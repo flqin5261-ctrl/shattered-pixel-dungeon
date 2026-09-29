@@ -50,19 +50,47 @@ public class InfiniteWorldLevel extends Level {
         color2 = 0x7AA7A1;
     }
 
+    private int visualTheme() {
+        // Keep old v2 worlds visually compatible. New v3 worlds pick one complete
+        // upstream tileset from the world seed and keep it for the lifetime of the save.
+        if (state().generatorVersion <= 2) return 3;
+        return (int)Math.floorMod(Dungeon.seed ^ (Dungeon.seed >>> 32), 5L);
+    }
+
     @Override
     public String tilesTex() {
-        return Assets.Environment.TILES_CITY;
+        switch (visualTheme()) {
+            case 0: return Assets.Environment.TILES_SEWERS;
+            case 1: return Assets.Environment.TILES_PRISON;
+            case 2: return Assets.Environment.TILES_CAVES;
+            case 4: return Assets.Environment.TILES_HALLS;
+            case 3:
+            default:return Assets.Environment.TILES_CITY;
+        }
     }
 
     @Override
     public String waterTex() {
-        return Assets.Environment.WATER_CITY;
+        switch (visualTheme()) {
+            case 0: return Assets.Environment.WATER_SEWERS;
+            case 1: return Assets.Environment.WATER_PRISON;
+            case 2: return Assets.Environment.WATER_CAVES;
+            case 4: return Assets.Environment.WATER_HALLS;
+            case 3:
+            default:return Assets.Environment.WATER_CITY;
+        }
     }
 
     @Override
     public void playLevelMusic() {
-        Music.INSTANCE.play(Assets.Music.CITY_1, true);
+        switch (visualTheme()) {
+            case 0: Music.INSTANCE.play(Assets.Music.SEWERS_1, true); break;
+            case 1: Music.INSTANCE.play(Assets.Music.PRISON_1, true); break;
+            case 2: Music.INSTANCE.play(Assets.Music.CAVES_1, true); break;
+            case 4: Music.INSTANCE.play(Assets.Music.HALLS_1, true); break;
+            case 3:
+            default:Music.INSTANCE.play(Assets.Music.CITY_1, true); break;
+        }
     }
 
     private InfiniteWorldState state() {
@@ -489,7 +517,8 @@ public class InfiniteWorldLevel extends Level {
         }
 
         if (cx == 0 && cy == 0) {
-            carveOriginPlaza(out, ox, oy);
+            if (state().generatorVersion >= 3) carveOriginPlazaV3(out, ox, oy);
+            else carveOriginPlaza(out, ox, oy);
         }
     }
 
@@ -587,8 +616,14 @@ public class InfiniteWorldLevel extends Level {
                         else if (roll < 30) out[cell] = Terrain.GRASS;
                         break;
                     case 1: // flooded ruins
-                        if (roll < 15 && floorNeighbours(out, ox + x, oy + y) >= 5) out[cell] = Terrain.WATER;
-                        else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        if (state().generatorVersion >= 3) {
+                            // v3 uses smaller, readable puddles instead of broad random flooding.
+                            if (roll < 5 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
+                            else if (roll < 16) out[cell] = Terrain.EMPTY_DECO;
+                        } else {
+                            if (roll < 15 && floorNeighbours(out, ox + x, oy + y) >= 5) out[cell] = Terrain.WATER;
+                            else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        }
                         break;
                     case 2: // archives
                         if (roll < 8 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.BOOKSHELF;
@@ -642,6 +677,62 @@ public class InfiniteWorldLevel extends Level {
         }
         out[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.EMPTY_DECO;
         out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
+    }
+
+    private void carveOriginPlazaV3(int[] out, int ox, int oy) {
+        int variant = range(0, 0, 12001, 0, 3);
+
+        // All variants keep the exact world spawn (12,12) open and connect naturally
+        // to the procedural routes that were already carved through this chunk.
+        carveRect(out, ox + 7, oy + 7, ox + 16, oy + 16, Terrain.EMPTY);
+
+        switch (variant) {
+            case 0: // small reflecting pools
+                for (int x = 8; x <= 15; x++) {
+                    if (x != 11 && x != 12) {
+                        out[ox + x + (oy + 8) * MAP_SIZE] = Terrain.WATER;
+                        out[ox + x + (oy + 15) * MAP_SIZE] = Terrain.WATER;
+                    }
+                }
+                out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
+                break;
+
+            case 1: // overgrown cross court
+                for (int x = 8; x <= 15; x++) {
+                    if (x < 11 || x > 13) {
+                        out[ox + x + (oy + 9) * MAP_SIZE] = Terrain.HIGH_GRASS;
+                        out[ox + x + (oy + 14) * MAP_SIZE] = Terrain.GRASS;
+                    }
+                }
+                for (int y = 9; y <= 14; y++) {
+                    if (y < 11 || y > 13) {
+                        out[ox + 9 + (oy + y) * MAP_SIZE] = Terrain.GRASS;
+                        out[ox + 14 + (oy + y) * MAP_SIZE] = Terrain.HIGH_GRASS;
+                    }
+                }
+                break;
+
+            case 2: // broken ceremonial court
+                out[ox + 8 + (oy + 8) * MAP_SIZE] = Terrain.STATUE;
+                out[ox + 15 + (oy + 8) * MAP_SIZE] = Terrain.STATUE;
+                out[ox + 8 + (oy + 15) * MAP_SIZE] = Terrain.STATUE;
+                out[ox + 15 + (oy + 15) * MAP_SIZE] = Terrain.STATUE;
+                out[ox + 10 + (oy + 11) * MAP_SIZE] = Terrain.EMPTY_DECO;
+                out[ox + 13 + (oy + 13) * MAP_SIZE] = Terrain.EMPTY_DECO;
+                break;
+
+            default: // ruined archive court, without forcing every world into library visuals
+                for (int x = 8; x <= 15; x += 2) {
+                    out[ox + x + (oy + 8) * MAP_SIZE] = Terrain.BOOKSHELF;
+                }
+                for (int x = 9; x <= 15; x += 3) {
+                    out[ox + x + (oy + 15) * MAP_SIZE] = Terrain.BOOKSHELF;
+                }
+                out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
+                break;
+        }
+
+        out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY;
     }
 
     private int nearestHub(int[] hx, int[] hy, int x, int y) {
@@ -949,6 +1040,13 @@ public class InfiniteWorldLevel extends Level {
     private int range(int x, int y, int salt, int min, int max) {
         int span = max - min + 1;
         return min + (int)Math.floorMod(hash(x, y, salt), (long)span);
+    }
+
+    public int stableTileVariance(int localPos) {
+        if (localPos < 0 || localPos >= length()) return 50;
+        int wx = worldXForLocalCell(localPos);
+        int wy = worldYForLocalCell(localPos);
+        return (int)Math.floorMod(hash(wx, wy, 15001), 100L);
     }
 
     private long hash(int x, int y, int salt) {
