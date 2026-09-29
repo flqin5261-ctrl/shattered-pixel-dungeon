@@ -108,6 +108,10 @@ public class HeroSprite extends CharSprite {
 	}
 
 	public void rebaseInfiniteWorld(int p, float cameraShiftX, float cameraShiftY) {
+		// Stop the tween that was created for the just-completed step before moving the
+		// sprite into the rebased local window. Otherwise that old tween can finish
+		// afterwards and snap the hero back to a stale pre-rebase pixel position.
+		interruptMotion();
 		super.place(p);
 		if (Game.scene() instanceof GameScene) {
 			Camera.main.shift(new PointF(cameraShiftX, cameraShiftY));
