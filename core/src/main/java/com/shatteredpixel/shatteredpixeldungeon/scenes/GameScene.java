@@ -1385,24 +1385,35 @@ public class GameScene extends PixelScene {
 		if (scene == null || Dungeon.level == null || Dungeon.hero == null) return;
 
 		synchronized (scene) {
-			scene.heaps.clear();
-			for (Heap heap : Dungeon.level.heaps.valueList()) {
-				scene.addHeapSprite(heap);
+			boolean waterWasVisible = scene.water != null && scene.water.visible;
+			if (scene.water != null) scene.water.visible = false;
+
+			try {
+				scene.heaps.clear();
+				for (Heap heap : Dungeon.level.heaps.valueList()) {
+					scene.addHeapSprite(heap);
+				}
+
+				// Rebuild every terrain-dependent layer before the frame is visible again.
+				// The water skin sits underneath all terrain in the original renderer, so
+				// hiding it during this synchronous refresh prevents a one-frame "liquid"
+				// flash if a streamed tile buffer is being regenerated.
+				resetMap();
+
+				if (Dungeon.hero.sprite instanceof HeroSprite) {
+					((HeroSprite) Dungeon.hero.sprite).rebaseInfiniteWorld(
+							Dungeon.hero.pos,
+							-shiftedCellsX * DungeonTilemap.SIZE,
+							-shiftedCellsY * DungeonTilemap.SIZE);
+				} else if (Dungeon.hero.sprite != null) {
+					Dungeon.hero.sprite.place(Dungeon.hero.pos);
+				}
+
+				Dungeon.observe();
+				updateFog();
+			} finally {
+				if (scene.water != null) scene.water.visible = waterWasVisible;
 			}
-
-			resetMap();
-
-			if (Dungeon.hero.sprite instanceof HeroSprite) {
-				((HeroSprite) Dungeon.hero.sprite).rebaseInfiniteWorld(
-						Dungeon.hero.pos,
-						-shiftedCellsX * DungeonTilemap.SIZE,
-						-shiftedCellsY * DungeonTilemap.SIZE);
-			} else if (Dungeon.hero.sprite != null) {
-				Dungeon.hero.sprite.place(Dungeon.hero.pos);
-			}
-
-			Dungeon.observe();
-			updateFog();
 		}
 	}
 
