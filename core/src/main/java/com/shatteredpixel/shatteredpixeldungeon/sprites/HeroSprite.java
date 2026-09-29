@@ -107,6 +107,14 @@ public class HeroSprite extends CharSprite {
 		if (Game.scene() instanceof GameScene) Camera.main.panFollow(this, 5f);
 	}
 
+	public void rebaseInfiniteWorld(int p, float cameraShiftX, float cameraShiftY) {
+		super.place(p);
+		if (Game.scene() instanceof GameScene) {
+			Camera.main.shift(new PointF(cameraShiftX, cameraShiftY));
+			Camera.main.panFollow(this, 20f);
+		}
+	}
+
 	@Override
 	public void move( int from, int to ) {
 		super.move( from, to );
