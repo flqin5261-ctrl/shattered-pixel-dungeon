@@ -36,6 +36,9 @@ import java.util.HashMap;
 public class GamesInProgress {
 	
 	public static final int MAX_SLOTS = HeroClass.values().length;
+	// Dedicated hidden save slot for the standalone Extra Challenge mode.
+	// checkAll()/firstEmpty() intentionally ignore it, so it never mixes with normal runs.
+	public static final int EXTRA_CHALLENGE_SLOT = MAX_SLOTS + 1;
 	
 	//null means we have loaded info and it is empty, no entry means unknown.
 	private static HashMap<Integer, Info> slotStates = new HashMap<>();
