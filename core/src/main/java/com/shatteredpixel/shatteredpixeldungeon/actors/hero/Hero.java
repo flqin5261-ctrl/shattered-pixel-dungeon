@@ -1964,12 +1964,17 @@ public class Hero extends Char {
 			}
 
 		//TODO perhaps only trigger this if hero is already adjacent? reducing mistaps
-		} else if (Dungeon.level instanceof MiningLevel &&
-					belongings.getItem(Pickaxe.class) != null &&
-				(Dungeon.level.map[cell] == Terrain.WALL
-						|| Dungeon.level.map[cell] == Terrain.WALL_DECO
-						|| Dungeon.level.map[cell] == Terrain.MINE_CRYSTAL
-						|| Dungeon.level.map[cell] == Terrain.MINE_BOULDER)){
+		} else if ((Dungeon.level instanceof MiningLevel || Dungeon.level instanceof InfiniteWorldLevel)
+					&& belongings.getItem(Pickaxe.class) != null
+					&& ((Dungeon.level instanceof MiningLevel
+						&& (Dungeon.level.map[cell] == Terrain.WALL
+							|| Dungeon.level.map[cell] == Terrain.WALL_DECO
+							|| Dungeon.level.map[cell] == Terrain.MINE_CRYSTAL
+							|| Dungeon.level.map[cell] == Terrain.MINE_BOULDER))
+					|| (Dungeon.level instanceof InfiniteWorldLevel
+						&& (Dungeon.level.map[cell] == Terrain.WALL_DECO
+							|| Dungeon.level.map[cell] == Terrain.MINE_CRYSTAL
+							|| Dungeon.level.map[cell] == Terrain.MINE_BOULDER)))){
 
 			curAction = new HeroAction.Mine( cell );
 
