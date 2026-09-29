@@ -12,6 +12,7 @@ on:
       - assist-0.3.1-worldgen
       - assist-0.3.2-worldfix
       - assist-0.3.3-worldfix2
+      - assist-0.3.4-streamfix
   workflow_dispatch:
 
 permissions:
