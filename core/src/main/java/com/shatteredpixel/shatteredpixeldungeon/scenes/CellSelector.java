@@ -64,7 +64,7 @@ public class CellSelector extends ScrollArea {
 	private float mouseZoom;
 
 	private float minimumZoom() {
-		return Dungeon.infiniteWorld ? Math.max(2f, PixelScene.minZoom) : PixelScene.minZoom;
+		return Dungeon.infiniteWorld ? Math.max(1.8f, PixelScene.minZoom) : PixelScene.minZoom;
 	}
 	
 	@Override
