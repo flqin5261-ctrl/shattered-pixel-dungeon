@@ -601,10 +601,10 @@ public class InfiniteWorldLevel extends Level {
         int centerX = 9 + range(cx, cy, 11, 0, 5);
         int centerY = 9 + range(cx, cy, 12, 0, 5);
 
-        int northX = edgeHorizontal(cx, cy);
-        int southX = edgeHorizontal(cx, cy + 1);
-        int westY = edgeVertical(cx, cy);
-        int eastY = edgeVertical(cx + 1, cy);
+        int northX = edgeHorizontalV1(cx, cy);
+        int southX = edgeHorizontalV1(cx, cy + 1);
+        int westY = edgeVerticalV1(cx, cy);
+        int eastY = edgeVerticalV1(cx + 1, cy);
 
         carveRect(result, ox + centerX - 4, oy + centerY - 4,
                 ox + centerX + 4, oy + centerY + 4, Terrain.EMPTY);
@@ -635,9 +635,9 @@ public class InfiniteWorldLevel extends Level {
                 break;
         }
 
-        if (hasChest(cx, cy)) {
-            int chestX = chestLocalX(cx, cy);
-            int chestY = chestLocalY(cx, cy);
+        if (hasChestV1(cx, cy)) {
+            int chestX = chestLocalXV1(cx, cy);
+            int chestY = chestLocalYV1(cx, cy);
             carveRect(result, ox + chestX - 1, oy + chestY - 1,
                     ox + chestX + 1, oy + chestY + 1, Terrain.EMPTY);
             carvePathV1(result, ox + centerX, oy + centerY, ox + chestX, oy + chestY, cx, cy, 81);
@@ -767,6 +767,26 @@ public class InfiniteWorldLevel extends Level {
                 map[cell] = terrain;
             }
         }
+    }
+
+    private int edgeHorizontalV1(int cx, int boundaryY) {
+        return 5 + range(cx, boundaryY, 5001, 0, CHUNK_SIZE - 11);
+    }
+
+    private int edgeVerticalV1(int boundaryX, int cy) {
+        return 5 + range(boundaryX, cy, 5002, 0, CHUNK_SIZE - 11);
+    }
+
+    private boolean hasChestV1(int cx, int cy) {
+        return Math.floorMod(hash(cx, cy, 6001), 3) == 0;
+    }
+
+    private int chestLocalXV1(int cx, int cy) {
+        return 6 + range(cx, cy, 6101, 0, CHUNK_SIZE - 13);
+    }
+
+    private int chestLocalYV1(int cx, int cy) {
+        return 6 + range(cx, cy, 6102, 0, CHUNK_SIZE - 13);
     }
 
     private int edgeHorizontal(int cx, int boundaryY) {
