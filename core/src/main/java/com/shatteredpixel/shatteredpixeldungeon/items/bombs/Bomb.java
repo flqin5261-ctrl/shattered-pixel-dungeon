@@ -237,6 +237,9 @@ public class Bomb extends Item {
 			}
 			
 			if (terrainAffected) {
+				if (Dungeon.infiniteWorld) {
+					Dungeon.level.cleanWalls();
+				}
 				Dungeon.observe();
 			}
 		}
