@@ -35,71 +35,28 @@ public class WndAssist extends Window {
     private static final int BTN_H = 18;
     private static final int SLIDER_H = 21;
     private static final int GAP = 2;
+    private static final int MODIFY_W = 38;
 
     private float pos = 0;
-    private RedButton btnTeleport;
-    private RedButton btnArtifact;
     private RedButton btnUpgrade;
-    private RedButton btnUpgradeAmount;
-    private RedButton btnSpeedAmount;
+    private RedButton btnSpeed;
+    private RedButton btnArtifact;
+    private CheckBox chkArtifact;
+    private RedButton btnTeleport;
     private OptionSlider depthSlider;
 
     public WndAssist() {
         super();
 
         addToggle("无敌", SPDSettings.assistInvincible(), SPDSettings::assistInvincible);
-        addToggle("物品/金币越用越多", SPDSettings.assistNoConsume(), SPDSettings::assistNoConsume);
+        addToggle("物品/金币只增不减", SPDSettings.assistNoConsume(), SPDSettings::assistNoConsume);
 
-        addToggle("启用指定装备强化", SPDSettings.assistWeapon10(), value -> {
-            SPDSettings.assistWeapon10(value);
-            updateButtons();
-        });
+        addUpgradeRow();
+        addSpeedRow();
 
-        btnUpgradeAmount = new RedButton(upgradeAmountText(), 8) {
-            @Override
-            protected void onClick() {
-                if (!SPDSettings.assistWeapon10()) return;
-                editUpgradeAmount();
-            }
-        };
-        add(btnUpgradeAmount);
-        btnUpgradeAmount.setRect(0, pos + GAP, WIDTH, BTN_H);
-        pos = btnUpgradeAmount.bottom();
-
-        btnUpgrade = new RedButton(upgradeActionText(), 8) {
-            @Override
-            protected void onClick() {
-                if (!SPDSettings.assistWeapon10() || Dungeon.hero == null) return;
-                showUpgradePicker();
-            }
-        };
-        add(btnUpgrade);
-        btnUpgrade.setRect(0, pos + GAP, WIDTH, BTN_H);
-        pos = btnUpgrade.bottom();
-
-        addToggle("启用自定义移速", SPDSettings.assistSpeed(), value -> {
-            SPDSettings.assistSpeed(value);
-            updateButtons();
-        });
-
-        btnSpeedAmount = new RedButton(speedAmountText(), 8) {
-            @Override
-            protected void onClick() {
-                if (!SPDSettings.assistSpeed()) return;
-                editSpeedMultiplier();
-            }
-        };
-        add(btnSpeedAmount);
-        btnSpeedAmount.setRect(0, pos + GAP, WIDTH, BTN_H);
-        pos = btnSpeedAmount.bottom();
-
+        // Teleport UI intentionally stays the same.
         addToggle("允许指定层传送", SPDSettings.assistTeleport(), value -> {
             SPDSettings.assistTeleport(value);
-            updateButtons();
-        });
-
-        addToggle("允许神器自选", SPDSettings.assistArtifact(), value -> {
-            SPDSettings.assistArtifact(value);
             updateButtons();
         });
 
@@ -138,16 +95,7 @@ public class WndAssist extends Window {
         btnTeleport.setRect(0, pos + GAP, WIDTH, BTN_H);
         pos = btnTeleport.bottom();
 
-        btnArtifact = new RedButton("选择并获得神器", 9) {
-            @Override
-            protected void onClick() {
-                if (!SPDSettings.assistArtifact() || Dungeon.hero == null) return;
-                showArtifactPicker();
-            }
-        };
-        add(btnArtifact);
-        btnArtifact.setRect(0, pos + GAP, WIDTH, BTN_H);
-        pos = btnArtifact.bottom();
+        addArtifactRow();
 
         updateButtons();
         resize(WIDTH, (int) pos);
@@ -171,45 +119,115 @@ public class WndAssist extends Window {
         pos = box.bottom();
     }
 
-    private String upgradeAmountText() {
-        return "设置强化增量：+" + SPDSettings.assistUpgradeAmount();
+    private void addUpgradeRow() {
+        float y = pos > 0 ? pos + GAP : 0;
+        float leftW = WIDTH - MODIFY_W - GAP;
+
+        btnUpgrade = new RedButton(upgradeText(), 8) {
+            @Override
+            protected void onClick() {
+                if (Dungeon.hero != null) showUpgradePicker();
+            }
+        };
+        add(btnUpgrade);
+        btnUpgrade.setRect(0, y, leftW, BTN_H);
+
+        RedButton modify = new RedButton("修改", 8) {
+            @Override
+            protected void onClick() {
+                editUpgradeAmount();
+            }
+        };
+        add(modify);
+        modify.setRect(btnUpgrade.right() + GAP, y, MODIFY_W, BTN_H);
+
+        pos = btnUpgrade.bottom();
     }
 
-    private String upgradeActionText() {
-        return "选择装备并 +" + SPDSettings.assistUpgradeAmount();
+    private void addSpeedRow() {
+        float y = pos + GAP;
+        float leftW = WIDTH - MODIFY_W - GAP;
+
+        btnSpeed = new RedButton(speedText(), 8) {
+            @Override
+            protected void onClick() {
+                SPDSettings.assistSpeed(!SPDSettings.assistSpeed());
+                text(speedText());
+                GLog.i("移动速度已" + (SPDSettings.assistSpeed() ? "开启" : "关闭"));
+            }
+        };
+        add(btnSpeed);
+        btnSpeed.setRect(0, y, leftW, BTN_H);
+
+        RedButton modify = new RedButton("修改", 8) {
+            @Override
+            protected void onClick() {
+                editSpeedMultiplier();
+            }
+        };
+        add(modify);
+        modify.setRect(btnSpeed.right() + GAP, y, MODIFY_W, BTN_H);
+
+        pos = btnSpeed.bottom();
     }
 
-    private String speedAmountText() {
-        return String.format(Locale.US, "设置移动倍率：×%.2f", SPDSettings.assistSpeedMultiplier());
+    private void addArtifactRow() {
+        float y = pos + GAP;
+        float switchW = 44;
+        float leftW = WIDTH - switchW - GAP;
+
+        btnArtifact = new RedButton("神器", 9) {
+            @Override
+            protected void onClick() {
+                if (SPDSettings.assistArtifact() && Dungeon.hero != null) {
+                    showArtifactPicker();
+                }
+            }
+        };
+        add(btnArtifact);
+        btnArtifact.setRect(0, y, leftW, BTN_H);
+
+        chkArtifact = new CheckBox("开启") {
+            @Override
+            protected void onClick() {
+                super.onClick();
+                SPDSettings.assistArtifact(checked());
+                updateButtons();
+            }
+        };
+        chkArtifact.checked(SPDSettings.assistArtifact());
+        add(chkArtifact);
+        chkArtifact.setRect(btnArtifact.right() + GAP, y, switchW, BTN_H);
+
+        pos = btnArtifact.bottom();
+    }
+
+    private String upgradeText() {
+        return "强化 +" + SPDSettings.assistUpgradeAmount();
+    }
+
+    private String speedText() {
+        return String.format(Locale.US, "移动速度 ×%.2f %s",
+                SPDSettings.assistSpeedMultiplier(),
+                SPDSettings.assistSpeed() ? "（开）" : "（关）");
     }
 
     private void updateButtons() {
-        boolean upgrade = SPDSettings.assistWeapon10();
-        if (btnUpgrade != null) {
-            btnUpgrade.enable(upgrade);
-            btnUpgrade.text(upgradeActionText());
-        }
-        if (btnUpgradeAmount != null) {
-            btnUpgradeAmount.enable(upgrade);
-            btnUpgradeAmount.text(upgradeAmountText());
-        }
-
-        boolean speed = SPDSettings.assistSpeed();
-        if (btnSpeedAmount != null) {
-            btnSpeedAmount.enable(speed);
-            btnSpeedAmount.text(speedAmountText());
-        }
+        if (btnUpgrade != null) btnUpgrade.text(upgradeText());
+        if (btnSpeed != null) btnSpeed.text(speedText());
 
         if (btnTeleport != null) btnTeleport.enable(SPDSettings.assistTeleport());
-        if (btnArtifact != null) btnArtifact.enable(SPDSettings.assistArtifact());
         if (depthSlider != null) depthSlider.enable(SPDSettings.assistTeleport());
+
+        if (chkArtifact != null) chkArtifact.checked(SPDSettings.assistArtifact());
+        if (btnArtifact != null) btnArtifact.enable(SPDSettings.assistArtifact());
     }
 
     private void editUpgradeAmount() {
         hide();
         GameScene.show(new WndTextInput(
-                "自定义强化数值",
-                "输入本次强化增量，例如 10 或 100。范围 1～1000。",
+                "强化数值",
+                "输入每次要增加的强化等级，例如 10、100。范围 1～1000。",
                 Integer.toString(SPDSettings.assistUpgradeAmount()),
                 4,
                 false,
@@ -223,7 +241,7 @@ public class WndAssist extends Window {
                         int value = Integer.parseInt(cleaned);
                         if (value < 1 || value > 1000) throw new NumberFormatException();
                         SPDSettings.assistUpgradeAmount(value);
-                        GLog.p("强化增量已设置为 +" + value);
+                        GLog.p("强化数值已设置为 +" + value);
                     } catch (Exception e) {
                         GLog.w("请输入 1～1000 的整数。");
                     }
@@ -236,8 +254,8 @@ public class WndAssist extends Window {
     private void editSpeedMultiplier() {
         hide();
         GameScene.show(new WndTextInput(
-                "自定义移动倍率",
-                "可输入 1.5、2、5、10 等。范围 0.25～50。",
+                "移动速度",
+                "输入倍率，例如 1.5、2、5、10。范围 0.25～50。",
                 String.format(Locale.US, "%.2f", SPDSettings.assistSpeedMultiplier()),
                 6,
                 false,
@@ -252,7 +270,7 @@ public class WndAssist extends Window {
                         float value = Float.parseFloat(cleaned);
                         if (value < 0.25f || value > 50f) throw new NumberFormatException();
                         SPDSettings.assistSpeedPercent(Math.round(value * 100f));
-                        GLog.p(String.format(Locale.US, "移动倍率已设置为 ×%.2f", SPDSettings.assistSpeedMultiplier()));
+                        GLog.p(String.format(Locale.US, "移动速度已设置为 ×%.2f", SPDSettings.assistSpeedMultiplier()));
                     } catch (Exception e) {
                         GLog.w("请输入 0.25～50 之间的数字。");
                     }
@@ -288,15 +306,14 @@ public class WndAssist extends Window {
                     artifact.identify();
                     int before = artifact.visiblyUpgraded();
                     int after = artifact.assistBoostVisibleLevel(amount);
-                    GLog.p("已指定强化：" + artifact.name() + "，神器等级 " + before + " → " + after
-                            + "（神器仍遵循自身等级上限）");
+                    GLog.p("已强化：" + artifact.name() + "，神器等级 " + before + " → " + after);
                 } else {
                     int before = item.trueLevel();
                     long desired = (long)before + amount;
                     int after = desired > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)desired;
                     item.level(after);
                     item.identify();
-                    GLog.p("已指定强化：" + item.name() + "，+" + before + " → +" + item.trueLevel());
+                    GLog.p("已强化：" + item.name() + "，+" + before + " → +" + item.trueLevel());
                 }
                 Item.updateQuickslot();
             }
@@ -314,8 +331,8 @@ public class WndAssist extends Window {
         }
 
         Game.scene().addToFront(new WndOptions(
-                "神器自选",
-                "选择一个神器。已在背包中的同类神器不会重复生成。",
+                "神器",
+                "选择一个神器。已拥有的同类神器不会重复生成。",
                 names) {
             @Override
             protected void onSelect(int index) {
