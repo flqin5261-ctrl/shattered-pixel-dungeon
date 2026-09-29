@@ -1,6 +1,6 @@
 /*
  * Shattered Pixel Dungeon - Assist Edition
- * Mixed-material floor overlay for Infinite World.
+ * Mixed-material overlays for Infinite World.
  */
 package com.shatteredpixel.shatteredpixeldungeon.tiles;
 
@@ -12,23 +12,35 @@ import com.watabou.utils.Bundle;
 import java.util.Arrays;
 
 /**
- * Paints deterministic patches of ordinary floor using a foreign region tilesheet.
- * It intentionally avoids walls, water, doors and raised terrain so the overlay
- * cannot change collision or stitching logic; it is visual-only.
+ * Deterministic visual-only chunk overlay. Older worlds use sparse floor patches;
+ * v6 can also use full floor and raised/wall overlays so neighboring world regions
+ * can visibly use different upstream environment tilesheets without changing
+ * collision or logical terrain.
  */
 public class InfiniteWorldAccentTilemap extends CustomTilemap {
 
+    public static final int MODE_FLOOR = 0;
+    public static final int MODE_WALLS = 1;
+
     private String textureName;
     private int salt;
+    private int coverage = 54;
+    private int mode = MODE_FLOOR;
 
     public InfiniteWorldAccentTilemap() {
         // public zero-arg constructor required by Bundlable restore
     }
 
     public InfiniteWorldAccentTilemap(String textureName, int salt) {
+        this(textureName, salt, 54, MODE_FLOOR);
+    }
+
+    public InfiniteWorldAccentTilemap(String textureName, int salt, int coverage, int mode) {
         this.textureName = textureName;
         this.texture = textureName;
         this.salt = salt;
+        this.coverage = Math.max(0, Math.min(100, coverage));
+        this.mode = mode;
     }
 
     @Override
@@ -53,30 +65,83 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
                 int pos = gx + gy * Dungeon.level.width();
                 int terrain = Dungeon.level.map[pos];
 
-                // Keep this overlay deliberately conservative. These floor types do
-                // not carry raised objects or water/wall stitching.
-                if (terrain != Terrain.EMPTY && terrain != Terrain.EMPTY_DECO && terrain != Terrain.EMPTY_SP) continue;
+                if (!includedByPatchNoise(x, y)) continue;
 
-                // Coarse 4x4 noise produces readable material patches rather than
-                // confetti. The same chunk always gets the same patch shape.
-                int bx = x >> 2;
-                int by = y >> 2;
-                int h = salt;
-                h ^= bx * 0x45d9f3b;
-                h = Integer.rotateLeft(h, 13);
-                h ^= by * 0x119de1f3;
-                h ^= h >>> 16;
-                if (Math.floorMod(h, 100) >= 54) continue;
+                int visual = mode == MODE_WALLS
+                        ? raisedVisual(pos, terrain)
+                        : floorVisual(pos, terrain);
 
-                int visual = DungeonTileSheet.directVisuals.get(terrain, -1);
-                if (visual >= 0) {
-                    data[x + y * tileW] = DungeonTileSheet.getVisualWithAlts(visual, pos);
-                }
+                if (visual >= 0) data[x + y * tileW] = visual;
             }
         }
 
         v.map(data, tileW);
         return v;
+    }
+
+    private boolean includedByPatchNoise(int x, int y) {
+        if (coverage >= 100) return true;
+        int bx = x >> 2;
+        int by = y >> 2;
+        int h = salt;
+        h ^= bx * 0x45d9f3b;
+        h = Integer.rotateLeft(h, 13);
+        h ^= by * 0x119de1f3;
+        h ^= h >>> 16;
+        return Math.floorMod(h, 100) < coverage;
+    }
+
+    private int floorVisual(int pos, int terrain) {
+        // Water remains animated by the world's normal water layer. Walls and
+        // raised objects are handled by MODE_WALLS.
+        if (terrain == Terrain.WATER || terrain == Terrain.CHASM
+                || DungeonTileSheet.wallStitcheable(terrain)
+                || DungeonTileSheet.doorTile(terrain)
+                || terrain == Terrain.STATUE || terrain == Terrain.STATUE_SP
+                || terrain == Terrain.ALCHEMY || terrain == Terrain.BARRICADE
+                || terrain == Terrain.HIGH_GRASS || terrain == Terrain.FURROWED_GRASS
+                || terrain == Terrain.MINE_CRYSTAL || terrain == Terrain.MINE_BOULDER
+                || terrain == Terrain.REGION_DECO || terrain == Terrain.REGION_DECO_ALT) {
+            return -1;
+        }
+
+        int visual = DungeonTileSheet.directVisuals.get(terrain, -1);
+        return visual >= 0 ? DungeonTileSheet.getVisualWithAlts(visual, pos) : -1;
+    }
+
+    private int raisedVisual(int pos, int terrain) {
+        int width = Dungeon.level.width();
+        int right = (pos + 1) % width != 0 ? Dungeon.level.map[pos + 1] : -1;
+        int below = pos + width < Dungeon.level.length() ? Dungeon.level.map[pos + width] : -1;
+        int left = pos % width != 0 ? Dungeon.level.map[pos - 1] : -1;
+
+        if (DungeonTileSheet.doorTile(terrain)) {
+            return DungeonTileSheet.getRaisedDoorTile(terrain,
+                    pos >= width ? Dungeon.level.map[pos - width] : -1);
+        } else if (DungeonTileSheet.wallStitcheable(terrain)) {
+            return DungeonTileSheet.getRaisedWallTile(terrain, pos, right, below, left);
+        } else if (terrain == Terrain.STATUE) {
+            return DungeonTileSheet.RAISED_STATUE;
+        } else if (terrain == Terrain.STATUE_SP) {
+            return DungeonTileSheet.RAISED_STATUE_SP;
+        } else if (terrain == Terrain.REGION_DECO) {
+            return DungeonTileSheet.RAISED_REGION_DECO;
+        } else if (terrain == Terrain.REGION_DECO_ALT) {
+            return DungeonTileSheet.RAISED_REGION_DECO_ALT;
+        } else if (terrain == Terrain.MINE_CRYSTAL) {
+            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_MINE_CRYSTAL_BLUE_1, pos);
+        } else if (terrain == Terrain.MINE_BOULDER) {
+            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_MINE_BOULDER, pos);
+        } else if (terrain == Terrain.ALCHEMY) {
+            return DungeonTileSheet.RAISED_ALCHEMY_POT;
+        } else if (terrain == Terrain.BARRICADE) {
+            return DungeonTileSheet.RAISED_BARRICADE;
+        } else if (terrain == Terrain.HIGH_GRASS) {
+            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_HIGH_GRASS, pos);
+        } else if (terrain == Terrain.FURROWED_GRASS) {
+            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_FURROWED_GRASS, pos);
+        }
+        return -1;
     }
 
     @Override
@@ -91,12 +156,16 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
 
     private static final String TEXTURE = "iw_texture";
     private static final String SALT = "iw_salt";
+    private static final String COVERAGE = "iw_coverage";
+    private static final String MODE = "iw_mode";
 
     @Override
     public void storeInBundle(Bundle bundle) {
         super.storeInBundle(bundle);
         bundle.put(TEXTURE, textureName);
         bundle.put(SALT, salt);
+        bundle.put(COVERAGE, coverage);
+        bundle.put(MODE, mode);
     }
 
     @Override
@@ -105,5 +174,7 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
         textureName = bundle.getString(TEXTURE);
         texture = textureName;
         salt = bundle.getInt(SALT);
+        coverage = bundle.contains(COVERAGE) ? bundle.getInt(COVERAGE) : 54;
+        mode = bundle.contains(MODE) ? bundle.getInt(MODE) : MODE_FLOOR;
     }
 }
