@@ -11,11 +11,11 @@
 
 当前最新稳定：
 
-- 版本：0.4.3
-- versionCode：944
-- Generator：V9
-- stable：`assist-0.4.3-stable`
-- dev：`assist-0.4.3-liminal`
+- 版本：0.4.4
+- versionCode：945
+- Generator：V10
+- stable：`assist-0.4.4-stable`
+- dev：`assist-0.4.4-branch-network`
 
 当前核心已经具备：
 
@@ -1078,3 +1078,23 @@ Boss 激活后：
 
 > **可以增加大量视觉结构和交互，但不要让每个新房间都同时成为新的奖励来源。**
 
+
+
+# B8. 0.4.4 V10 次级无限路线专项测试
+
+必须重新开始创建 V10 世界。
+
+- [ ] 找到 primary spine 后离开主干探索。
+- [ ] 进入 secondary east-west route 后连续跨 20+ Chunk，不应自然终止。
+- [ ] 进入 secondary north-south route 后连续跨 20+ Chunk，不应自然终止。
+- [ ] secondary route 跨 Chunk seam 时入口不能错位或断开。
+- [ ] secondary route 与 primary spine 周期性交汇。
+- [ ] 横纵 secondary route 之间可以形成新的交叉网络。
+- [ ] 普通局部支路仍然允许出现 dead end。
+- [ ] anomaly 5×5 macro 内 V10 route 仍贯通。
+- [ ] 不应因为额外路线重新出现“地图过于规则的方格网”体感。
+- [ ] Streaming、Fog、Water、VBO 不因新增路线发生回归。
+
+V10 的验收标准不是“所有路都无限”，而是：
+
+> **从主干出去后，世界里存在大量第二层无限路线，玩家不必总是撞死路后折返唯一主干。**
