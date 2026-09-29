@@ -736,7 +736,14 @@ public class Hero extends Char {
 
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
 
-		if (SPDSettings.assistSpeed()) speed *= SPDSettings.assistSpeedMultiplier();
+		if (SPDSettings.assistSpeed()) {
+			float assistSpeed = SPDSettings.assistSpeedMultiplier();
+			speed *= assistSpeed;
+
+			float sprintSpeed = 1f;
+			if (momentum != null && momentum.freerunning()) sprintSpeed = 1.5f;
+			((HeroSprite)sprite).sprint(sprintSpeed * assistSpeed);
+		}
 		
 		return speed;
 		
