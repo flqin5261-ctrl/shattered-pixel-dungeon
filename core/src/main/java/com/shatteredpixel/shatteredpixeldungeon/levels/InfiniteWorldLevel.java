@@ -73,9 +73,15 @@ public class InfiniteWorldLevel extends Level {
     protected boolean build() {
         setSize(MAP_SIZE, MAP_SIZE);
 
-        state().markChunkExplored(state().centerChunkX, state().centerChunkY);
+        InfiniteWorldState st = state();
+        if (!st.heroWorldInitialized) {
+            st.heroWorldX = 12;
+            st.heroWorldY = 12;
+            st.heroWorldInitialized = true;
+        }
+        st.markChunkExplored(st.centerChunkX, st.centerChunkY);
 
-        int[] base = generateBaseWindow(state().centerChunkX, state().centerChunkY);
+        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
         System.arraycopy(base, 0, map, 0, map.length);
         applyTerrainOverrides();
         restoreExploration();
@@ -127,9 +133,13 @@ public class InfiniteWorldLevel extends Level {
         int x = hero.pos % width();
         int y = hero.pos / width();
 
-        int worldXNow = (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
-        int worldYNow = (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
-        state().markChunkExplored(Math.floorDiv(worldXNow, CHUNK_SIZE), Math.floorDiv(worldYNow, CHUNK_SIZE));
+        InfiniteWorldState st = state();
+        int worldXNow = (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
+        int worldYNow = (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
+        st.heroWorldX = worldXNow;
+        st.heroWorldY = worldYNow;
+        st.heroWorldInitialized = true;
+        st.markChunkExplored(Math.floorDiv(worldXNow, CHUNK_SIZE), Math.floorDiv(worldYNow, CHUNK_SIZE));
 
         int shiftX = 0;
         int shiftY = 0;
@@ -144,14 +154,11 @@ public class InfiniteWorldLevel extends Level {
 
         shifting = true;
 
-        InfiniteWorldState st = state();
         int oldCenterX = st.centerChunkX;
         int oldCenterY = st.centerChunkY;
 
-        int localX = hero.pos % width();
-        int localY = hero.pos / width();
-        int worldX = (oldCenterX - HALF_WINDOW) * CHUNK_SIZE + localX;
-        int worldY = (oldCenterY - HALF_WINDOW) * CHUNK_SIZE + localY;
+        int worldX = st.heroWorldX;
+        int worldY = st.heroWorldY;
 
         snapshotForSave();
 
@@ -162,6 +169,18 @@ public class InfiniteWorldLevel extends Level {
 
         int newLocalX = worldX - (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
         int newLocalY = worldY - (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
+
+        // Absolute coordinates are authoritative. A bad rebase must never silently
+        // fall back to the spawn/entrance position.
+        if (newLocalX < 1 || newLocalX >= width()-1
+                || newLocalY < 1 || newLocalY >= height()-1) {
+            st.centerChunkX = oldCenterX;
+            st.centerChunkY = oldCenterY;
+            rebuildWindow();
+            shifting = false;
+            return false;
+        }
+
         hero.pos = newLocalX + newLocalY * width();
 
         // Stop any old multi-cell path because its local cell indices belonged to the old window.
@@ -170,7 +189,9 @@ public class InfiniteWorldLevel extends Level {
         ShatteredPixelDungeon.runOnRenderThread(new Callback() {
             @Override
             public void call() {
-                GameScene.refreshInfiniteWorldWindow();
+                GameScene.refreshInfiniteWorldWindow(
+                        shiftX * CHUNK_SIZE,
+                        shiftY * CHUNK_SIZE);
                 shifting = false;
             }
         });
@@ -180,6 +201,15 @@ public class InfiniteWorldLevel extends Level {
 
     public void snapshotForSave() {
         InfiniteWorldState st = state();
+
+        if (Dungeon.hero != null) {
+            int hx = Dungeon.hero.pos % width();
+            int hy = Dungeon.hero.pos / width();
+            st.heroWorldX = (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE + hx;
+            st.heroWorldY = (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE + hy;
+            st.heroWorldInitialized = true;
+        }
+
         int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
 
         for (int cell = 0; cell < length(); cell++) {
