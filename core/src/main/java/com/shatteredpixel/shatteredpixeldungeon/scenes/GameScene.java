@@ -232,7 +232,7 @@ public class GameScene extends PixelScene {
 		SPDSettings.lastClass(Dungeon.hero.heroClass.ordinal());
 		
 		super.create();
-		float sceneMinZoom = Dungeon.infiniteWorld ? Math.max(2f, minZoom) : minZoom;
+		float sceneMinZoom = Dungeon.infiniteWorld ? Math.max(1.8f, minZoom) : minZoom;
 		Camera.main.zoom( GameMath.gate(sceneMinZoom, defaultZoom + SPDSettings.zoom(), maxZoom));
 		Camera.main.edgeScroll.set(1);
 
