@@ -66,6 +66,10 @@ public class CellSelector extends ScrollArea {
 	private float minimumZoom() {
 		return Dungeon.infiniteWorld ? Math.max(1.8f, PixelScene.minZoom) : PixelScene.minZoom;
 	}
+
+	private float roundedZoom(float value) {
+		return Dungeon.infiniteWorld ? Math.round(value * 10f) / 10f : Math.round(value);
+	}
 	
 	@Override
 	protected void onScroll( ScrollEvent event ) {
@@ -76,7 +80,7 @@ public class CellSelector extends ScrollArea {
 		diff = Math.min(1, diff);
 		mouseZoom = GameMath.gate( minimumZoom(), mouseZoom - diff, PixelScene.maxZoom );
 		
-		zoom( Math.round(mouseZoom) );
+		zoom( roundedZoom(mouseZoom) );
 	}
 	
 	@Override
@@ -209,7 +213,7 @@ public class CellSelector extends ScrollArea {
 			
 			pinching = false;
 			
-			zoom(Math.round( camera.zoom ));
+			zoom(roundedZoom( camera.zoom ));
 			
 			dragging = true;
 			if (event == curEvent) {
@@ -503,7 +507,7 @@ public class CellSelector extends ScrollArea {
 		if (pinching){
 			pinching = false;
 
-			zoom( Math.round( camera.zoom ) );
+			zoom( roundedZoom( camera.zoom ) );
 		}
 	}
 
