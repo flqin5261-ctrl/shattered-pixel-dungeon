@@ -45,6 +45,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -157,6 +159,24 @@ public class Bomb extends Item {
 			boolean[] explodable = new boolean[Dungeon.level.length()];
 			BArray.not( Dungeon.level.solid, explodable);
 			BArray.or( Dungeon.level.flamable, explodable, explodable);
+
+			// Infinite World treats ordinary stone as mutable terrain. Let explosions
+			// propagate into nearby wall cells so bombs can open new passages, while
+			// keeping the outer streaming-frame border indestructible.
+			if (Dungeon.infiniteWorld) {
+				int w = Dungeon.level.width();
+				int h = Dungeon.level.height();
+				for (int i = 0; i < Dungeon.level.length(); i++) {
+					int x = i % w;
+					int y = i / w;
+					if (x == 0 || y == 0 || x == w-1 || y == h-1) continue;
+					int terr = Dungeon.level.map[i];
+					if (terr == Terrain.WALL || terr == Terrain.WALL_DECO
+							|| terr == Terrain.MINE_CRYSTAL || terr == Terrain.MINE_BOULDER) {
+						explodable[i] = true;
+					}
+				}
+			}
 			PathFinder.buildDistanceMap( cell, explodable, explosionRange() );
 			for (int i = 0; i < PathFinder.distance.length; i++) {
 				if (PathFinder.distance[i] != Integer.MAX_VALUE) {
@@ -173,7 +193,14 @@ public class Bomb extends Item {
 					CellEmitter.get(i).burst(SmokeParticle.FACTORY, 4);
 				}
 
-				if (Dungeon.level.flamable[i]) {
+				int terr = Dungeon.level.map[i];
+				if (Dungeon.infiniteWorld
+						&& (terr == Terrain.WALL || terr == Terrain.WALL_DECO
+						|| terr == Terrain.MINE_CRYSTAL || terr == Terrain.MINE_BOULDER)) {
+					Level.set(i, Terrain.EMPTY_DECO);
+					GameScene.updateMap(i);
+					terrainAffected = true;
+				} else if (Dungeon.level.flamable[i]) {
 					Dungeon.level.destroy(i);
 					GameScene.updateMap(i);
 					terrainAffected = true;
