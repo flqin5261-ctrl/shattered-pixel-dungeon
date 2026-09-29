@@ -19,6 +19,7 @@ on:
       - assist-0.3.8-worldcontent
       - assist-0.3.9-density
       - assist-0.4.0-worldloot
+      - assist-0.4.1-themedrooms
   workflow_dispatch:
 
 permissions:
