@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
@@ -84,6 +85,9 @@ public class ScrollOfTeleportation extends Scroll {
 		Dungeon.level.occupyCell( ch );
 		Buff.detach(ch, Roots.class);
 		if (ch == Dungeon.hero) {
+			if (Dungeon.level instanceof InfiniteWorldLevel) {
+				((InfiniteWorldLevel) Dungeon.level).recordHeroMove((Hero) ch);
+			}
 			Dungeon.observe();
 			GameScene.updateFog();
 		}
@@ -221,8 +225,32 @@ public class ScrollOfTeleportation extends Scroll {
 	private static boolean teleportInNonRegularLevel(Char ch, boolean preferNotSeen ){
 
 		if (Char.hasProp(ch, Char.Property.IMMOVABLE)){
+
 			GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
 			return false;
+		}
+
+		if (Dungeon.level instanceof InfiniteWorldLevel) {
+			InfiniteWorldLevel level = (InfiniteWorldLevel) Dungeon.level;
+			int pos = level.randomTeleportDestination(ch, preferNotSeen);
+			if (pos == -1) {
+				GLog.w(Messages.get(ScrollOfTeleportation.class, "no_tele"));
+				return false;
+			}
+
+			appear(ch, pos);
+			Dungeon.level.occupyCell(ch);
+			Buff.detach(ch, Roots.class);
+
+			if (ch == Dungeon.hero) {
+				level.recordHeroMove((Hero) ch);
+				GLog.i(Messages.get(ScrollOfTeleportation.class,
+						preferNotSeen ? "tele_infinite_unknown" : "tele_infinite_known"));
+				Dungeon.observe();
+				GameScene.updateFog();
+				Dungeon.hero.interrupt();
+			}
+			return true;
 		}
 
 		ArrayList<Integer> visibleValid = new ArrayList<>();
