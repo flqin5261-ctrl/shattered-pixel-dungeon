@@ -290,7 +290,9 @@ public class FogOfWar extends Image {
 		if (visible[cell]) {
 			return VISIBLE;
 		} else if (visited[cell]) {
-			return VISITED;
+			// In the infinite-world mode, explored terrain remains fully readable on the
+			// large zoomed-out canvas. Actors/items still use FOV for their own visibility.
+			return Dungeon.infiniteWorld ? VISIBLE : VISITED;
 		} else if (mapped[cell] ) {
 			return MAPPED;
 		} else {
