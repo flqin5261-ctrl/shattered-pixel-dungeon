@@ -123,5 +123,17 @@
     "docs/assist/ROADMAP_AND_TEST_CHECKLIST.md",
     "docs/assist/PROJECT_STATE.json",
     "docs/assist/NEW_CHAT_PROMPT.md"
-  ]
+  ],
+  "maintenance_policy": {
+    "mandatory_change_logging": true,
+    "task_is_not_complete_until_docs_updated": true,
+    "update_scope": [
+      "ASSIST_HANDOFF.md",
+      "docs/assist/PROJECT_STATE.json",
+      "docs/assist/CHANGELOG_DETAILED.md when version/history changes",
+      "docs/assist/ARCHITECTURE_AND_INVARIANTS.md when architecture changes",
+      "docs/assist/BUG_HISTORY_AND_FIXES.md when bugs or failed approaches are involved",
+      "docs/assist/ROADMAP_AND_TEST_CHECKLIST.md when roadmap/tests change"
+    ]
+  }
 }
