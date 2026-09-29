@@ -22,9 +22,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Foresight;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 
 public class ScrollOfForesight extends ExoticScroll {
@@ -35,6 +38,11 @@ public class ScrollOfForesight extends ExoticScroll {
 	
 	@Override
 	public void doRead() {
+
+		if (Dungeon.infiniteWorld) {
+			GLog.w(Messages.get(this, "infinite_blocked"));
+			return;
+		}
 
 		detach(curUser.belongings.backpack);
 		Sample.INSTANCE.play( Assets.Sounds.READ );
