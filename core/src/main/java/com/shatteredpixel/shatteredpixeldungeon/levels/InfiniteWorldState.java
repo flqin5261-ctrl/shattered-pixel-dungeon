@@ -25,8 +25,14 @@ public class InfiniteWorldState implements Bundlable {
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
     private final HashSet<Long> exploredChunks = new HashSet<>();
-    private final HashSet<Long> visited = new HashSet<>();
-    private final HashSet<Long> mapped = new HashSet<>();
+    // Exploration is stored as one compact bitset per 24x24 chunk instead of one
+    // boxed Long per world cell. 576 cells = 9 longs (72 bytes) for each layer.
+    private static final int CHUNK_SIZE = InfiniteWorldLevel.CHUNK_SIZE;
+    private static final int CHUNK_CELL_COUNT = CHUNK_SIZE * CHUNK_SIZE;
+    private static final int CHUNK_MASK_LONGS = (CHUNK_CELL_COUNT + 63) / 64;
+
+    private final HashMap<Long, long[]> visitedChunks = new HashMap<>();
+    private final HashMap<Long, long[]> mappedChunks = new HashMap<>();
     private final HashMap<Long, Integer> chestStates = new HashMap<>();
 
     public InfiniteWorldState() {}
@@ -65,19 +71,80 @@ public class InfiniteWorldState implements Bundlable {
     }
 
     public void markVisited(long key) {
-        visited.add(key);
+        markExploredCell(visitedChunks, key);
     }
 
     public void markMapped(long key) {
-        mapped.add(key);
+        markExploredCell(mappedChunks, key);
     }
 
     public boolean wasVisited(long key) {
-        return visited.contains(key);
+        return exploredCellSet(visitedChunks, key);
     }
 
     public boolean wasMapped(long key) {
-        return mapped.contains(key);
+        return exploredCellSet(mappedChunks, key);
+    }
+
+    public int visitedChunkCount() {
+        return visitedChunks.size();
+    }
+
+    public int mappedChunkCount() {
+        return mappedChunks.size();
+    }
+
+    private static void markExploredCell(HashMap<Long, long[]> chunks, long worldKey) {
+        int wx = (int)(worldKey >> 32);
+        int wy = (int)worldKey;
+        int cx = Math.floorDiv(wx, CHUNK_SIZE);
+        int cy = Math.floorDiv(wy, CHUNK_SIZE);
+        int lx = Math.floorMod(wx, CHUNK_SIZE);
+        int ly = Math.floorMod(wy, CHUNK_SIZE);
+        int bit = lx + ly * CHUNK_SIZE;
+
+        long key = chunkKey(cx, cy);
+        long[] mask = chunks.get(key);
+        if (mask == null) {
+            mask = new long[CHUNK_MASK_LONGS];
+            chunks.put(key, mask);
+        }
+        mask[bit >>> 6] |= 1L << (bit & 63);
+    }
+
+    private static boolean exploredCellSet(HashMap<Long, long[]> chunks, long worldKey) {
+        int wx = (int)(worldKey >> 32);
+        int wy = (int)worldKey;
+        int cx = Math.floorDiv(wx, CHUNK_SIZE);
+        int cy = Math.floorDiv(wy, CHUNK_SIZE);
+        int lx = Math.floorMod(wx, CHUNK_SIZE);
+        int ly = Math.floorMod(wy, CHUNK_SIZE);
+        int bit = lx + ly * CHUNK_SIZE;
+
+        long[] mask = chunks.get(chunkKey(cx, cy));
+        return mask != null && (mask[bit >>> 6] & (1L << (bit & 63))) != 0;
+    }
+
+    private static long[] flattenMasks(HashMap<Long, long[]> chunks, long[] keys) {
+        long[] flattened = new long[keys.length * CHUNK_MASK_LONGS];
+        int i = 0;
+        for (Map.Entry<Long, long[]> e : chunks.entrySet()) {
+            keys[i] = e.getKey();
+            System.arraycopy(e.getValue(), 0, flattened, i * CHUNK_MASK_LONGS, CHUNK_MASK_LONGS);
+            i++;
+        }
+        return flattened;
+    }
+
+    private static void restoreMasks(HashMap<Long, long[]> chunks, long[] keys, long[] flattened) {
+        chunks.clear();
+        if (keys == null || flattened == null) return;
+        int count = Math.min(keys.length, flattened.length / CHUNK_MASK_LONGS);
+        for (int i = 0; i < count; i++) {
+            long[] mask = new long[CHUNK_MASK_LONGS];
+            System.arraycopy(flattened, i * CHUNK_MASK_LONGS, mask, 0, CHUNK_MASK_LONGS);
+            chunks.put(keys[i], mask);
+        }
     }
 
     public int chestState(long key) {
@@ -100,8 +167,13 @@ public class InfiniteWorldState implements Bundlable {
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
     private static final String TERRAIN_VALUES = "terrain_values";
+    // Legacy v0.3.6 cell-per-key fields are kept read-only for migration.
     private static final String VISITED = "visited";
     private static final String MAPPED = "mapped";
+    private static final String VISITED_CHUNK_KEYS = "visited_chunk_keys";
+    private static final String VISITED_CHUNK_MASKS = "visited_chunk_masks";
+    private static final String MAPPED_CHUNK_KEYS = "mapped_chunk_keys";
+    private static final String MAPPED_CHUNK_MASKS = "mapped_chunk_masks";
     private static final String CHEST_KEYS = "chest_keys";
     private static final String CHEST_VALUES = "chest_values";
 
@@ -135,15 +207,15 @@ public class InfiniteWorldState implements Bundlable {
         for (Long key : exploredChunks) explored[i++] = key;
         bundle.put(EXPLORED_CHUNKS, explored);
 
-        long[] visitedKeys = new long[visited.size()];
-        i = 0;
-        for (Long key : visited) visitedKeys[i++] = key;
-        bundle.put(VISITED, visitedKeys);
+        long[] visitedChunkKeys = new long[visitedChunks.size()];
+        long[] visitedMasks = flattenMasks(visitedChunks, visitedChunkKeys);
+        bundle.put(VISITED_CHUNK_KEYS, visitedChunkKeys);
+        bundle.put(VISITED_CHUNK_MASKS, visitedMasks);
 
-        long[] mappedKeys = new long[mapped.size()];
-        i = 0;
-        for (Long key : mapped) mappedKeys[i++] = key;
-        bundle.put(MAPPED, mappedKeys);
+        long[] mappedChunkKeys = new long[mappedChunks.size()];
+        long[] mappedMasks = flattenMasks(mappedChunks, mappedChunkKeys);
+        bundle.put(MAPPED_CHUNK_KEYS, mappedChunkKeys);
+        bundle.put(MAPPED_CHUNK_MASKS, mappedMasks);
 
         long[] chestKeys = new long[chestStates.size()];
         int[] chestValues = new int[chestStates.size()];
@@ -183,13 +255,26 @@ public class InfiniteWorldState implements Bundlable {
         long[] explored = bundle.getLongArray(EXPLORED_CHUNKS);
         if (explored != null) for (long key : explored) exploredChunks.add(key);
 
-        visited.clear();
-        long[] visitedKeys = bundle.getLongArray(VISITED);
-        if (visitedKeys != null) for (long key : visitedKeys) visited.add(key);
+        if (bundle.contains(VISITED_CHUNK_KEYS)) {
+            restoreMasks(visitedChunks,
+                    bundle.getLongArray(VISITED_CHUNK_KEYS),
+                    bundle.getLongArray(VISITED_CHUNK_MASKS));
+        } else {
+            // One-time migration from v0.3.6 and earlier.
+            visitedChunks.clear();
+            long[] visitedKeys = bundle.getLongArray(VISITED);
+            if (visitedKeys != null) for (long key : visitedKeys) markVisited(key);
+        }
 
-        mapped.clear();
-        long[] mappedKeys = bundle.getLongArray(MAPPED);
-        if (mappedKeys != null) for (long key : mappedKeys) mapped.add(key);
+        if (bundle.contains(MAPPED_CHUNK_KEYS)) {
+            restoreMasks(mappedChunks,
+                    bundle.getLongArray(MAPPED_CHUNK_KEYS),
+                    bundle.getLongArray(MAPPED_CHUNK_MASKS));
+        } else {
+            mappedChunks.clear();
+            long[] mappedKeys = bundle.getLongArray(MAPPED);
+            if (mappedKeys != null) for (long key : mappedKeys) markMapped(key);
+        }
 
         chestStates.clear();
         long[] chestKeys = bundle.getLongArray(CHEST_KEYS);
