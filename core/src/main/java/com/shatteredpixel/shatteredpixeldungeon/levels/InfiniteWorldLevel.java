@@ -1240,7 +1240,7 @@ public class InfiniteWorldLevel extends Level {
                     int kind;
                     int salt;
                     if (theme == 0) {
-                        count = 7; kind = 0; salt = 21100;
+                        count = state().generatorVersion >= 8 ? 12 : 7; kind = 0; salt = 21100;
                         for (int slot = 0; slot < count; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
                             if (cell < 0) continue;
@@ -1266,12 +1266,23 @@ public class InfiniteWorldLevel extends Level {
                         else if (theme == 3) { count = 5 + range(cx, cy, 21400 + roomIndex, 0, 3); kind = 3; salt = 21420; }
                         else if (theme == 4) { count = 5; kind = 4; salt = 21520; }
                         else if (theme == 5) { count = 3 + range(cx, cy, 21600 + roomIndex, 0, 2); kind = 5; salt = 21620; }
-                        else { count = 4; kind = 7; salt = 21820; }
+                        else if (theme == 7) { count = 4; kind = 7; salt = 21820; }
+                        else if (theme == 8) { count = 8 + range(cx, cy, 21900 + roomIndex, 0, 4); kind = 9; salt = 21920; }
+                        else { count = 5 + range(cx, cy, 22000 + roomIndex, 0, 3); kind = 10; salt = 22020; }
 
                         for (int slot = 0; slot < count; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
                             if (cell < 0) continue;
                             snapshotV7LooseCell(cell, v7RoomObjectKey(cell, roomIndex, slot, kind));
+                        }
+                    }
+
+                    if (state().generatorVersion >= 8 && spec.length > 10 && spec[10] == 1) {
+                        int bonus = 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
+                        for (int slot = 0; slot < bonus; slot++) {
+                            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot + 12, 22220);
+                            if (cell < 0) continue;
+                            snapshotV7LooseCell(cell, v7RoomObjectKey(cell, roomIndex, slot, 11));
                         }
                     }
                 }
