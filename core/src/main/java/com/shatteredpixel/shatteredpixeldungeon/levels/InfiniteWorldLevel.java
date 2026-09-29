@@ -2726,6 +2726,56 @@ public class InfiniteWorldLevel extends Level {
                 customWalls.add(wallAccent);
             }
         }
+
+        if (state().generatorVersion >= 8) {
+            // A second visual pass assigns each enclosed room its own upstream
+            // environment material. This is intentionally room-scoped instead of
+            // chunk-scoped, so two adjacent rooms can look like different regions.
+            for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+                for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
+                    int cx = state().centerChunkX + wx;
+                    int cy = state().centerChunkY + wy;
+                    if (cx == 0 && cy == 0) continue;
+
+                    int chunkX = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                    int chunkY = (wy + HALF_WINDOW) * CHUNK_SIZE;
+                    int roomCount = v7RoomCount(cx, cy);
+
+                    for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
+                        int[] s = v7RoomSpec(cx, cy, roomIndex);
+                        int theme = s[8];
+
+                        int alt = range(cx, cy, 22400 + roomIndex, 0, 4);
+                        // Theme contributes to the room material so repeated room
+                        // types tend to have a recognizable visual bias.
+                        alt = (alt + theme) % 5;
+
+                        int roomX = chunkX + s[0];
+                        int roomY = chunkY + s[1];
+                        int roomW = s[2] - s[0] + 1;
+                        int roomH = s[3] - s[1] + 1;
+
+                        InfiniteWorldAccentTilemap roomFloor =
+                                new InfiniteWorldAccentTilemap(
+                                        textures[alt],
+                                        (int)hash(cx, cy, 22420 + roomIndex),
+                                        100,
+                                        InfiniteWorldAccentTilemap.MODE_FLOOR);
+                        roomFloor.setRect(roomX, roomY, roomW, roomH);
+                        customTiles.add(roomFloor);
+
+                        InfiniteWorldAccentTilemap roomWalls =
+                                new InfiniteWorldAccentTilemap(
+                                        textures[alt],
+                                        (int)hash(cx, cy, 22440 + roomIndex),
+                                        100,
+                                        InfiniteWorldAccentTilemap.MODE_WALLS);
+                        roomWalls.setRect(roomX, roomY, roomW, roomH);
+                        customWalls.add(roomWalls);
+                    }
+                }
+            }
+        }
     }
 
     public int stableTileVariance(int localPos) {
