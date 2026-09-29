@@ -83,6 +83,13 @@ public class ScrollOfMagicMapping extends Scroll {
 				}
 			}
 		}
+		if (Dungeon.level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel) Dungeon.level).syncExplorationArea(
+					heroX - infiniteRadius,
+					heroY - infiniteRadius,
+					infiniteRadius * 2 + 1,
+					infiniteRadius * 2 + 1);
+		}
 		GameScene.updateFog();
 		
 		GLog.i( Messages.get(this, "layout") );
