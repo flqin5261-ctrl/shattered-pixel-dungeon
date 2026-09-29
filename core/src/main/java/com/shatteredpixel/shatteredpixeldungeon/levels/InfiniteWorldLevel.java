@@ -15,10 +15,23 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BurningTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ChillingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ConfusionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrippingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.watabou.noosa.audio.Music;
@@ -167,6 +180,8 @@ public class InfiniteWorldLevel extends Level {
     @Override
     protected void createItems() {
         generateChestHeaps();
+        generateV5Containers();
+        generateV5Traps();
     }
 
     @Override
@@ -331,6 +346,7 @@ public class InfiniteWorldLevel extends Level {
         }
 
         snapshotChestStates();
+        snapshotV5ContainerStates();
     }
 
     private void rebuildWindow() {
@@ -363,6 +379,8 @@ public class InfiniteWorldLevel extends Level {
         PathFinder.setMapSize(width(), height());
 
         generateChestHeaps();
+        generateV5Containers();
+        generateV5Traps();
     }
 
     private void applyTerrainOverrides() {
@@ -468,6 +486,132 @@ public class InfiniteWorldLevel extends Level {
         return new Pickaxe();
     }
 
+    private void generateV5Traps() {
+        if (state().generatorVersion < 5) return;
+
+        for (int cell = 0; cell < length(); cell++) {
+            if (map[cell] != Terrain.SECRET_TRAP && map[cell] != Terrain.TRAP) continue;
+            if (traps.get(cell) != null) continue;
+
+            int wx = worldXForLocalCell(cell);
+            int wy = worldYForLocalCell(cell);
+            int roll = (int)Math.floorMod(hash(wx, wy, 18100), 7L);
+            Trap trap;
+            switch (roll) {
+                case 0: trap = new TeleportationTrap(); break;
+                case 1: trap = new BurningTrap(); break;
+                case 2: trap = new ChillingTrap(); break;
+                case 3: trap = new PoisonDartTrap(); break;
+                case 4: trap = new OozeTrap(); break;
+                case 5: trap = new ConfusionTrap(); break;
+                default:trap = new GrippingTrap(); break;
+            }
+            trap.set(cell);
+            trap.visible = map[cell] == Terrain.TRAP;
+            traps.put(cell, trap);
+        }
+    }
+
+    private void snapshotV5ContainerStates() {
+        if (state().generatorVersion < 5) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = v5ContainerCount(cx, cy);
+                for (int index = 0; index < count; index++) {
+                    int cell = v5ContainerCell(cx, cy, ox, oy, index);
+                    if (cell < 0) continue;
+
+                    long key = worldKeyForLocalCell(cell);
+                    Heap heap = heaps.get(cell);
+                    if (heap == null) {
+                        st.setChestState(key, 2);
+                    } else if (heap.type == v5ContainerType(cx, cy, index)) {
+                        st.setChestState(key, 0);
+                    } else {
+                        st.setChestState(key, 1);
+                    }
+                }
+            }
+        });
+    }
+
+    private void generateV5Containers() {
+        if (state().generatorVersion < 5) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = v5ContainerCount(cx, cy);
+                for (int index = 0; index < count; index++) {
+                    int cell = v5ContainerCell(cx, cy, ox, oy, index);
+                    if (cell < 0 || heaps.get(cell) != null || traps.get(cell) != null) continue;
+
+                    long key = worldKeyForLocalCell(cell);
+                    int containerState = st.chestState(key);
+                    if (containerState >= 2) continue;
+
+                    Heap heap = new Heap();
+                    heap.pos = cell;
+                    heap.seen = mapped[cell] || visited[cell];
+                    heap.type = containerState == 0
+                            ? v5ContainerType(cx, cy, index)
+                            : Heap.Type.HEAP;
+                    heap.drop(v5ContainerItem(cx, cy, index));
+                    heaps.put(cell, heap);
+                }
+            }
+        });
+    }
+
+    private int v5ContainerCount(int cx, int cy) {
+        return 2 + range(cx, cy, 18200, 0, 3);
+    }
+
+    private int v5ContainerCell(int cx, int cy, int ox, int oy, int index) {
+        // A container gets several deterministic candidate cells. This avoids forcing
+        // floor carving just for loot and keeps compact chunks genuinely compact.
+        for (int attempt = 0; attempt < 10; attempt++) {
+            int salt = 18220 + index * 40 + attempt * 3;
+            int x = 2 + range(cx, cy, salt, 0, CHUNK_SIZE - 5);
+            int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
+            int cell = ox + x + (oy + y) * width();
+
+            int t = map[cell];
+            if ((t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
+                    || t == Terrain.EMBERS || t == Terrain.HIGH_GRASS)
+                    && !solid[cell] && !pit[cell]) {
+                return cell;
+            }
+        }
+        return -1;
+    }
+
+    private Heap.Type v5ContainerType(int cx, int cy, int index) {
+        int roll = range(cx, cy, 18400 + index, 0, 9);
+        if (roll <= 4) return Heap.Type.CHEST;
+        if (roll <= 6) return Heap.Type.TOMB;
+        return Heap.Type.SKELETON;
+    }
+
+    private Item v5ContainerItem(int cx, int cy, int index) {
+        int roll = range(cx, cy, 18500 + index, 0, 8);
+        switch (roll) {
+            case 0: return new PotionOfHealing();
+            case 1: return new PotionOfInvisibility();
+            case 2: return new PotionOfLiquidFlame();
+            case 3: return new PotionOfFrost();
+            case 4: return new ScrollOfTeleportation();
+            case 5: return new Bomb();
+            case 6: return new StoneOfBlink();
+            case 7: return new Torch();
+            default:return new Pickaxe();
+        }
+    }
+
     private int[] generateBaseWindow(int centerChunkX, int centerChunkY) {
         int[] result = new int[MAP_SIZE * MAP_SIZE];
         Arrays.fill(result, Terrain.WALL);
@@ -538,23 +682,48 @@ public class InfiniteWorldLevel extends Level {
         int westY = edgeVertical(cx, cy);
         int eastY = edgeVertical(cx + 1, cy);
 
-        int hubCount = 3 + range(cx, cy, 101, 0, 3);
+        int spaceProfile = state().generatorVersion >= 5 ? range(cx, cy, 95, 0, 4) : 2;
+        int hubCount;
+        if (state().generatorVersion >= 5) {
+            switch (spaceProfile) {
+                case 0: hubCount = 5 + range(cx, cy, 101, 0, 2); break; // many tiny rooms
+                case 1: hubCount = 4 + range(cx, cy, 101, 0, 2); break; // compact
+                case 3: hubCount = 2 + range(cx, cy, 101, 0, 2); break; // broad chambers
+                case 4: hubCount = 3 + range(cx, cy, 101, 0, 3); break; // mixed
+                case 2:
+                default:hubCount = 3 + range(cx, cy, 101, 0, 3); break;
+            }
+        } else {
+            hubCount = 3 + range(cx, cy, 101, 0, 3);
+        }
+
         int[] hx = new int[hubCount];
         int[] hy = new int[hubCount];
 
         for (int i = 0; i < hubCount; i++) {
             hx[i] = 4 + range(cx, cy, 110 + i * 2, 0, CHUNK_SIZE - 9);
             hy[i] = 4 + range(cx, cy, 111 + i * 2, 0, CHUNK_SIZE - 9);
-            carveHub(out, cx, cy, ox, oy, hx[i], hy[i], i);
+            if (state().generatorVersion >= 5) {
+                carveHubV5(out, cx, cy, ox, oy, hx[i], hy[i], i, spaceProfile);
+            } else {
+                carveHub(out, cx, cy, ox, oy, hx[i], hy[i], i);
+            }
         }
 
         // Connect the hubs into a guaranteed tree first.
         for (int i = 1; i < hubCount; i++) {
             int parent = range(cx, cy, 180 + i, 0, i - 1);
-            carveWanderPath(out,
-                    ox + hx[i], oy + hy[i],
-                    ox + hx[parent], oy + hy[parent],
-                    cx, cy, 200 + i);
+            if (state().generatorVersion >= 5) {
+                carveWanderPathV5(out,
+                        ox + hx[i], oy + hy[i],
+                        ox + hx[parent], oy + hy[parent],
+                        cx, cy, 200 + i, spaceProfile);
+            } else {
+                carveWanderPath(out,
+                        ox + hx[i], oy + hy[i],
+                        ox + hx[parent], oy + hy[parent],
+                        cx, cy, 200 + i);
+            }
         }
 
         // Shared edge gateways are each connected to a pseudo-random hub.
@@ -563,10 +732,17 @@ public class InfiniteWorldLevel extends Level {
         int wHub = range(cx, cy, 252, 0, hubCount - 1);
         int eHub = range(cx, cy, 253, 0, hubCount - 1);
 
-        carveWanderPath(out, ox + northX, oy, ox + hx[nHub], oy + hy[nHub], cx, cy, 260);
-        carveWanderPath(out, ox + southX, oy + CHUNK_SIZE - 1, ox + hx[sHub], oy + hy[sHub], cx, cy, 261);
-        carveWanderPath(out, ox, oy + westY, ox + hx[wHub], oy + hy[wHub], cx, cy, 262);
-        carveWanderPath(out, ox + CHUNK_SIZE - 1, oy + eastY, ox + hx[eHub], oy + hy[eHub], cx, cy, 263);
+        if (state().generatorVersion >= 5) {
+            carveWanderPathV5(out, ox + northX, oy, ox + hx[nHub], oy + hy[nHub], cx, cy, 260, spaceProfile);
+            carveWanderPathV5(out, ox + southX, oy + CHUNK_SIZE - 1, ox + hx[sHub], oy + hy[sHub], cx, cy, 261, spaceProfile);
+            carveWanderPathV5(out, ox, oy + westY, ox + hx[wHub], oy + hy[wHub], cx, cy, 262, spaceProfile);
+            carveWanderPathV5(out, ox + CHUNK_SIZE - 1, oy + eastY, ox + hx[eHub], oy + hy[eHub], cx, cy, 263, spaceProfile);
+        } else {
+            carveWanderPath(out, ox + northX, oy, ox + hx[nHub], oy + hy[nHub], cx, cy, 260);
+            carveWanderPath(out, ox + southX, oy + CHUNK_SIZE - 1, ox + hx[sHub], oy + hy[sHub], cx, cy, 261);
+            carveWanderPath(out, ox, oy + westY, ox + hx[wHub], oy + hy[wHub], cx, cy, 262);
+            carveWanderPath(out, ox + CHUNK_SIZE - 1, oy + eastY, ox + hx[eHub], oy + hy[eHub], cx, cy, 263);
+        }
 
         carveGateway(out, ox + northX, oy, true);
         carveGateway(out, ox + southX, oy + CHUNK_SIZE - 1, true);
@@ -579,16 +755,26 @@ public class InfiniteWorldLevel extends Level {
             int a = range(cx, cy, 281 + i * 2, 0, hubCount - 1);
             int b = range(cx, cy, 282 + i * 2, 0, hubCount - 1);
             if (a != b) {
-                carveWanderPath(out, ox + hx[a], oy + hy[a], ox + hx[b], oy + hy[b],
-                        cx, cy, 300 + i);
+                if (state().generatorVersion >= 5) {
+                    carveWanderPathV5(out, ox + hx[a], oy + hy[a], ox + hx[b], oy + hy[b],
+                            cx, cy, 300 + i, spaceProfile);
+                } else {
+                    carveWanderPath(out, ox + hx[a], oy + hy[a], ox + hx[b], oy + hy[b],
+                            cx, cy, 300 + i);
+                }
             }
         }
 
         // v4 adds much stronger silhouettes while preserving the shared gateways.
         // Old worlds retain their exact v3 generator.
-        if (state().generatorVersion >= 4 && (cx != 0 || cy != 0)
-                && Math.floorMod(hash(cx, cy, 390), 100L) < 48) {
-            carveStrangeLandmark(out, cx, cy, ox, oy);
+        if (state().generatorVersion >= 4 && (cx != 0 || cy != 0)) {
+            int landmarkChance = 48;
+            if (state().generatorVersion >= 5) {
+                landmarkChance = spaceProfile == 0 ? 18 : (spaceProfile == 1 ? 28 : (spaceProfile == 3 ? 72 : 48));
+            }
+            if (Math.floorMod(hash(cx, cy, 390), 100L) < landmarkChance) {
+                carveStrangeLandmark(out, cx, cy, ox, oy);
+            }
         }
 
         // Large-area styles form coherent districts, but v4 has eight distinct
@@ -599,19 +785,35 @@ public class InfiniteWorldLevel extends Level {
         int biome = range(regionX, regionY, 401, 0, biomeMax);
         decorateBiome(out, cx, cy, ox, oy, biome);
 
-        // 0-2 doors placed only on narrow-ish floor cells.
-        int doorCount = range(cx, cy, 430, 0, 2);
+        // v5 deliberately uses many more doors so dense chunks feel like actual
+        // rooms instead of a single open cave.
+        int doorCount = state().generatorVersion >= 5
+                ? 2 + range(cx, cy, 430, 0, spaceProfile <= 1 ? 5 : 3)
+                : range(cx, cy, 430, 0, 2);
         for (int i = 0; i < doorCount; i++) {
             placeSafeDoor(out, cx, cy, ox, oy, 440 + i);
+        }
+
+        if (state().generatorVersion >= 5) {
+            scatterV5TerrainProps(out, cx, cy, ox, oy, spaceProfile);
         }
 
         if (hasChest(cx, cy)) {
             int chestX = chestLocalX(cx, cy);
             int chestY = chestLocalY(cx, cy);
-            carveHub(out, cx, cy, ox, oy, chestX, chestY, 90);
+            if (state().generatorVersion >= 5) {
+                carveHubV5(out, cx, cy, ox, oy, chestX, chestY, 90, Math.min(spaceProfile, 2));
+            } else {
+                carveHub(out, cx, cy, ox, oy, chestX, chestY, 90);
+            }
             int nearest = nearestHub(hx, hy, chestX, chestY);
-            carveWanderPath(out, ox + chestX, oy + chestY, ox + hx[nearest], oy + hy[nearest],
-                    cx, cy, 500);
+            if (state().generatorVersion >= 5) {
+                carveWanderPathV5(out, ox + chestX, oy + chestY, ox + hx[nearest], oy + hy[nearest],
+                        cx, cy, 500, Math.min(spaceProfile, 2));
+            } else {
+                carveWanderPath(out, ox + chestX, oy + chestY, ox + hx[nearest], oy + hy[nearest],
+                        cx, cy, 500);
+            }
             out[ox + chestX + (oy + chestY) * MAP_SIZE] = Terrain.EMPTY_DECO;
         }
 
@@ -660,6 +862,193 @@ public class InfiniteWorldLevel extends Level {
                     }
                 }
                 break;
+        }
+    }
+
+    private void carveHubV5(int[] out, int cx, int cy, int ox, int oy,
+                            int x, int y, int index, int profile) {
+        int shape = range(cx, cy, 1520 + index, 0, 5);
+        int rx;
+        int ry;
+
+        switch (profile) {
+            case 0: // tiny cells and closets
+                rx = 1 + range(cx, cy, 1560 + index, 0, 1);
+                ry = 1 + range(cx, cy, 1600 + index, 0, 1);
+                break;
+            case 1: // compact rooms
+                rx = 1 + range(cx, cy, 1560 + index, 0, 2);
+                ry = 1 + range(cx, cy, 1600 + index, 0, 2);
+                break;
+            case 3: // deliberately oversized halls
+                rx = 4 + range(cx, cy, 1560 + index, 0, 2);
+                ry = 4 + range(cx, cy, 1600 + index, 0, 2);
+                break;
+            case 4: // stretched / asymmetric rooms
+                if (range(cx, cy, 1640 + index, 0, 1) == 0) {
+                    rx = 1 + range(cx, cy, 1560 + index, 0, 2);
+                    ry = 4 + range(cx, cy, 1600 + index, 0, 2);
+                } else {
+                    rx = 4 + range(cx, cy, 1560 + index, 0, 2);
+                    ry = 1 + range(cx, cy, 1600 + index, 0, 2);
+                }
+                break;
+            case 2:
+            default:
+                rx = 2 + range(cx, cy, 1560 + index, 0, 2);
+                ry = 2 + range(cx, cy, 1600 + index, 0, 2);
+                break;
+        }
+
+        switch (shape) {
+            case 0:
+                carveRect(out, ox + x - rx, oy + y - ry, ox + x + rx, oy + y + ry, Terrain.EMPTY);
+                break;
+            case 1:
+                for (int dy = -ry; dy <= ry; dy++) {
+                    for (int dx = -rx; dx <= rx; dx++) {
+                        float nx = dx / (float)Math.max(1, rx);
+                        float ny = dy / (float)Math.max(1, ry);
+                        if (nx * nx + ny * ny <= 1.12f) setFloor(out, ox + x + dx, oy + y + dy);
+                    }
+                }
+                break;
+            case 2:
+                carveRect(out, ox + x - rx, oy + y, ox + x + rx, oy + y, Terrain.EMPTY);
+                carveRect(out, ox + x, oy + y - ry, ox + x, oy + y + ry, Terrain.EMPTY);
+                break;
+            case 3:
+                carveRect(out, ox + x - rx, oy + y - 1, ox + x + rx, oy + y + 1, Terrain.EMPTY);
+                carveRect(out, ox + x - 1, oy + y - ry, ox + x + 1, oy + y + ry, Terrain.EMPTY);
+                break;
+            case 4:
+                carveRect(out, ox + x - rx, oy + y - ry, ox + x, oy + y + ry, Terrain.EMPTY);
+                carveRect(out, ox + x, oy + y - 1, ox + x + rx, oy + y + ry, Terrain.EMPTY);
+                break;
+            default:
+                for (int dy = -ry; dy <= ry; dy++) {
+                    for (int dx = -rx; dx <= rx; dx++) {
+                        long n = hash(cx * 31 + x + dx, cy * 31 + y + dy, 1660 + index);
+                        if (Math.floorMod(n, 5L) != 0) setFloor(out, ox + x + dx, oy + y + dy);
+                    }
+                }
+                break;
+        }
+    }
+
+    private void carveWanderPathV5(int[] out, int x1, int y1, int x2, int y2,
+                                   int cx, int cy, int salt, int profile) {
+        int x = x1;
+        int y = y1;
+        int guard = 0;
+        setFloor(out, x, y);
+
+        while ((x != x2 || y != y2) && guard++ < 180) {
+            boolean canX = x != x2;
+            boolean canY = y != y2;
+            boolean takeX;
+
+            if (!canY) takeX = true;
+            else if (!canX) takeX = false;
+            else takeX = Math.floorMod(hash(cx * 137 + x, cy * 137 + y, salt + guard), 100L) < 50;
+
+            if (takeX) x += Integer.compare(x2, x);
+            else y += Integer.compare(y2, y);
+            setFloor(out, x, y);
+
+            int widenChance;
+            switch (profile) {
+                case 0: widenChance = 7; break;
+                case 1: widenChance = 18; break;
+                case 3: widenChance = 78; break;
+                case 4: widenChance = 46; break;
+                default:widenChance = 36; break;
+            }
+
+            long h = hash(cx * 101 + x, cy * 101 + y, salt + guard * 5);
+            if (Math.floorMod(h, 100L) < widenChance) {
+                if ((h & 1L) == 0) {
+                    setFloor(out, x + 1, y);
+                    setFloor(out, x - 1, y);
+                } else {
+                    setFloor(out, x, y + 1);
+                    setFloor(out, x, y - 1);
+                }
+            }
+
+            // Broad chunks occasionally explode into a short open pocket mid-corridor.
+            if (profile == 3 && Math.floorMod(h, 29L) == 0) {
+                carveRect(out, x - 2, y - 2, x + 2, y + 2, Terrain.EMPTY);
+            }
+        }
+    }
+
+    private void scatterV5TerrainProps(int[] out, int cx, int cy, int ox, int oy, int profile) {
+        int count = 11 + range(cx, cy, 17200, 0, profile <= 1 ? 13 : 9);
+
+        for (int i = 0; i < count; i++) {
+            int x = 2 + range(cx, cy, 17210 + i * 4, 0, CHUNK_SIZE - 5);
+            int y = 2 + range(cx, cy, 17211 + i * 4, 0, CHUNK_SIZE - 5);
+            int gx = ox + x;
+            int gy = oy + y;
+            int cell = gx + gy * MAP_SIZE;
+            int t = out[cell];
+
+            if (t != Terrain.EMPTY && t != Terrain.EMPTY_DECO && t != Terrain.GRASS
+                    && t != Terrain.EMBERS && t != Terrain.HIGH_GRASS) continue;
+
+            int neighbours = floorNeighbours(out, gx, gy);
+            int kind = range(cx, cy, 17212 + i * 4, 0, 11);
+
+            switch (kind) {
+                case 0:
+                case 1:
+                case 2:
+                    // Hidden traps are reconstructed as Trap objects after flag-map creation.
+                    if (neighbours >= 4) out[cell] = Terrain.SECRET_TRAP;
+                    break;
+                case 3:
+                    if (neighbours >= 5) out[cell] = Terrain.ALCHEMY;
+                    break;
+                case 4:
+                case 5:
+                    if (neighbours >= 6) out[cell] = Terrain.BARRICADE;
+                    break;
+                case 6:
+                    if (neighbours >= 6) out[cell] = Terrain.BOOKSHELF;
+                    break;
+                case 7:
+                    out[cell] = Terrain.HIGH_GRASS;
+                    break;
+                case 8:
+                    out[cell] = Terrain.EMBERS;
+                    break;
+                case 9:
+                    if (neighbours >= 6) out[cell] = Terrain.MINE_CRYSTAL;
+                    break;
+                case 10:
+                    if (neighbours >= 6) out[cell] = Terrain.STATUE;
+                    break;
+                default:
+                    out[cell] = Terrain.EMPTY_DECO;
+                    break;
+            }
+        }
+
+        // Add a few interior divider walls to cramped chunks. They only replace
+        // highly open cells, so they cannot sever the guaranteed edge-to-edge tree.
+        if (profile <= 1) {
+            int blockers = 3 + range(cx, cy, 17500, 0, 5);
+            for (int i = 0; i < blockers; i++) {
+                int x = 4 + range(cx, cy, 17510 + i * 2, 0, CHUNK_SIZE - 9);
+                int y = 4 + range(cx, cy, 17511 + i * 2, 0, CHUNK_SIZE - 9);
+                int gx = ox + x;
+                int gy = oy + y;
+                int cell = gx + gy * MAP_SIZE;
+                if (out[cell] == Terrain.EMPTY && floorNeighbours(out, gx, gy) == 8) {
+                    out[cell] = (i & 1) == 0 ? Terrain.STATUE : Terrain.BOOKSHELF;
+                }
+            }
         }
     }
 
