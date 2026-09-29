@@ -18,6 +18,9 @@ public class InfiniteWorldState implements Bundlable {
     public int generatorVersion = WORLD_GEN_VERSION;
     public int centerChunkX = 0;
     public int centerChunkY = 0;
+    public int heroWorldX = 12;
+    public int heroWorldY = 12;
+    public boolean heroWorldInitialized = false;
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
@@ -90,6 +93,9 @@ public class InfiniteWorldState implements Bundlable {
     private static final String GEN = "gen";
     private static final String CX = "cx";
     private static final String CY = "cy";
+    private static final String HERO_WX = "hero_world_x";
+    private static final String HERO_WY = "hero_world_y";
+    private static final String HERO_WORLD_INIT = "hero_world_init";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -104,6 +110,9 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(GEN, generatorVersion);
         bundle.put(CX, centerChunkX);
         bundle.put(CY, centerChunkY);
+        bundle.put(HERO_WX, heroWorldX);
+        bundle.put(HERO_WY, heroWorldY);
+        bundle.put(HERO_WORLD_INIT, heroWorldInitialized);
 
         long[] terrainKeys = new long[terrainOverrides.size()];
         int[] terrainValues = new int[terrainOverrides.size()];
@@ -153,6 +162,9 @@ public class InfiniteWorldState implements Bundlable {
         generatorVersion = bundle.contains(GEN) ? bundle.getInt(GEN) : WORLD_GEN_VERSION;
         centerChunkX = bundle.getInt(CX);
         centerChunkY = bundle.getInt(CY);
+        heroWorldX = bundle.contains(HERO_WX) ? bundle.getInt(HERO_WX) : 12;
+        heroWorldY = bundle.contains(HERO_WY) ? bundle.getInt(HERO_WY) : 12;
+        heroWorldInitialized = bundle.contains(HERO_WORLD_INIT) && bundle.getBoolean(HERO_WORLD_INIT);
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
