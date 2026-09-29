@@ -635,6 +635,27 @@ public class InfiniteWorldLevel extends Level {
                 break;
         }
 
+        int doorChoice = range(cx, cy, 51, 0, 3);
+        int doorX;
+        int doorY;
+        if (doorChoice == 0) {
+            doorX = northX;
+            doorY = 5;
+        } else if (doorChoice == 1) {
+            doorX = southX;
+            doorY = CHUNK_SIZE - 6;
+        } else if (doorChoice == 2) {
+            doorX = 5;
+            doorY = westY;
+        } else {
+            doorX = CHUNK_SIZE - 6;
+            doorY = eastY;
+        }
+        int dc = ox + doorX + (oy + doorY) * MAP_SIZE;
+        if (result[dc] == Terrain.EMPTY || result[dc] == Terrain.EMPTY_DECO) {
+            result[dc] = Terrain.DOOR;
+        }
+
         if (hasChestV1(cx, cy)) {
             int chestX = chestLocalXV1(cx, cy);
             int chestY = chestLocalYV1(cx, cy);
@@ -644,7 +665,17 @@ public class InfiniteWorldLevel extends Level {
             result[ox + chestX + (oy + chestY) * MAP_SIZE] = Terrain.EMPTY_DECO;
         }
 
-        if (cx == 0 && cy == 0) carveOriginPlaza(result, ox, oy);
+        if (cx == 0 && cy == 0) carveOriginPlazaV1(result, ox, oy);
+    }
+
+    private void carveOriginPlazaV1(int[] result, int ox, int oy) {
+        carveRect(result, ox + 7, oy + 7, ox + 16, oy + 16, Terrain.EMPTY);
+        for (int x = 9; x <= 14; x++) {
+            result[ox + x + (oy + 9) * MAP_SIZE] = Terrain.WATER;
+            result[ox + x + (oy + 14) * MAP_SIZE] = Terrain.WATER;
+        }
+        result[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.EMPTY_DECO;
+        result[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
     }
 
     private void carvePathV1(int[] map, int x1, int y1, int x2, int y2, int cx, int cy, int salt) {
