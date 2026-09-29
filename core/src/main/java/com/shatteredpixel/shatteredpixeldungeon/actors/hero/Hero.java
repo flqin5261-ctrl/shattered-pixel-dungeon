@@ -736,7 +736,7 @@ public class Hero extends Char {
 
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
 
-		if (SPDSettings.assistEnabled() && SPDSettings.assistSpeed()) speed *= 2f;
+		if (SPDSettings.assistSpeed()) speed *= 2f;
 		
 		return speed;
 		
@@ -1628,7 +1628,7 @@ public class Hero extends Char {
 
 	@Override
 	public void damage( int dmg, Object src ) {
-		if (SPDSettings.assistEnabled() && SPDSettings.assistInvincible()) return;
+		if (SPDSettings.assistInvincible()) return;
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null) {
 			return;
