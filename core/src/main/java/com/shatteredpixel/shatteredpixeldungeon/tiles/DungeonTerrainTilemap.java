@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.tiles;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.noosa.Image;
@@ -125,13 +124,6 @@ public class DungeonTerrainTilemap extends DungeonTilemap {
 
 	@Override
 	protected boolean needsRender(int pos) {
-		// Normal levels use a full-screen animated water skin underneath the terrain.
-		// Infinite World cannot safely rely on that during streaming, because a newly
-		// remapped tile buffer may briefly expose the skin over a huge area. Render
-		// WATER cells explicitly from the tileset instead.
-		if (Dungeon.level instanceof InfiniteWorldLevel) {
-			return super.needsRender(pos);
-		}
 		return super.needsRender(pos) && data[pos] != DungeonTileSheet.WATER;
 	}
 }
