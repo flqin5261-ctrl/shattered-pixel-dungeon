@@ -477,7 +477,7 @@ public class InfiniteWorldLevel extends Level {
                 long key = encodeWorld((long)cx * CHUNK_SIZE + lx, (long)cy * CHUNK_SIZE + ly);
                 int chestState = st.chestState(key);
 
-                if (chestState >= 2) return;
+                if (chestState >= 2 || solid[cell] || pit[cell]) return;
 
                 Heap heap = new Heap();
                 heap.pos = cell;
@@ -591,6 +591,8 @@ public class InfiniteWorldLevel extends Level {
             int x = 2 + range(cx, cy, salt, 0, CHUNK_SIZE - 5);
             int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
             int cell = ox + x + (oy + y) * width();
+
+            if (state().generatorVersion >= 7 && v7LocalCellInsideRoom(cx, cy, x, y)) continue;
 
             int t = map[cell];
             if ((t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
@@ -804,6 +806,9 @@ public class InfiniteWorldLevel extends Level {
             int x = 2 + range(cx, cy, salt, 0, CHUNK_SIZE - 5);
             int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
             int cell = ox + x + (oy + y) * width();
+
+            if (state().generatorVersion >= 7 && v7LocalCellInsideRoom(cx, cy, x, y)) continue;
+
             int t = baseWindow != null && cell < baseWindow.length ? baseWindow[cell] : map[cell];
 
             if (t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
@@ -812,6 +817,16 @@ public class InfiniteWorldLevel extends Level {
             }
         }
         return -1;
+    }
+
+    private boolean v7LocalCellInsideRoom(int cx, int cy, int x, int y) {
+        if (state().generatorVersion < 7 || (cx == 0 && cy == 0)) return false;
+        int count = v7RoomCount(cx, cy);
+        for (int i = 0; i < count; i++) {
+            int[] s = v7RoomSpec(cx, cy, i);
+            if (x >= s[0] && x <= s[2] && y >= s[1] && y <= s[3]) return true;
+        }
+        return false;
     }
 
     private long v6ObjectKey(int cell, int salt) {
@@ -899,6 +914,310 @@ public class InfiniteWorldLevel extends Level {
             case 8: return new Stormvine.Seed();
             case 9: return new Mageroyal.Seed();
             default:return new Starflower.Seed();
+        }
+    }
+
+    private int v7RoomCount(int cx, int cy) {
+        return 2 + (Math.floorMod(hash(cx, cy, 20500), 100L) < 38 ? 1 : 0);
+    }
+
+    private int v7RoomSlotCell(int cx, int cy, int ox, int oy,
+                               int roomIndex, int slot, int salt) {
+        int[] s = v7RoomSpec(cx, cy, roomIndex);
+        int iw = Math.max(1, s[2] - s[0] - 1);
+        int ih = Math.max(1, s[3] - s[1] - 1);
+        int area = iw * ih;
+        if (area <= 0) return -1;
+
+        int start = (int)Math.floorMod(hash(cx, cy, salt + roomIndex * 31), (long)area);
+        int step = Math.max(1, area - 1);
+
+        for (int attempt = 0; attempt < area; attempt++) {
+            int idx = Math.floorMod(start + (slot + attempt) * step, area);
+            int lx = s[0] + 1 + (idx % iw);
+            int ly = s[1] + 1 + (idx / iw);
+            int cell = ox + lx + (oy + ly) * width();
+
+            if (cell < 0 || cell >= length()) continue;
+            if (solid[cell] || pit[cell]) continue;
+            if (map[cell] == Terrain.ALCHEMY || map[cell] == Terrain.MINE_CRYSTAL
+                    || map[cell] == Terrain.STATUE || map[cell] == Terrain.STATUE_SP
+                    || map[cell] == Terrain.BARRICADE || map[cell] == Terrain.BOOKSHELF) continue;
+            return cell;
+        }
+        return -1;
+    }
+
+    private long v7RoomObjectKey(int cell, int roomIndex, int slot, int kind) {
+        return v6ObjectKey(cell, 0x5100 + kind * 0x100 + roomIndex * 0x20 + slot);
+    }
+
+    private void generateV7ThemedRoomContents() {
+        if (state().generatorVersion < 7) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                if (cx == 0 && cy == 0) return;
+
+                int roomCount = v7RoomCount(cx, cy);
+                for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
+                    int[] spec = v7RoomSpec(cx, cy, roomIndex);
+                    int theme = spec[8];
+
+                    // Every locked room has its own visible iron key outside the
+                    // door. This guarantees the player sees keys and can always
+                    // open every locked room in an endless world.
+                    if (spec[9] == Terrain.LOCKED_DOOR) {
+                        int keyCell = ox + spec[6] + (oy + spec[7]) * width();
+                        placeV7LooseItem(keyCell,
+                                v7RoomObjectKey(keyCell, roomIndex, 0, 8),
+                                new IronKey(Dungeon.depth));
+                    }
+
+                    // Crystal vaults also place a crystal key beside the door, so
+                    // the chest is never generated without a corresponding key.
+                    if (theme == 6) {
+                        int keyCell = ox + spec[6] + (oy + spec[7]) * width();
+                        placeV7LooseItem(keyCell,
+                                v7RoomObjectKey(keyCell, roomIndex, 1, 8),
+                                new CrystalKey(Dungeon.depth));
+                    }
+
+                    switch (theme) {
+                        case 0:
+                            generateV7PlantRoom(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 1:
+                            generateV7ScrollRoom(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 2:
+                            generateV7PotionRoom(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 3:
+                            generateV7FoodRoom(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 4:
+                            generateV7KeyRoom(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 5:
+                            generateV7Armory(cx, cy, ox, oy, roomIndex);
+                            break;
+                        case 6:
+                            generateV7CrystalVault(cx, cy, ox, oy, roomIndex);
+                            break;
+                        default:
+                            generateV7Workshop(cx, cy, ox, oy, roomIndex);
+                            break;
+                    }
+                }
+            }
+        });
+    }
+
+    private void generateV7PlantRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        for (int slot = 0; slot < 7; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21100);
+            if (cell < 0) continue;
+            long key = v7RoomObjectKey(cell, roomIndex, slot, 0);
+            if (state().objectState(key) != 0 || plants.get(cell) != null
+                    || heaps.get(cell) != null || traps.get(cell) != null) continue;
+
+            Plant.Seed seed = v6PlantSeed(cx, cy, 21150 + roomIndex * 16 + slot);
+            Plant plant = seed.couch(cell, this);
+            plants.put(cell, plant);
+        }
+    }
+
+    private void generateV7ScrollRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 4 + range(cx, cy, 21200 + roomIndex, 0, 2);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21220);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 1),
+                    v6SafeScroll(cx, cy, 21260 + roomIndex * 16 + slot));
+        }
+    }
+
+    private void generateV7PotionRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 4 + range(cx, cy, 21300 + roomIndex, 0, 2);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21320);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 2),
+                    v6RandomPotion(cx, cy, 21360 + roomIndex * 16 + slot));
+        }
+    }
+
+    private void generateV7FoodRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 5 + range(cx, cy, 21400 + roomIndex, 0, 3);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21420);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 3),
+                    v6RandomFood(cx, cy, 21460 + roomIndex * 16 + slot));
+        }
+    }
+
+    private void generateV7KeyRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        Item[] keys = new Item[]{
+                new IronKey(Dungeon.depth),
+                new IronKey(Dungeon.depth),
+                new CrystalKey(Dungeon.depth)
+        };
+        for (int slot = 0; slot < keys.length; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21520);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 4),
+                    keys[slot]);
+        }
+
+        int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, 4, 21520);
+        if (cell >= 0) {
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, 4, 4),
+                    v6SafeScroll(cx, cy, 21580 + roomIndex));
+        }
+    }
+
+    private void generateV7Armory(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 3 + range(cx, cy, 21600 + roomIndex, 0, 2);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21620);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 5),
+                    v6EquipmentItem(cx, cy, 21660 + roomIndex * 16 + slot));
+        }
+    }
+
+    private void generateV7CrystalVault(int cx, int cy, int ox, int oy, int roomIndex) {
+        for (int slot = 0; slot < 2; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21720);
+            if (cell < 0) continue;
+            long key = v7RoomObjectKey(cell, roomIndex, slot, 6);
+            int state = state().chestState(key);
+            if (state >= 2 || heaps.get(cell) != null || traps.get(cell) != null) continue;
+
+            Heap heap = new Heap();
+            heap.pos = cell;
+            heap.seen = mapped[cell] || visited[cell];
+            heap.type = state == 0 ? Heap.Type.CRYSTAL_CHEST : Heap.Type.HEAP;
+            heap.drop(v6EquipmentItem(cx, cy, 21760 + roomIndex * 16 + slot));
+            heaps.put(cell, heap);
+        }
+    }
+
+    private void generateV7Workshop(int cx, int cy, int ox, int oy, int roomIndex) {
+        Item[] items = new Item[]{
+                new Bomb(),
+                new Bomb(),
+                new StoneOfBlink(),
+                new Torch()
+        };
+        for (int slot = 0; slot < items.length; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21820);
+            if (cell < 0) continue;
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 7),
+                    items[slot]);
+        }
+    }
+
+    private void placeV7LooseItem(int cell, long stateKey, Item item) {
+        if (cell < 0 || cell >= length() || item == null) return;
+        if (state().objectState(stateKey) != 0) return;
+
+        Heap heap = heaps.get(cell);
+        if (heap == null) {
+            if (traps.get(cell) != null || plants.get(cell) != null) return;
+            heap = new Heap();
+            heap.pos = cell;
+            heap.seen = mapped[cell] || visited[cell];
+            heap.type = Heap.Type.HEAP;
+            heaps.put(cell, heap);
+        } else if (heap.type != Heap.Type.HEAP) {
+            return;
+        }
+        heap.drop(item);
+    }
+
+    private void snapshotV7ThemedRoomStates() {
+        if (state().generatorVersion < 7) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                if (cx == 0 && cy == 0) return;
+
+                int roomCount = v7RoomCount(cx, cy);
+                for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
+                    int[] spec = v7RoomSpec(cx, cy, roomIndex);
+                    int theme = spec[8];
+
+                    if (spec[9] == Terrain.LOCKED_DOOR) {
+                        int cell = ox + spec[6] + (oy + spec[7]) * width();
+                        snapshotV7LooseCell(cell, v7RoomObjectKey(cell, roomIndex, 0, 8));
+                    }
+                    if (theme == 6) {
+                        int cell = ox + spec[6] + (oy + spec[7]) * width();
+                        snapshotV7LooseCell(cell, v7RoomObjectKey(cell, roomIndex, 1, 8));
+                    }
+
+                    int count;
+                    int kind;
+                    int salt;
+                    if (theme == 0) {
+                        count = 7; kind = 0; salt = 21100;
+                        for (int slot = 0; slot < count; slot++) {
+                            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
+                            if (cell < 0) continue;
+                            long key = v7RoomObjectKey(cell, roomIndex, slot, kind);
+                            if (st.objectState(key) == 0 && plants.get(cell) == null) {
+                                st.setObjectState(key, 1);
+                            }
+                        }
+                    } else if (theme == 6) {
+                        count = 2;
+                        for (int slot = 0; slot < count; slot++) {
+                            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21720);
+                            if (cell < 0) continue;
+                            long key = v7RoomObjectKey(cell, roomIndex, slot, 6);
+                            Heap heap = heaps.get(cell);
+                            if (heap == null) st.setChestState(key, 2);
+                            else if (heap.type == Heap.Type.CRYSTAL_CHEST) st.setChestState(key, 0);
+                            else st.setChestState(key, 1);
+                        }
+                    } else {
+                        if (theme == 1) { count = 4 + range(cx, cy, 21200 + roomIndex, 0, 2); kind = 1; salt = 21220; }
+                        else if (theme == 2) { count = 4 + range(cx, cy, 21300 + roomIndex, 0, 2); kind = 2; salt = 21320; }
+                        else if (theme == 3) { count = 5 + range(cx, cy, 21400 + roomIndex, 0, 3); kind = 3; salt = 21420; }
+                        else if (theme == 4) { count = 5; kind = 4; salt = 21520; }
+                        else if (theme == 5) { count = 3 + range(cx, cy, 21600 + roomIndex, 0, 2); kind = 5; salt = 21620; }
+                        else { count = 4; kind = 7; salt = 21820; }
+
+                        for (int slot = 0; slot < count; slot++) {
+                            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
+                            if (cell < 0) continue;
+                            snapshotV7LooseCell(cell, v7RoomObjectKey(cell, roomIndex, slot, kind));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void snapshotV7LooseCell(int cell, long stateKey) {
+        if (state().objectState(stateKey) != 0) return;
+        Heap heap = heaps.get(cell);
+        if (heap == null || heap.type != Heap.Type.HEAP) {
+            state().setObjectState(stateKey, 1);
         }
     }
 
