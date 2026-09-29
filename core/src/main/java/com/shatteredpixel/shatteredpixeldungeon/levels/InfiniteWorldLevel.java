@@ -381,6 +381,26 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    // Persist the small area whose exploration state just changed instead of waiting
+    // for the next 7x7 window shift. This keeps long walks resilient while keeping
+    // the per-step work bounded to the hero's current vision rectangle.
+    public void syncExplorationArea(int left, int top, int areaWidth, int areaHeight) {
+        InfiniteWorldState st = state();
+        int right = Math.min(width(), left + areaWidth);
+        int bottom = Math.min(height(), top + areaHeight);
+        left = Math.max(0, left);
+        top = Math.max(0, top);
+
+        for (int y = top; y < bottom; y++) {
+            int cell = left + y * width();
+            for (int x = left; x < right; x++, cell++) {
+                long key = worldKeyForLocalCell(cell);
+                if (visited[cell]) st.markVisited(key);
+                if (mapped[cell]) st.markMapped(key);
+            }
+        }
+    }
+
     private void snapshotChestStates() {
         final InfiniteWorldState st = state();
 
