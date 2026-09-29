@@ -12,16 +12,19 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.*;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BurningTrap;
@@ -32,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.watabou.noosa.audio.Music;
@@ -182,6 +186,8 @@ public class InfiniteWorldLevel extends Level {
         generateChestHeaps();
         generateV5Containers();
         generateV5Traps();
+        generateV6LooseLoot();
+        generateV6Plants();
     }
 
     @Override
@@ -347,6 +353,8 @@ public class InfiniteWorldLevel extends Level {
 
         snapshotChestStates();
         snapshotV5ContainerStates();
+        snapshotV6LooseLootStates();
+        snapshotV6PlantStates();
     }
 
     private void rebuildWindow() {
@@ -381,6 +389,8 @@ public class InfiniteWorldLevel extends Level {
         generateChestHeaps();
         generateV5Containers();
         generateV5Traps();
+        generateV6LooseLoot();
+        generateV6Plants();
     }
 
     private void applyTerrainOverrides() {
@@ -557,10 +567,9 @@ public class InfiniteWorldLevel extends Level {
                     Heap heap = new Heap();
                     heap.pos = cell;
                     heap.seen = mapped[cell] || visited[cell];
-                    heap.type = containerState == 0
-                            ? v5ContainerType(cx, cy, index)
-                            : Heap.Type.HEAP;
-                    heap.drop(v5ContainerItem(cx, cy, index));
+                    Heap.Type originalType = v5ContainerType(cx, cy, index);
+                    heap.type = containerState == 0 ? originalType : Heap.Type.HEAP;
+                    heap.drop(v5ContainerItem(cx, cy, index, originalType));
                     heaps.put(cell, heap);
                 }
             }
@@ -592,13 +601,23 @@ public class InfiniteWorldLevel extends Level {
 
     private Heap.Type v5ContainerType(int cx, int cy, int index) {
         int roll = range(cx, cy, 18400 + index, 0, 9);
+        if (state().generatorVersion >= 6) {
+            if (roll <= 4) return Heap.Type.CHEST;
+            if (roll <= 6) return Heap.Type.TOMB;
+            if (roll == 7) return Heap.Type.SKELETON;
+            return Heap.Type.CRYSTAL_CHEST;
+        }
         if (roll <= 4) return Heap.Type.CHEST;
         if (roll <= 6) return Heap.Type.TOMB;
         return Heap.Type.SKELETON;
     }
 
-    private Item v5ContainerItem(int cx, int cy, int index) {
-        int roll = range(cx, cy, 18500 + index, 0, 8);
+    private Item v5ContainerItem(int cx, int cy, int index, Heap.Type type) {
+        if (state().generatorVersion >= 6 && type == Heap.Type.CRYSTAL_CHEST) {
+            return v6EquipmentItem(cx, cy, 18600 + index);
+        }
+
+        int roll = range(cx, cy, 18500 + index, 0, 10);
         switch (roll) {
             case 0: return new PotionOfHealing();
             case 1: return new PotionOfInvisibility();
@@ -608,7 +627,275 @@ public class InfiniteWorldLevel extends Level {
             case 5: return new Bomb();
             case 6: return new StoneOfBlink();
             case 7: return new Torch();
+            case 8: return v6RandomFood(cx, cy, 18580 + index);
+            case 9: return v6SafeScroll(cx, cy, 18590 + index);
             default:return new Pickaxe();
+        }
+    }
+
+    private void promoteV6LockedDoor(int[] out, int cx, int cy, int ox, int oy) {
+        if (Math.floorMod(hash(cx, cy, 18800), 100L) >= 42) return;
+
+        int chosen = -1;
+        long best = Long.MAX_VALUE;
+        for (int y = 2; y < CHUNK_SIZE - 2; y++) {
+            for (int x = 2; x < CHUNK_SIZE - 2; x++) {
+                int cell = ox + x + (oy + y) * MAP_SIZE;
+                if (out[cell] != Terrain.DOOR) continue;
+                long score = hash(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, 18801);
+                if (score < best) {
+                    best = score;
+                    chosen = cell;
+                }
+            }
+        }
+        if (chosen >= 0) out[chosen] = Terrain.LOCKED_DOOR;
+    }
+
+    private void generateV6LooseLoot() {
+        if (state().generatorVersion < 6) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = 1 + range(cx, cy, 19000, 0, 2);
+                for (int index = 0; index < count; index++) {
+                    int cell = v6ObjectCell(cx, cy, ox, oy, index, 19100);
+                    if (cell < 0) continue;
+                    long key = v6ObjectKey(cell, 0x4100 + index);
+                    if (st.objectState(key) != 0) continue;
+
+                    if (heaps.get(cell) != null || traps.get(cell) != null) {
+                        st.setObjectState(key, 1);
+                        continue;
+                    }
+
+                    Heap heap = new Heap();
+                    heap.pos = cell;
+                    heap.seen = mapped[cell] || visited[cell];
+                    heap.type = Heap.Type.HEAP;
+                    heap.drop(v6LooseItem(cx, cy, index));
+                    heaps.put(cell, heap);
+                }
+
+                // Keys are intentionally separate from random loot so an endless
+                // world never runs out of ways to open remote locks.
+                if (Math.floorMod(hash(cx, cy, 19400), 100L) < 38) {
+                    generateV6KeyHeap(cx, cy, ox, oy, 0, new IronKey(Dungeon.depth));
+                }
+                if (Math.floorMod(hash(cx, cy, 19401), 100L) < 32) {
+                    generateV6KeyHeap(cx, cy, ox, oy, 1, new CrystalKey(Dungeon.depth));
+                }
+            }
+        });
+    }
+
+    private void generateV6KeyHeap(int cx, int cy, int ox, int oy, int index, Item keyItem) {
+        int cell = v6ObjectCell(cx, cy, ox, oy, index, 19500);
+        if (cell < 0) return;
+        long stateKey = v6ObjectKey(cell, 0x4200 + index);
+        if (state().objectState(stateKey) != 0) return;
+
+        if (heaps.get(cell) != null || traps.get(cell) != null) {
+            state().setObjectState(stateKey, 1);
+            return;
+        }
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.seen = mapped[cell] || visited[cell];
+        heap.type = Heap.Type.HEAP;
+        heap.drop(keyItem);
+        heaps.put(cell, heap);
+    }
+
+    private void snapshotV6LooseLootStates() {
+        if (state().generatorVersion < 6) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = 1 + range(cx, cy, 19000, 0, 2);
+                for (int index = 0; index < count; index++) {
+                    int cell = v6ObjectCell(cx, cy, ox, oy, index, 19100);
+                    if (cell < 0) continue;
+                    long key = v6ObjectKey(cell, 0x4100 + index);
+                    if (st.objectState(key) == 0) {
+                        Heap heap = heaps.get(cell);
+                        if (heap == null || heap.type != Heap.Type.HEAP) st.setObjectState(key, 1);
+                    }
+                }
+
+                if (Math.floorMod(hash(cx, cy, 19400), 100L) < 38) {
+                    snapshotV6KeyState(cx, cy, ox, oy, 0);
+                }
+                if (Math.floorMod(hash(cx, cy, 19401), 100L) < 32) {
+                    snapshotV6KeyState(cx, cy, ox, oy, 1);
+                }
+            }
+        });
+    }
+
+    private void snapshotV6KeyState(int cx, int cy, int ox, int oy, int index) {
+        int cell = v6ObjectCell(cx, cy, ox, oy, index, 19500);
+        if (cell < 0) return;
+        long key = v6ObjectKey(cell, 0x4200 + index);
+        if (state().objectState(key) == 0) {
+            Heap heap = heaps.get(cell);
+            if (heap == null || heap.type != Heap.Type.HEAP) state().setObjectState(key, 1);
+        }
+    }
+
+    private void generateV6Plants() {
+        if (state().generatorVersion < 6) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = 1 + range(cx, cy, 19600, 0, 3);
+                for (int index = 0; index < count; index++) {
+                    int cell = v6ObjectCell(cx, cy, ox, oy, index, 19700);
+                    if (cell < 0) continue;
+                    long key = v6ObjectKey(cell, 0x4300 + index);
+                    if (st.objectState(key) != 0) continue;
+
+                    if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) {
+                        st.setObjectState(key, 1);
+                        continue;
+                    }
+
+                    Plant.Seed seed = v6PlantSeed(cx, cy, index);
+                    Plant plant = seed.couch(cell, this);
+                    plants.put(cell, plant);
+                }
+            }
+        });
+    }
+
+    private void snapshotV6PlantStates() {
+        if (state().generatorVersion < 6) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int count = 1 + range(cx, cy, 19600, 0, 3);
+                for (int index = 0; index < count; index++) {
+                    int cell = v6ObjectCell(cx, cy, ox, oy, index, 19700);
+                    if (cell < 0) continue;
+                    long key = v6ObjectKey(cell, 0x4300 + index);
+                    if (st.objectState(key) == 0 && plants.get(cell) == null) {
+                        st.setObjectState(key, 1);
+                    }
+                }
+            }
+        });
+    }
+
+    private int v6ObjectCell(int cx, int cy, int ox, int oy, int index, int saltBase) {
+        for (int attempt = 0; attempt < 12; attempt++) {
+            int salt = saltBase + index * 50 + attempt * 3;
+            int x = 2 + range(cx, cy, salt, 0, CHUNK_SIZE - 5);
+            int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
+            int cell = ox + x + (oy + y) * width();
+            int t = baseWindow != null && cell < baseWindow.length ? baseWindow[cell] : map[cell];
+
+            if (t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
+                    || t == Terrain.EMBERS || t == Terrain.HIGH_GRASS) {
+                return cell;
+            }
+        }
+        return -1;
+    }
+
+    private long v6ObjectKey(int cell, int salt) {
+        long world = worldKeyForLocalCell(cell);
+        long mix = 0x9E3779B97F4A7C15L * (salt + 0x632BE5AB);
+        return world ^ Long.rotateLeft(mix, salt & 31);
+    }
+
+    private Item v6LooseItem(int cx, int cy, int index) {
+        int roll = range(cx, cy, 19800 + index, 0, 99);
+        if (roll < 20) return v6RandomFood(cx, cy, 19850 + index);
+        if (roll < 39) return v6EquipmentItem(cx, cy, 19860 + index);
+        if (roll < 55) return v6SafeScroll(cx, cy, 19870 + index);
+        if (roll < 67) return v6RandomPotion(cx, cy, 19880 + index);
+        if (roll < 77) return v6SeedItem(cx, cy, 19890 + index);
+        if (roll < 86) return new Bomb();
+        if (roll < 93) return new StoneOfBlink();
+        return new Torch();
+    }
+
+    private Item v6EquipmentItem(int cx, int cy, int salt) {
+        Random.pushGenerator(hash(cx, cy, salt));
+        try {
+            int kind = range(cx, cy, salt + 1, 0, 99);
+            int tier = range(cx, cy, salt + 2, 0, 4);
+            if (kind < 44) return Generator.randomWeapon(tier, true);
+            if (kind < 76) return Generator.randomArmor(tier);
+            if (kind < 90) return Generator.randomUsingDefaults(Generator.Category.WAND);
+            return Generator.randomUsingDefaults(Generator.Category.RING);
+        } finally {
+            Random.popGenerator();
+        }
+    }
+
+    private Item v6RandomFood(int cx, int cy, int salt) {
+        switch (range(cx, cy, salt, 0, 5)) {
+            case 0: return new Food();
+            case 1: return new SmallRation();
+            case 2: return new Pasty();
+            case 3: return new MysteryMeat();
+            case 4: return new MeatPie();
+            default:return new SupplyRation();
+        }
+    }
+
+    private Item v6SafeScroll(int cx, int cy, int salt) {
+        switch (range(cx, cy, salt, 0, 8)) {
+            case 0: return new ScrollOfIdentify();
+            case 1: return new ScrollOfRemoveCurse();
+            case 2: return new ScrollOfMirrorImage();
+            case 3: return new ScrollOfRecharging();
+            case 4: return new ScrollOfTeleportation();
+            case 5: return new ScrollOfLullaby();
+            case 6: return new ScrollOfRage();
+            case 7: return new ScrollOfTerror();
+            default:return new ScrollOfTransmutation();
+        }
+    }
+
+    private Item v6RandomPotion(int cx, int cy, int salt) {
+        switch (range(cx, cy, salt, 0, 5)) {
+            case 0: return new PotionOfHealing();
+            case 1: return new PotionOfInvisibility();
+            case 2: return new PotionOfLiquidFlame();
+            case 3: return new PotionOfFrost();
+            case 4: return new com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHaste();
+            default:return new com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation();
+        }
+    }
+
+    private Item v6SeedItem(int cx, int cy, int salt) {
+        return v6PlantSeed(cx, cy, salt);
+    }
+
+    private Plant.Seed v6PlantSeed(int cx, int cy, int salt) {
+        switch (range(cx, cy, 19900 + salt, 0, 10)) {
+            case 0: return new Firebloom.Seed();
+            case 1: return new Icecap.Seed();
+            case 2: return new Sungrass.Seed();
+            case 3: return new Earthroot.Seed();
+            case 4: return new Fadeleaf.Seed();
+            case 5: return new Sorrowmoss.Seed();
+            case 6: return new Swiftthistle.Seed();
+            case 7: return new Blindweed.Seed();
+            case 8: return new Stormvine.Seed();
+            case 9: return new Mageroyal.Seed();
+            default:return new Starflower.Seed();
         }
     }
 
@@ -792,6 +1079,10 @@ public class InfiniteWorldLevel extends Level {
                 : range(cx, cy, 430, 0, 2);
         for (int i = 0; i < doorCount; i++) {
             placeSafeDoor(out, cx, cy, ox, oy, 440 + i);
+        }
+
+        if (state().generatorVersion >= 6) {
+            promoteV6LockedDoor(out, cx, cy, ox, oy);
         }
 
         if (state().generatorVersion >= 5) {
