@@ -1385,8 +1385,6 @@ public class GameScene extends PixelScene {
 		if (scene == null || Dungeon.level == null || Dungeon.hero == null) return;
 
 		synchronized (scene) {
-			if (scene.water != null) scene.water.visible = false;
-
 			scene.heaps.clear();
 			for (Heap heap : Dungeon.level.heaps.valueList()) {
 				scene.addHeapSprite(heap);
