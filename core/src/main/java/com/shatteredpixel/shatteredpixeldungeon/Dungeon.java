@@ -59,6 +59,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.CavesLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.DeadEndLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.ExtraChallengeLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastLevel;
@@ -209,6 +210,8 @@ public class Dungeon {
 
 	public static boolean daily;
 	public static boolean dailyReplay;
+	// Standalone one-floor mode launched from the title screen. It is not an original challenge flag.
+	public static boolean extraChallenge;
 	public static String customSeedText = "";
 	public static long seed;
 	public static long lastPlayed;
@@ -233,7 +236,7 @@ public class Dungeon {
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
-		challenges = SPDSettings.challenges();
+		challenges = extraChallenge ? 0 : SPDSettings.challenges();
 		mobsToChampion = 1;
 
 		Actor.clear();
@@ -300,7 +303,9 @@ public class Dungeon {
 		Actor.clear();
 		
 		Level level;
-		if (branch == 0) {
+		if (extraChallenge) {
+			level = new ExtraChallengeLevel();
+		} else if (branch == 0) {
 			switch (depth) {
 				case 1:
 				case 2:
@@ -382,7 +387,7 @@ public class Dungeon {
 				generatedLevels.add(depth + 1000 * branch);
 			}
 
-			if (depth > Statistics.deepestFloor && branch == 0) {
+			if (!extraChallenge && depth > Statistics.deepestFloor && branch == 0) {
 				Statistics.deepestFloor = depth;
 
 				if (Statistics.qualifiedForNoKilling) {
@@ -397,7 +402,7 @@ public class Dungeon {
 		
 		level.create();
 		
-		if (branch == 0) Statistics.qualifiedForNoKilling = !bossLevel();
+		if (!extraChallenge && branch == 0) Statistics.qualifiedForNoKilling = !bossLevel();
 		Statistics.qualifiedForBossChallengeBadge = false;
 		
 		return level;
@@ -453,7 +458,7 @@ public class Dungeon {
 	}
 
 	public static boolean interfloorTeleportAllowed(){
-		if (Dungeon.level.locked
+		if (extraChallenge || Dungeon.level.locked
 				|| Dungeon.level instanceof MiningLevel || Dungeon.level instanceof VaultLevel
 				|| (Dungeon.hero != null && Dungeon.hero.belongings.getItem(Amulet.class) != null)){
 			return false;
@@ -604,6 +609,7 @@ public class Dungeon {
 	private static final String CUSTOM_SEED	= "custom_seed";
 	private static final String DAILY	    = "daily";
 	private static final String DAILY_REPLAY= "daily_replay";
+	private static final String EXTRA_CHALLENGE = "extra_challenge";
 	private static final String LAST_PLAYED = "last_played";
 	private static final String CHALLENGES	= "challenges";
 	private static final String MOBS_TO_CHAMPION	= "mobs_to_champion";
@@ -631,6 +637,7 @@ public class Dungeon {
 			bundle.put( CUSTOM_SEED, customSeedText );
 			bundle.put( DAILY, daily );
 			bundle.put( DAILY_REPLAY, dailyReplay );
+			bundle.put( EXTRA_CHALLENGE, extraChallenge );
 			bundle.put( LAST_PLAYED, lastPlayed = Game.realTime);
 			bundle.put( CHALLENGES, challenges );
 			bundle.put( MOBS_TO_CHAMPION, mobsToChampion );
@@ -731,6 +738,7 @@ public class Dungeon {
 		customSeedText = bundle.getString( CUSTOM_SEED );
 		daily = bundle.getBoolean( DAILY );
 		dailyReplay = bundle.getBoolean( DAILY_REPLAY );
+		extraChallenge = bundle.contains(EXTRA_CHALLENGE) && bundle.getBoolean(EXTRA_CHALLENGE);
 
 		Actor.clear();
 		Actor.restoreNextID( bundle );
