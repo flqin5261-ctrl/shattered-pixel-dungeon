@@ -186,12 +186,13 @@ public class InfiniteWorldLevel extends Level {
         // Stop any old multi-cell path because its local cell indices belonged to the old window.
         hero.interrupt();
 
+        final int shiftedCellsX = shiftX * CHUNK_SIZE;
+        final int shiftedCellsY = shiftY * CHUNK_SIZE;
+
         ShatteredPixelDungeon.runOnRenderThread(new Callback() {
             @Override
             public void call() {
-                GameScene.refreshInfiniteWorldWindow(
-                        shiftX * CHUNK_SIZE,
-                        shiftY * CHUNK_SIZE);
+                GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
                 shifting = false;
             }
         });
