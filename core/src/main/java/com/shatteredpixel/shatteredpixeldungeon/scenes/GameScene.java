@@ -1381,7 +1381,7 @@ public class GameScene extends PixelScene {
 
 	// Infinite-world streaming refresh. The map dimensions stay fixed, so we can
 	// replace tile/heap data in-place instead of rebuilding the entire GameScene.
-	public static void refreshInfiniteWorldWindow() {
+	public static void refreshInfiniteWorldWindow(int shiftedCellsX, int shiftedCellsY) {
 		if (scene == null || Dungeon.level == null || Dungeon.hero == null) return;
 
 		synchronized (scene) {
@@ -1392,7 +1392,12 @@ public class GameScene extends PixelScene {
 
 			resetMap();
 
-			if (Dungeon.hero.sprite != null) {
+			if (Dungeon.hero.sprite instanceof HeroSprite) {
+				((HeroSprite) Dungeon.hero.sprite).rebaseInfiniteWorld(
+						Dungeon.hero.pos,
+						-shiftedCellsX * DungeonTilemap.SIZE,
+						-shiftedCellsY * DungeonTilemap.SIZE);
+			} else if (Dungeon.hero.sprite != null) {
 				Dungeon.hero.sprite.place(Dungeon.hero.pos);
 			}
 
