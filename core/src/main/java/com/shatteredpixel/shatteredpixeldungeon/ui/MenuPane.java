@@ -392,6 +392,7 @@ public class MenuPane extends Component {
 			add(bg);
 
 			image = Icons.get(Icons.PREFS);
+			image.originToCenter();
 			image.scale.set(PixelScene.align(0.5f));
 			add(image);
 		}
@@ -403,8 +404,9 @@ public class MenuPane extends Component {
 			bg.x = x + 2;
 			bg.y = y + 8;
 
-			image.x = bg.x + (bg.width() - image.width()*image.scale.x)/2f;
-			image.y = bg.y + (bg.height() - image.height()*image.scale.y)/2f;
+			// center the icon itself, then scale around its center so it does not appear tilted/off-axis
+			image.x = bg.x + (bg.width() - image.width())/2f;
+			image.y = bg.y + (bg.height() - image.height())/2f;
 			PixelScene.align(image);
 		}
 
