@@ -270,6 +270,12 @@ public class GameScene extends PixelScene {
 			}
 		};
 		water.autoAdjust = true;
+		if (Dungeon.infiniteWorld) {
+			// Infinite World renders WATER as ordinary tiles. Keeping the original
+			// full-level water skin visible would turn any transient render hole into
+			// a giant fake lake during streaming.
+			water.visible = false;
+		}
 		terrain.add( water );
 
 		ripples = new Group();
@@ -1385,35 +1391,42 @@ public class GameScene extends PixelScene {
 		if (scene == null || Dungeon.level == null || Dungeon.hero == null) return;
 
 		synchronized (scene) {
-			boolean waterWasVisible = scene.water != null && scene.water.visible;
 			if (scene.water != null) scene.water.visible = false;
 
-			try {
-				scene.heaps.clear();
-				for (Heap heap : Dungeon.level.heaps.valueList()) {
-					scene.addHeapSprite(heap);
-				}
-
-				// Rebuild every terrain-dependent layer before the frame is visible again.
-				// The water skin sits underneath all terrain in the original renderer, so
-				// hiding it during this synchronous refresh prevents a one-frame "liquid"
-				// flash if a streamed tile buffer is being regenerated.
-				resetMap();
-
-				if (Dungeon.hero.sprite instanceof HeroSprite) {
-					((HeroSprite) Dungeon.hero.sprite).rebaseInfiniteWorld(
-							Dungeon.hero.pos,
-							-shiftedCellsX * DungeonTilemap.SIZE,
-							-shiftedCellsY * DungeonTilemap.SIZE);
-				} else if (Dungeon.hero.sprite != null) {
-					Dungeon.hero.sprite.place(Dungeon.hero.pos);
-				}
-
-				Dungeon.observe();
-				updateFog();
-			} finally {
-				if (scene.water != null) scene.water.visible = waterWasVisible;
+			scene.heaps.clear();
+			for (Heap heap : Dungeon.level.heaps.valueList()) {
+				scene.addHeapSprite(heap);
 			}
+
+			resetMap();
+
+			// map() prepares CPU-side tile data, but normal Tilemap rendering does not
+			// upload its new vertex buffer until draw(). Infinite World must complete
+			// that upload now, on the render thread, before the camera is rebased.
+			scene.tiles.flushMapUpdate();
+			scene.occlusion.flushMapUpdate();
+			scene.visualGrid.flushMapUpdate();
+			scene.terrainFeatures.flushMapUpdate();
+			scene.raisedTerrain.flushMapUpdate();
+			scene.walls.flushMapUpdate();
+			scene.wallBlocking.flushMapUpdate();
+
+			if (Dungeon.hero.sprite instanceof HeroSprite) {
+				((HeroSprite) Dungeon.hero.sprite).rebaseInfiniteWorld(
+						Dungeon.hero.pos,
+						-shiftedCellsX * DungeonTilemap.SIZE,
+						-shiftedCellsY * DungeonTilemap.SIZE);
+			} else if (Dungeon.hero.sprite != null) {
+				Dungeon.hero.sprite.place(Dungeon.hero.pos);
+			}
+
+			Dungeon.observe();
+			updateFog();
+			scene.wallBlocking.flushMapUpdate();
+
+			// Deliberately remain hidden for Infinite World. Its real water cells are
+			// rendered by DungeonTerrainTilemap instead of this full-screen skin.
+			if (scene.water != null) scene.water.visible = !Dungeon.infiniteWorld;
 		}
 	}
 
