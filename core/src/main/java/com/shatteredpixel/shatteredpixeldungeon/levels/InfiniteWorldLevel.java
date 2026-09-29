@@ -24,6 +24,8 @@ import com.watabou.utils.PathFinder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class InfiniteWorldLevel extends Level {
 
@@ -44,6 +46,21 @@ public class InfiniteWorldLevel extends Level {
     private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
     private boolean shifting;
+
+    // Keep recently generated chunks in memory. The world itself is still seed-driven;
+    // this cache only avoids rebuilding chunks when the player walks back and forth.
+    private static final int CHUNK_CACHE_LIMIT = 128;
+    private final LinkedHashMap<Long, int[]> chunkCache =
+            new LinkedHashMap<Long, int[]>(CHUNK_CACHE_LIMIT, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Long, int[]> eldest) {
+                    return size() > CHUNK_CACHE_LIMIT;
+                }
+            };
+
+    // Exact unmodified terrain for the current 7x7 window. Reusing this avoids
+    // regenerating all 49 chunks every time exploration state is snapshotted.
+    private int[] baseWindow;
 
     {
         color1 = 0x36585F;
@@ -112,8 +129,8 @@ public class InfiniteWorldLevel extends Level {
         }
         st.markChunkExplored(st.centerChunkX, st.centerChunkY);
 
-        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
-        System.arraycopy(base, 0, map, 0, map.length);
+        baseWindow = generateBaseWindow(st.centerChunkX, st.centerChunkY);
+        System.arraycopy(baseWindow, 0, map, 0, map.length);
         applyTerrainOverrides();
         restoreExploration();
 
@@ -290,12 +307,14 @@ public class InfiniteWorldLevel extends Level {
             st.heroWorldInitialized = true;
         }
 
-        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
+        if (baseWindow == null || baseWindow.length != length()) {
+            baseWindow = generateBaseWindow(st.centerChunkX, st.centerChunkY);
+        }
 
         for (int cell = 0; cell < length(); cell++) {
             long key = worldKeyForLocalCell(cell);
 
-            if (map[cell] != base[cell]) st.setTerrainOverride(key, map[cell]);
+            if (map[cell] != baseWindow[cell]) st.setTerrainOverride(key, map[cell]);
             else st.setTerrainOverride(key, null);
 
             if (visited[cell]) st.markVisited(key);
@@ -308,8 +327,8 @@ public class InfiniteWorldLevel extends Level {
     private void rebuildWindow() {
         InfiniteWorldState st = state();
 
-        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
-        System.arraycopy(base, 0, map, 0, map.length);
+        baseWindow = generateBaseWindow(st.centerChunkX, st.centerChunkY);
+        System.arraycopy(baseWindow, 0, map, 0, map.length);
         applyTerrainOverrides();
 
         Arrays.fill(visited, false);
@@ -428,14 +447,51 @@ public class InfiniteWorldLevel extends Level {
                 int ox = (wx + HALF_WINDOW) * CHUNK_SIZE;
                 int oy = (wy + HALF_WINDOW) * CHUNK_SIZE;
 
-                if (st.generatorVersion <= 1) generateChunkV1(result, cx, cy, ox, oy);
-                else generateChunkV2(result, cx, cy, ox, oy);
+                int[] cached = chunkCache.get(chunkKey(cx, cy));
+                if (cached != null) {
+                    pasteChunk(result, cached, ox, oy);
+                } else {
+                    if (st.generatorVersion <= 1) generateChunkV1(result, cx, cy, ox, oy);
+                    else generateChunkV2(result, cx, cy, ox, oy);
+                }
 
                 st.markChunkGenerated(cx, cy);
             }
         }
 
+        // Refresh every active cache entry from the final window so shared-edge
+        // carving performed by a newly generated neighbour is retained exactly.
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
+                int cx = centerChunkX + wx;
+                int cy = centerChunkY + wy;
+                int ox = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                int oy = (wy + HALF_WINDOW) * CHUNK_SIZE;
+                chunkCache.put(chunkKey(cx, cy), extractChunk(result, ox, oy));
+            }
+        }
+
         return result;
+    }
+
+    private static long chunkKey(int cx, int cy) {
+        return ((long)cx << 32) ^ (cy & 0xFFFFFFFFL);
+    }
+
+    private static int[] extractChunk(int[] source, int ox, int oy) {
+        int[] chunk = new int[CHUNK_SIZE * CHUNK_SIZE];
+        for (int y = 0; y < CHUNK_SIZE; y++) {
+            System.arraycopy(source, ox + (oy + y) * MAP_SIZE,
+                    chunk, y * CHUNK_SIZE, CHUNK_SIZE);
+        }
+        return chunk;
+    }
+
+    private static void pasteChunk(int[] target, int[] chunk, int ox, int oy) {
+        for (int y = 0; y < CHUNK_SIZE; y++) {
+            System.arraycopy(chunk, y * CHUNK_SIZE,
+                    target, ox + (oy + y) * MAP_SIZE, CHUNK_SIZE);
+        }
     }
 
     // ------------------------------------------------------------------------
