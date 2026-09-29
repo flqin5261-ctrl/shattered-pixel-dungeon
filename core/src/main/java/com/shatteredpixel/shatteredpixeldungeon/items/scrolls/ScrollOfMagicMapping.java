@@ -43,6 +43,11 @@ public class ScrollOfMagicMapping extends Scroll {
 	@Override
 	public void doRead() {
 
+		if (Dungeon.infiniteWorld) {
+			GLog.w(Messages.get(this, "infinite_blocked"));
+			return;
+		}
+
 		detach(curUser.belongings.backpack);
 		int length = Dungeon.level.length();
 		int[] map = Dungeon.level.map;
