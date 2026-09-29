@@ -13,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -1527,8 +1528,17 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        int w = 6 + range(cx, cy, 20820 + index * 2, 0, 2); // 6-8 outer width
-        int h = 6 + range(cx, cy, 20821 + index * 2, 0, 2); // 6-8 outer height
+        int w;
+        int h;
+        if (state().generatorVersion >= 8) {
+            // Follow the upstream room scale more closely: most rooms are compact
+            // 5-8 tile rectangles, with occasional slightly larger treasure rooms.
+            w = 5 + range(cx, cy, 20820 + index * 2, 0, 3);
+            h = 5 + range(cx, cy, 20821 + index * 2, 0, 3);
+        } else {
+            w = 6 + range(cx, cy, 20820 + index * 2, 0, 2);
+            h = 6 + range(cx, cy, 20821 + index * 2, 0, 2);
+        }
         int jitterX = range(cx, cy, 20840 + index * 2, 0, 1);
         int jitterY = range(cx, cy, 20841 + index * 2, 0, 1);
 
@@ -1584,19 +1594,45 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        int theme = range(cx, cy, 20900 + index, 0, 7);
+        int theme = state().generatorVersion >= 8
+                ? range(cx, cy, 20900 + index, 0, 9)
+                : range(cx, cy, 20900 + index, 0, 7);
 
-        // Key rooms and crystal vaults are always reachable without first owning
-        // the key they are intended to supply. Other treasure rooms can be locked.
         int doorTerrain = Terrain.DOOR;
-        if (theme != 0 && theme != 4 && theme != 6) {
-            if (Math.floorMod(hash(cx, cy, 20920 + index), 100L) < 58) {
-                doorTerrain = Terrain.LOCKED_DOOR;
+        int secret = 0;
+
+        if (state().generatorVersion >= 8) {
+            // Guarantee that every chunk exposes at least one ordinary unlocked
+            // room. Remaining rooms mix regular, locked and hidden entrances.
+            if (index > 0) {
+                int doorRoll = range(cx, cy, 20920 + index, 0, 99);
+                if (doorRoll < 24 && theme != 4) {
+                    doorTerrain = Terrain.LOCKED_DOOR;
+                } else if (doorRoll < 50) {
+                    doorTerrain = Terrain.SECRET_DOOR;
+                    secret = 1;
+                }
+            }
+
+            // A key room must never require a key. A crystal vault may be hidden
+            // but is not itself iron-locked; its chest still needs a crystal key.
+            if (theme == 4) {
+                doorTerrain = Terrain.DOOR;
+                secret = 0;
+            } else if (theme == 6 && doorTerrain == Terrain.LOCKED_DOOR) {
+                doorTerrain = Terrain.DOOR;
+            }
+        } else {
+            // v7 compatibility.
+            if (theme != 0 && theme != 4 && theme != 6) {
+                if (Math.floorMod(hash(cx, cy, 20920 + index), 100L) < 58) {
+                    doorTerrain = Terrain.LOCKED_DOOR;
+                }
             }
         }
 
         return new int[]{left, top, right, bottom, doorX, doorY,
-                outsideX, outsideY, theme, doorTerrain};
+                outsideX, outsideY, theme, doorTerrain, secret};
     }
 
     private boolean v7AnyRoomContains(int cx, int cy, int roomCount, int x, int y) {
