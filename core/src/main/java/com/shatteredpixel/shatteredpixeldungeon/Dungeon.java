@@ -394,7 +394,7 @@ public class Dungeon {
 				generatedLevels.add(depth + 1000 * branch);
 			}
 
-			if (!extraChallenge && depth > Statistics.deepestFloor && branch == 0) {
+			if (!extraChallenge && !infiniteWorld && depth > Statistics.deepestFloor && branch == 0) {
 				Statistics.deepestFloor = depth;
 
 				if (Statistics.qualifiedForNoKilling) {
