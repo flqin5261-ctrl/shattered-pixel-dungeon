@@ -34,6 +34,7 @@
 | 世界物资/钥匙/环境 | 0.4.0 | 941 | assist-0.4.0-stable | aa757bf4973e737a3cdf1f843cd19eca65537359 |
 | 真主题房间 | 0.4.1 | 942 | assist-0.4.1-stable | b33d6c7402245d72da50cce292469c0db7f953db |
 | 秘密房/房间级主题 | 0.4.2 | 943 | assist-0.4.2-stable | 21eb31d97ba0bf46b920a6f622a587ea97c560f0 |
+| 无限骨架/阈限异常区 | 0.4.3 | 944 | assist-0.4.3-stable | a513fc1a099d272c356c3127f874c3dd861e2799 |
 
 特别说明：
 
@@ -1282,3 +1283,206 @@ V8 每个主题房间可以独立选择：
 > **地图是否足够像真正丰富的地牢世界。**
 
 再补一批房间/环境内容后，进入怪物阶段。
+
+
+# 20. 0.4.3 — 无限骨架、资源稀疏化、异常空间与异境记录
+
+版本：
+
+- 0.4.3
+- versionCode 944
+- stable：`assist-0.4.3-stable`
+- dev：`assist-0.4.3-liminal`
+- Generator V9
+- release code SHA：`a513fc1a099d272c356c3127f874c3dd861e2799`
+
+这一版来自 0.4.2 的一组实机反馈：
+
+1. 某些世界/路线可能让玩家产生“地图是不是其实有限”的感觉，旧版甚至出现过所有可见分支都走到头。
+2. 用户不要求所有岔路都有出口，但要求整个模式在结构上真的存在无限延展路径。
+3. 0.4.2 用户没有实际找到秘密房。
+4. 隐藏陷阱过多。
+5. 房间/野外高价值物资过密，新世界跑不远就能收集大量物资。
+6. 希望加入少量非常大、空旷、重复、类似阈限空间/后室气质的异常区域。
+7. 希望异常区域以后能发现纸条，并在指南里单独收录。
+
+## 20.1 Generator V9
+
+`WORLD_GEN_VERSION`：
+
+```
+8 -> 9
+```
+
+因此 V9 地形结构只作用于新建 Infinite World。
+
+旧 V8 世界继续按 V8 公式恢复，不会因为升级而重排已探索地图。
+
+## 20.2 世界级 Infinite Backbone
+
+V9 在正常 Chunk 生成全部完成后增加一层稀疏的永久连通骨架。
+
+规则：
+
+- `floorMod(cx, 6) == 0`：
+  - Chunk 中心 x=11..12 刻出南北贯通双格走廊。
+- `floorMod(cy, 6) == 0`：
+  - Chunk 中心 y=11..12 刻出东西贯通双格走廊。
+- (0,0) 同时属于两条主干。
+
+意义：
+
+- 普通支路可以自然死路。
+- 主题房间可以封闭。
+- 怪异局部结构仍然可以“不合理”。
+- 但出生区域所在的主连通分量中一定存在可以无限向远处延展的路径。
+
+这一层在普通房、装饰、障碍生成结束后最后刻出，因此后来房间 shell 不会再把它堵死。
+
+## 20.3 秘密房更容易真实遇到
+
+V8 只有随机 Secret Door，理论存在不代表玩家短期能碰见。
+
+V9：
+
+- 每个 3×3 Chunk macro 通过 hash 确定一个秘密房候选 Chunk；
+- 候选 Chunk 的 room index 1 强制 Secret Door；
+- 其余房间仍保留随机秘密门；
+- 锁门比例进一步下降；
+- Infinite World 下靠近 SECRET_DOOR 后被动搜索概率提高到 55%；
+- 主动 Search 继续走原版发现机制；
+- SECRET_TRAP 的普通发现率不跟着提高。
+
+目标不是让隐藏房变成明房，而是让认真贴墙探索的玩家确实有机会遇到。
+
+## 20.4 隐藏陷阱降密
+
+V5/V8 环境 prop 曾经大量抽到 SECRET_TRAP。
+
+V9：
+
+- Ambient prop 总投放次数降低；
+- SECRET_TRAP 从多个高权重 case 降到约 1/18 的 prop roll；
+- Trap Workshop 内部 secret trap 概率从约 22% 降到约 10%；
+- 异常大区域不撒普通环境陷阱。
+
+## 20.5 普通物资大幅降密
+
+V9 的核心平衡原则：
+
+> 地图可以丰富，高价值战利品必须稀疏。
+
+调整：
+
+- 普通 deterministic chest：V9 约 12% Chunk（旧约 42%）。
+- V5 container：V9 约 28% Chunk 仅 1 个，其他没有。
+- V6 loose loot：V9 约 30% Chunk 仅 1 件。
+- 野外 IronKey：约 8%。
+- 野外 CrystalKey：约 5%。
+- 野外真实 Plant：约 45% Chunk 1 株。
+- 锁门旁仍保证 IronKey。
+- Crystal Vault 仍保证 CrystalKey。
+
+因此减少的是泛滥资源，不删除防 soft-lock 的钥匙保障。
+
+## 20.6 主题房奖励重新平衡
+
+V9：
+
+- 植物房：约 7～9 株真实植物。
+- Scroll Room：1～2 张卷轴。
+- Potion Lab：1～2 瓶药。
+- Pantry：2～3 份食物。
+- Key Room：1 IronKey + 1 CrystalKey。
+- Armory：1～2 件装备。
+- Crystal Vault：1 个 Crystal Chest。
+- Workshop：Bomb + StoneOfBlink。
+- Gold Garden：4～7 堆较小金币。
+- Treasury：2～4 件混合奖励。
+- Secret Bonus：额外 2～3 件高价值物资。
+
+秘密房仍值得找，但不会一次把玩家背包装满。
+
+## 20.7 三种 5×5 Chunk 阈限异常区
+
+V9 在远离出生点的区域增加 5×5 Chunk 宏区。
+
+触发：
+
+- 出生周边 `abs(cx)<=4 && abs(cy)<=4` 不产生异常宏区；
+- 之后约 8% 的 5×5 macro 被选为 anomaly；
+- 一个 anomaly macro 内 25 个 Chunk 共享同一种异常空间。
+
+### Type 1 — Repeating Offices
+
+- 大片 `EMPTY_SP`
+- 规则墙网格
+- 重复间隔
+- 每组墙有少量确定性缺口
+- 强调“走了很久但景物似乎没变化”的感觉
+
+### Type 2 — Pool Halls
+
+- 大面积 WATER
+- 重复浅水池
+- 中央十字干路
+- 使用原版稳定 water backdrop，不另做新的 water renderer
+
+### Type 3 — Endless Hall
+
+- 大片 `EMPTY_SP`
+- 稀疏规则 STATUE/柱体
+- 大量空旷面积
+- 奖励极少
+
+三类异常区仍保留 shared-edge gateway，并叠加 Infinite Backbone。
+
+## 20.8 异常区环境主题
+
+V9 anomaly 不再运行普通主题房内容。
+
+视觉上：
+
+- Repeating Offices：偏 City material
+- Pool Halls：偏 Sewers material
+- Endless Hall：偏 Halls material
+
+floor + wall 100% chunk overlay，使 5×5 macro 的视觉区别明显。
+
+WATER 仍交给原版水层。
+
+## 20.9 Infinite World Field Notes
+
+新增：
+
+- `Document.INFINITE_WORLD_NOTES`
+- `InfiniteWorldNote`
+- 指南页中的独立“无界异境记录”栏目
+
+当前页面：
+
+- Liminal_Offices
+- Pool_Halls
+- Endless_Hall
+
+每个 5×5 anomaly macro 只有中心 Anchor Chunk 放一张对应 note。
+
+Note：
+
+- 使用 deterministic cell；
+- 使用 objectStates 防刷新；
+- 拾取后解锁 Journal 页面；
+- 走远回来不重复出现。
+
+文本是 Assist 自己编写的异常空间观察记录，不复制外部作品的具体 Lore。
+
+## 20.10 Build
+
+0.4.3 release workflow：
+
+- run：36595730471
+- head SHA：`a513fc1a099d272c356c3127f874c3dd861e2799`
+- result：success
+- 固定 applicationId 未变
+- 固定 signing 流程未变
+
