@@ -1403,3 +1403,160 @@ V10 network 必须在：
 对于 anomaly chunk，生成 anomaly 后再 carve V10 network。
 
 未来任何 V11+ 大地形步骤也必须遵守这一顺序，或者显式保护 V10 route cells。
+
+
+# 43. 0.5.0 Player-Centered Ephemeral Mob Ecology
+
+旧 Roadmap 曾设想“每个 Chunk 的怪永久保存”，但用户在真正进入怪物阶段时明确选择了更接近 Minecraft 的模型：
+
+> 远离玩家一定范围的普通/精英怪直接 despawn，不保留远处世界实体。
+
+因此 0.5.0 的正式架构是 **ephemeral ecology**，而不是 chunk-persistent population。
+
+## 43.1 Ecology Actor
+
+InfiniteWorldLevel 不使用原版 RegularLevel 的整层预生成敌人。
+
+`createMobs()` 初始不创建敌人。
+
+`addRespawner()` 创建：
+
+`InfiniteWorldMobEcology extends Actor`
+
+它：
+
+1. 进入世界后延迟 20～32 turn。
+2. prune 过远敌人。
+3. 若当前敌人低于 target cap，按低概率尝试生成 1 只。
+4. 再等待 32～50 turn。
+
+不能改回原版 `MobSpawner` 的“spawn 失败后下一回合立刻重试”逻辑，否则会显著抬高 Infinite World 刷怪密度。
+
+## 43.2 Cap
+
+两级限制：
+
+```
+MOB_SPAWN_TARGET_CAP = 5
+MOB_HARD_CAP = 6
+ELITE_HARD_CAP = 1
+```
+
+Ecology 自己到 5 后停止常规刷怪。
+
+如果 Trap/其他运行时机制额外造敌人，prune 阶段会在超过 6 时优先移除距离最远的普通敌人。
+
+Boss/MINIBOSS 预留为未来例外，目前没有生成。
+
+## 43.3 Spawn Annulus
+
+新敌人必须：
+
+- 路径距离 >=14
+- 路径距离 <=28
+- 不在 heroFOV
+- passable
+- 非 solid/pit/secret
+- 无 Actor
+- 无 Heap/Trap/Plant 占位
+- LARGE 时需 openSpace
+
+每次 spawn 才构建 bounded PathFinder distance map，不在每个 Hero step 做完整寻路。
+
+## 43.4 Despawn
+
+Hero 每次 recordHeroMove 后，只遍历当前很小的 mobs 集合，使用 local Chebyshev 距离判断。
+
+```
+distance > 40 -> despawnFromInfiniteWorld()
+```
+
+`Mob.despawnFromInfiniteWorld()`：
+
+- `Actor.remove(this)`
+- `Dungeon.level.mobs.remove(this)`
+- interrupt sprite motion
+- killAndErase sprite
+
+**绝对不能调用 `die()` 或 `destroy()`。**
+
+原因：
+
+- `die()` 会 roll loot
+- `Mob.destroy()` 会加击杀统计、EXP、Bestiary 等
+- 这与“走远自然消失”语义完全不同
+
+## 43.5 Streaming Rebase
+
+Streaming 时中心移动 3 Chunk = 72 cell。
+
+当前活跃 Mob 的绝对世界位置不变，local pos 改：
+
+```
+newX = oldX - shiftedCellsX
+newY = oldY - shiftedCellsY
+```
+
+`Mob.rebaseForInfiniteWorld(newPos)` 同时：
+
+- interrupt old sprite motion
+- pos = newPos
+- previousPos = -1
+- path = null
+- clearEnemy
+- target = newPos
+- 非 PASSIVE -> WANDERING
+- sprite.place(newPos)
+
+清 path/target 是硬要求，否则 Mob 会继续使用旧 window 的 path cell。
+
+## 43.6 Save/Load
+
+当前 active mobs 仍由 Level 原生：
+
+```
+bundle.put(MOBS, mobs)
+```
+
+保存。
+
+所以：
+
+- 玩家附近还未 despawn 的怪可以正常 save/load。
+- 已经因距离 despawn 的怪不再保存。
+- 不建立随探索面积无限增长的 mob-state map。
+
+## 43.7 Enemy Pools
+
+选择的是较少依赖楼层脚本的普通敌人。
+
+明确排除：
+
+- Boss/Miniboss
+- Thief（偷物后 despawn 风险）
+- 大量 summon-heavy 敌人
+
+后续增加新怪前检查：
+
+1. 是否偷/持有玩家永久物品；
+2. 是否召唤大量子怪；
+3. 是否依赖固定楼层/Room/Boss state；
+4. despawn 时 Buff.detach 是否有环境副作用；
+5. 是否会突破 hard cap。
+
+## 43.8 Elite
+
+精英复用 ChampionEnemy。
+
+当前允许：
+
+- Projecting
+- AntiMagic
+- Blessed
+- Growing
+
+禁止 Blazing 用于 ephemeral elite，因为其 detach 可释放 Fire。
+
+未来如果加入新的 Elite buff，必须测试：
+
+> reward-free despawn 时 detach 是否真正无副作用。
