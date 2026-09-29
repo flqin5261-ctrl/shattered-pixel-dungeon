@@ -77,6 +77,10 @@ public class WndAssist extends Window {
             @Override
             protected void onClick() {
                 if (!SPDSettings.assistTeleport() || Dungeon.hero == null || Dungeon.level == null) return;
+                if (Dungeon.extraChallenge) {
+                    GLog.w("额外挑战为独立单层地图，不能使用楼层传送。");
+                    return;
+                }
 
                 int target = depthSlider.getSelectedValue();
                 if (target == Dungeon.depth && Dungeon.branch == 0) {
