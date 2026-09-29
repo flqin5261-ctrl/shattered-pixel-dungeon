@@ -1291,7 +1291,17 @@ public class InfiniteWorldLevel extends Level {
         int westY = edgeVertical(cx, cy);
         int eastY = edgeVertical(cx + 1, cy);
 
-        int spaceProfile = state().generatorVersion >= 5 ? range(cx, cy, 95, 0, 4) : 2;
+        int spaceProfile;
+        if (state().generatorVersion >= 7) {
+            int profileRoll = range(cx, cy, 94, 0, 99);
+            if (profileRoll < 38) spaceProfile = 0;
+            else if (profileRoll < 68) spaceProfile = 1;
+            else if (profileRoll < 84) spaceProfile = 2;
+            else if (profileRoll < 94) spaceProfile = 4;
+            else spaceProfile = 3;
+        } else {
+            spaceProfile = state().generatorVersion >= 5 ? range(cx, cy, 95, 0, 4) : 2;
+        }
         int hubCount;
         if (state().generatorVersion >= 5) {
             switch (spaceProfile) {
