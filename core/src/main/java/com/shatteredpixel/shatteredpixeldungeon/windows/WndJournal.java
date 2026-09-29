@@ -250,22 +250,38 @@ public class WndJournal extends WndTabbed {
 		}
 		
 		public void updateList(){
-			list.addTitle(Document.ADVENTURERS_GUIDE.title());
+			addDocumentSection(Document.ADVENTURERS_GUIDE);
 
-			for (String page : Document.ADVENTURERS_GUIDE.pageNames()){
-				boolean found = Document.ADVENTURERS_GUIDE.isPageFound(page);
+			// Infinite World field notes live in the Guide tab as their own section,
+			// rather than being mixed into the ordinary regional lore catalog.
+			list.addTitle(Document.INFINITE_WORLD_NOTES.title());
+			addDocumentPages(Document.INFINITE_WORLD_NOTES);
+
+			list.setRect(x, y, width, height);
+		}
+
+		private void addDocumentSection(Document document) {
+			list.addTitle(document.title());
+			addDocumentPages(document);
+		}
+
+		private void addDocumentPages(final Document document) {
+			for (final String page : document.pageNames()){
+				final boolean found = document.isPageFound(page);
 				ScrollingListPane.ListItem item = new ScrollingListPane.ListItem(
-						Document.ADVENTURERS_GUIDE.pageSprite(page),
+						document.pageSprite(page),
 						null,
-						found ? Messages.titleCase(Document.ADVENTURERS_GUIDE.pageTitle(page)) : Messages.titleCase(Messages.get( this, "missing" ))
+						found ? Messages.titleCase(document.pageTitle(page))
+								: Messages.titleCase(Messages.get( this, "missing" ))
 				){
 					@Override
 					public boolean onClick(float x, float y) {
 						if (inside( x, y ) && found) {
-							ShatteredPixelDungeon.scene().addToFront( new WndStory( Document.ADVENTURERS_GUIDE.pageSprite(page),
-									Document.ADVENTURERS_GUIDE.pageTitle(page),
-									Document.ADVENTURERS_GUIDE.pageBody(page) ));
-							Document.ADVENTURERS_GUIDE.readPage(page);
+							ShatteredPixelDungeon.scene().addToFront( new WndStory(
+									document.pageSprite(page),
+									document.pageTitle(page),
+									document.pageBody(page) ));
+							document.readPage(page);
 							return true;
 						} else {
 							return false;
@@ -278,8 +294,6 @@ public class WndJournal extends WndTabbed {
 				}
 				list.addItem(item);
 			}
-
-			list.setRect(x, y, width, height);
 		}
 
 	}
