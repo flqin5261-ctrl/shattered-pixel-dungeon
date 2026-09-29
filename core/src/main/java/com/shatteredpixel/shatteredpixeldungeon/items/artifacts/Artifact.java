@@ -140,6 +140,24 @@ public class Artifact extends KindofMisc {
 		upgrade(Math.round((transferLvl*levelCap)/10f));
 	}
 
+	// Assist edition: artifacts use different internal level caps, but always display 0..10.
+	// This raises the visible artifact level without exceeding that artifact's own cap.
+	public int assistBoostVisibleLevel(int amount) {
+		if (levelCap <= 0 || amount <= 0) return visiblyUpgraded();
+
+		int currentVisible = Math.round((level()*10)/(float)levelCap);
+		int targetVisible = Math.min(10, currentVisible + amount);
+		int targetInternal = Math.min(levelCap, Math.round((targetVisible*levelCap)/10f));
+
+		int guard = 0;
+		while (level() < targetInternal && guard++ < 32) {
+			int before = level();
+			upgrade();
+			if (level() <= before) break;
+		}
+		return Math.round((level()*10)/(float)levelCap);
+	}
+
 	public void resetForTrinity(int visibleLevel){
 		level(Math.round((visibleLevel*levelCap)/10f));
 		exp = Integer.MIN_VALUE; //ensures no levelling
