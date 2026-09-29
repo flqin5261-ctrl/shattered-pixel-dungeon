@@ -2152,7 +2152,11 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void scatterV5TerrainProps(int[] out, int cx, int cy, int ox, int oy, int profile) {
-        int count = 11 + range(cx, cy, 17200, 0, profile <= 1 ? 13 : 9);
+        if (state().generatorVersion >= 9 && v9AnomalyType(cx, cy) != 0) return;
+
+        int count = state().generatorVersion >= 9
+                ? 8 + range(cx, cy, 17200, 0, profile <= 1 ? 6 : 4)
+                : 11 + range(cx, cy, 17200, 0, profile <= 1 ? 13 : 9);
 
         for (int i = 0; i < count; i++) {
             int x = 2 + range(cx, cy, 17210 + i * 4, 0, CHUNK_SIZE - 5);
@@ -2166,8 +2170,51 @@ public class InfiniteWorldLevel extends Level {
                     && t != Terrain.EMBERS && t != Terrain.HIGH_GRASS) continue;
 
             int neighbours = floorNeighbours(out, gx, gy);
-            int kind = range(cx, cy, 17212 + i * 4, 0, 11);
 
+            if (state().generatorVersion >= 9) {
+                // V9 keeps the map visually busy but moves most strong rewards and
+                // hazards into recognizable rooms. Ambient secret traps fall from
+                // roughly one quarter of prop rolls to about one eighteenth.
+                int kind = range(cx, cy, 17212 + i * 4, 0, 17);
+                switch (kind) {
+                    case 0:
+                        if (neighbours >= 4) out[cell] = Terrain.SECRET_TRAP;
+                        break;
+                    case 1:
+                        if (neighbours >= 6) out[cell] = Terrain.ALCHEMY;
+                        break;
+                    case 2:
+                        if (neighbours >= 6) out[cell] = Terrain.BARRICADE;
+                        break;
+                    case 3:
+                        if (neighbours >= 6) out[cell] = Terrain.BOOKSHELF;
+                        break;
+                    case 4:
+                    case 5:
+                        out[cell] = Terrain.HIGH_GRASS;
+                        break;
+                    case 6:
+                    case 7:
+                        out[cell] = Terrain.EMBERS;
+                        break;
+                    case 8:
+                        if (neighbours >= 6) out[cell] = Terrain.MINE_CRYSTAL;
+                        break;
+                    case 9:
+                        if (neighbours >= 7) out[cell] = Terrain.STATUE;
+                        break;
+                    case 10:
+                    case 11:
+                        out[cell] = Terrain.GRASS;
+                        break;
+                    default:
+                        out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                }
+                continue;
+            }
+
+            int kind = range(cx, cy, 17212 + i * 4, 0, 11);
             switch (kind) {
                 case 0:
                 case 1:
@@ -2203,10 +2250,12 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        // Add a few interior divider walls to cramped chunks. They only replace
-        // highly open cells, so they cannot sever the guaranteed edge-to-edge tree.
+        // Add a few interior divider objects to cramped chunks. V9 uses fewer
+        // blockers because actual themed rooms already provide enclosure.
         if (profile <= 1) {
-            int blockers = 3 + range(cx, cy, 17500, 0, 5);
+            int blockers = state().generatorVersion >= 9
+                    ? 1 + range(cx, cy, 17500, 0, 2)
+                    : 3 + range(cx, cy, 17500, 0, 5);
             for (int i = 0; i < blockers; i++) {
                 int x = 4 + range(cx, cy, 17510 + i * 2, 0, CHUNK_SIZE - 9);
                 int y = 4 + range(cx, cy, 17511 + i * 2, 0, CHUNK_SIZE - 9);
