@@ -783,8 +783,10 @@ public class InfiniteWorldLevel extends Level {
 
     private void carveStrangeLandmark(int[] out, int cx, int cy, int ox, int oy) {
         int type = range(cx, cy, 910, 0, 5);
-        int mx = ox + 6 + range(cx, cy, 911, 0, 11);
-        int my = oy + 6 + range(cx, cy, 912, 0, 11);
+        // Keep the landmark inside its own chunk so cached chunks stay
+        // independent of generation order at streaming-window edges.
+        int mx = ox + 8 + range(cx, cy, 911, 0, 7);
+        int my = oy + 8 + range(cx, cy, 912, 0, 7);
 
         switch (type) {
             case 0: { // oversized oval rotunda
