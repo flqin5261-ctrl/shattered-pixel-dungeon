@@ -1,0 +1,979 @@
+# Assist Infinite World Roadmap 与回归测试清单
+
+本文档回答两个问题：
+
+1. **当前还要做什么？**
+2. **每次修改后必须测试什么，避免把以前修好的东西弄坏？**
+
+---
+
+# A. 当前项目状态
+
+当前最新稳定：
+
+- 版本：0.4.2
+- versionCode：943
+- Generator：V8
+- stable：`assist-0.4.2-stable`
+- dev：`assist-0.4.2-secrets`
+
+当前核心已经具备：
+
+- 水平无限 Chunk streaming
+- 绝对世界坐标
+- Seed 确定性生成
+- 7×7 active window
+- 探索状态持久化
+- terrain override
+- 箱子/物品/植物状态持久化
+- 多环境 tileset
+- 房间级环境 tileset
+- 普通门/锁门/隐藏门
+- 植物房
+- 金币园
+- 食物房
+- 卷轴房
+- 药剂房
+- 钥匙房
+- 武器库
+- 水晶宝库
+- 陷阱工坊
+- 综合藏宝室
+- Bomb / Pickaxe / Chains / Teleport 等互动
+
+尚未正式进入：
+
+- 普通怪物生态
+- 精英怪
+- Boss
+- 世界事件/NPC
+
+---
+
+# B. 0.4.2 当前实机优先验证
+
+下一次用户测试反馈回来时，优先判断以下内容。
+
+## B1. 动态门贴图
+
+必须确认：
+
+- [ ] LOCKED_DOOR 用 IronKey 解锁后，旧锁门贴图立即消失
+- [ ] 新门贴图正确
+- [ ] 普通门可正常打开
+- [ ] OPEN_DOOR 再关门正常
+- [ ] 不出现两个门叠在一起
+- [ ] 房间级异材质不覆盖动态门
+
+如果仍旧有残影：
+
+优先查：
+
+- InfiniteWorldAccentTilemap
+- customWalls
+- customTiles
+- DungeonWallsTilemap
+- GameScene.updateMap(cell)
+
+不要先去改 Key 逻辑，因为当前已确认逻辑解锁本身可用。
+
+---
+
+## B2. 普通门比例
+
+目标：
+
+玩家短距离走动就应该看到：
+
+- 普通门房
+- 锁门房
+- 少量秘密房
+
+不能再出现“几十个门全是锁门”的体感。
+
+如果仍偏锁：
+
+- 降低 V8 doorRoll 中 LOCKED 门区间
+- 保留每 Chunk index 0 强制普通门
+
+---
+
+## B3. Secret Door
+
+检查：
+
+- [ ] 未发现时像墙
+- [ ] 从远处看不出房间
+- [ ] 靠近有机会自动发现
+- [ ] 主动搜索能发现
+- [ ] 发现后变普通门
+- [ ] 可以进入
+- [ ] 奖励存在
+- [ ] 离开再回来仍保持已发现
+- [ ] 不会重新变隐藏墙
+
+如果 Secret Door 重载后重新隐藏：
+
+查：
+
+- terrainOverrides
+- snapshotForSave
+- baseWindow
+- Terrain.discover()
+
+---
+
+## B4. Secret Room 主题
+
+已知可能存在：
+
+> Secret Door 刚发现时，房间仍暂时是周围环境主题；下次 streaming 后才出现房间独立主题。
+
+这是非阻塞问题。
+
+如果用户在意，下一版修成：
+
+- discover 时局部重建 room accent
+
+---
+
+## B5. Gold Garden
+
+检查：
+
+- [ ] 房间不是太大
+- [ ] 多堆金币
+- [ ] 拿走后不重刷
+- [ ] streaming 后已拿金币不恢复
+
+---
+
+## B6. Plant Garden
+
+检查：
+
+- [ ] 植物数量明显高
+- [ ] 真实可触发
+- [ ] 触发后状态正确
+- [ ] 走远再回来不会复活全部植物
+
+---
+
+# C. 下一版地图内容扩充建议
+
+用户当前方向非常明确：
+
+> 地图要像原版那样有各种大小和功能房，不要只是开拓地带。
+
+建议下一版先继续“房间库”，再上怪。
+
+---
+
+# C1. 原版 Magic Well 风格房
+
+参考：
+
+`levels/rooms/special/MagicWellRoom.java`
+
+Infinite World 版本建议：
+
+- 5×5 / 6×6
+- 中央 WELL
+- 普通门或隐藏门
+- 少量草/水
+- 不需要锁
+
+持久化：
+
+- WELL 使用后变 EMPTY_WELL
+- terrainOverrides 可以保存
+
+---
+
+# C2. Runestone 房
+
+参考：
+
+- RunestoneRoom
+- SecretRunestoneRoom
+
+内容：
+
+- Runestone/Stone 奖励
+- 环形/十字布局
+- 可隐藏
+
+---
+
+# C3. Library 房
+
+参考：
+
+- LibraryRoom
+- LibraryHallRoom
+- SecretLibraryRoom
+- SegmentedLibraryRoom
+
+内容：
+
+- BOOKSHELF
+- 卷轴
+- 少量特殊物资
+- 可烧毁
+- 可以混 Prison/City tileset
+
+注意：
+
+BOOKSHELF 可破坏后，static room overlay 可能需要局部 refresh。
+
+---
+
+# C4. Pool 房
+
+参考：
+
+- PoolRoom
+- AquariumRoom
+- WaterBridgeRoom
+
+内容：
+
+- 小水池
+- 桥
+- 岛
+- 宝物
+
+注意：
+
+局部 water tileset 混合必须谨慎。
+
+不要重现 0.3.6 water backdrop Bug。
+
+第一阶段可以：
+
+- Terrain.WATER 仍走全局 water texture
+- 房间墙/地板换主题
+- 不做局部 waterTex 替换
+
+---
+
+# C5. Fire / Barricade 房
+
+参考：
+
+- MagicalFireRoom
+- BurnedRoom
+- StorageRoom
+
+内容：
+
+- BARRICADE
+- EMBERS
+- PotionOfLiquidFlame
+- Bomb
+
+交互：
+
+- 烧
+- 炸
+
+适合测试动态 Terrain + room overlay。
+
+---
+
+# C6. Trap Corridor / Trap Room
+
+参考：
+
+- TrapsRoom
+- MinefieldRoom
+- SecretHoardRoom
+
+布局：
+
+- 长条窄房
+- 4～10 个 Trap
+- 中央奖励
+- 普通/隐藏入口
+
+---
+
+# C7. 小矿洞
+
+内容：
+
+- WALL_DECO
+- MINE_CRYSTAL
+- MINE_BOULDER
+- Pickaxe
+- 金币
+- Bomb
+
+不要让矿洞堵住 Chunk 主连通树。
+
+---
+
+# C8. Statue / Ritual 房
+
+参考：
+
+- StatueRoom
+- StatuesRoom
+- RitualRoom
+- SacrificeRoom
+
+第一阶段可以只做：
+
+- STATUE
+- PEDESTAL
+- EMBERS
+- items
+
+后面怪物系统上线再给 ritual 加敌人。
+
+---
+
+# C9. Chest Maze
+
+参考 SecretMazeRoom 思路。
+
+小规模：
+
+- 7×7 左右
+- 内部 1-cell maze
+- 1～3 Chest
+- 可秘密入口
+
+不要做超过 Chunk 尺寸的大迷宫。
+
+---
+
+# C10. Broken Cell Block
+
+参考：
+
+- CellBlockRoom
+- Prison tileset
+
+布局：
+
+- 连续小隔间
+- 每间一个门
+- 有些门普通
+- 有些空
+- 有些箱子
+- 未来可放怪
+
+这个非常适合解决用户“为什么全是开拓地带”的问题。
+
+---
+
+# D. 环境视觉下一阶段
+
+## D1. Room overlay 动态刷新
+
+优先级高。
+
+当前：
+
+- room accent 是 static custom tilemap
+- door 已绕开
+
+未来实现：
+
+`refreshInfiniteWorldAccentAt(cell)`
+
+建议：
+
+1. 根据 world/local cell 找 chunk。
+2. 算该 chunk themed rooms。
+3. 判断 cell 是否在 room rect。
+4. 删除并重建相关 room visual。
+5. 只 flush 相关 group。
+
+触发：
+
+- Secret door discover
+- Wall destroyed
+- Bookshelf burned
+- Barricade destroyed
+- Crystal mined
+- door state change（虽然门已排除，也可统一）
+
+---
+
+## D2. Room-specific decoration
+
+当前主要是 tileset 替换。
+
+以后可以增加：
+
+- custom floor decal
+- skulls
+- pipe
+- cracks
+- books
+- rubble
+- torches
+- region deco
+
+优先复用原版素材。
+
+---
+
+## D3. 多环境边界
+
+Chunk/room theme 相遇时：
+
+- 不必追求现实合理
+- 但不能出现巨大片图层空洞
+- 不允许 black quad
+- 不允许错误 water background
+
+可以怪诞，但渲染要稳定。
+
+---
+
+# E. 怪物系统：正式接入前设计
+
+用户已经明确：
+
+> 地图差不多以后，就开始怪物和 Boss。
+
+建议版本阶段：
+
+- 0.5.0：普通怪物原型
+- 0.5.1：怪物 persistence
+- 0.5.2：生态/区域怪
+- 0.6.0：Boss 原型
+
+版本号只是建议，可按实际调整。
+
+---
+
+# E1. 普通怪物 V1
+
+第一步不要一次加全怪物表。
+
+建议只选几只简单原版怪：
+
+- Rat
+- Gnoll
+- Crab
+- Skeleton
+- Thief
+- Bat
+
+目标测试：
+
+- Actor tick
+- combat
+- drop
+- streaming
+
+不要先加：
+
+- summon-heavy
+- teleport-heavy
+- floor-transition-dependent
+- quest mobs
+
+---
+
+# E2. Mob World State
+
+必须新增类似：
+
+`InfiniteWorldMobState`
+
+至少保存：
+
+- deterministic spawn id
+- mob class
+- worldX
+- worldY
+- HP
+- dead
+- alignment/特殊状态
+- loot state（必要时）
+
+建议 key：
+
+```
+(worldChunkX, worldChunkY, spawnIndex)
+```
+
+不要用 local cell 当永久 ID。
+
+---
+
+# E3. Spawn 规则
+
+每 Chunk deterministic：
+
+```
+spawnCount = hash(seed, cx, cy)
+spawnClass = hash(...)
+spawnPos = hash(...)
+```
+
+第一次进入生成。
+
+之后：
+
+- 死了 → dead state
+- 不再 reload 刷新
+
+未来想要 respawn，单独实现世界时间系统。
+
+---
+
+# E4. Mob Active Radius
+
+49 个 Chunk 全部让怪物正常 AI tick，未来很可能浪费性能。
+
+建议：
+
+- Hero 周围 1～2 Chunk full AI
+- 更远 freeze
+- 即将 unload snapshot
+
+或者：
+
+- 只把实际 active simulation mobs 注册 Actor
+- 远处只保 state
+
+---
+
+# E5. Mob Streaming
+
+Window shift：
+
+旧区域 mob：
+
+1. world coords snapshot
+2. remove sprite
+3. remove Actor
+4. state 保存
+
+新区域：
+
+1. 查 deterministic spawn
+2. 查 persistent state
+3. dead → 不建
+4. alive → 创建 Mob
+5. world pos 转 local pos
+6. add sprite/Actor
+
+注意避免：
+
+- 同一 mob 重复 add
+- Actor 列表残留
+- sprite.wait 卡死
+
+---
+
+# E6. Mob Pathfinding 跨 Window
+
+最保守第一版：
+
+- Mob 只能在当前 active window 内追
+- 走到 streaming outer band 附近 freeze
+
+不建议一开始就让 NPC 跨无限世界寻路。
+
+后面可以做：
+
+- world chunk path
+- local PathFinder 分段
+
+---
+
+# E7. 怪物与 Theme
+
+后续可以按 biome/room：
+
+Sewers：
+- Rat
+- Crab
+- Slime
+
+Prison：
+- Skeleton
+- Thief
+- Guard 类
+
+Caves：
+- Bat
+- Gnoll
+- Shaman
+
+City：
+- Monk
+- Warlock
+
+Halls：
+- Demon
+- Succubus 等
+
+混合地图可以允许跨生态混刷。
+
+用户并不要求合理，可以偏怪诞。
+
+---
+
+# F. Boss 计划
+
+Boss 必须晚于普通 mob persistence。
+
+---
+
+# F1. Boss Landmark
+
+生成器低概率产生：
+
+```
+BossArenaChunk
+```
+
+World key：
+
+```
+boss:<cx>:<cy>:<bossType>
+```
+
+state：
+
+- discovered
+- spawned
+- alive
+- defeated
+- rewardClaimed
+
+---
+
+# F2. Boss 不重复
+
+任何 boss 的 deterministic landmark：
+
+若 defeated：
+
+- reload 不再生成 boss
+
+若 alive：
+
+- reload 恢复同一个 boss state
+
+不能因为 window shift 复制。
+
+---
+
+# F3. Boss Arena
+
+可以参考原版 Boss Room painter。
+
+但 Infinite World：
+
+- 没有 floor lock transition
+- arena 应局部封锁
+
+设计：
+
+1. 进入 arena
+2. doors temporarily locked
+3. boss active
+4. win
+5. doors unlock
+6. reward spawn
+
+所有状态写 world state。
+
+---
+
+# F4. Boss 远离
+
+第一版建议：
+
+Boss 激活后：
+
+- 如果 Hero 试图离开 arena，门封锁
+
+这样避免 Boss 跨 streaming。
+
+后续再做真正 open-world boss chase。
+
+---
+
+# G. 每个新版本必须执行的回归测试
+
+---
+
+# G1. 安装/升级
+
+- [ ] applicationId 未变
+- [ ] 固定签名未变
+- [ ] versionCode > 上一版
+- [ ] 可以覆盖安装上一版
+- [ ] 原 App 存档仍可读取
+- [ ] App 名仍是 Assist
+
+---
+
+# G2. 普通模式
+
+虽然主要开发 Infinite World，也要快速测：
+
+- [ ] 原版正常开局
+- [ ] 原版移动
+- [ ] 原版门
+- [ ] 原版物品
+- [ ] 原版存档
+
+防止全局类修改误伤普通模式。
+
+尤其：
+
+- Key.java
+- Hero.java
+- GameScene
+- Tilemap
+- Vertexbuffer
+
+是全局代码。
+
+---
+
+# G3. Assist 功能
+
+- [ ] Assist gear 还在
+- [ ] 无敌
+- [ ] 加金币
+- [ ] 加物品
+- [ ] 装备升级
+- [ ] Mage Staff
+- [ ] 速度倍率
+- [ ] 楼层传送普通模式可用
+- [ ] Infinite World 禁用楼层传送
+
+---
+
+# G4. 镜庭
+
+- [ ] 可进入
+- [ ] 独立存档
+- [ ] 不生成怪
+- [ ] 入口不能离开
+- [ ] Assist floor teleport 被禁
+
+---
+
+# G5. Infinite World 新世界
+
+每次 generatorVersion 改：
+
+必须“重新开始”测试。
+
+- [ ] seed 新
+- [ ] 出生正常
+- [ ] 中央区域可走
+- [ ] 没出生墙内
+- [ ] shared edge 可通
+
+---
+
+# G6. Streaming 压力测试
+
+至少：
+
+1. 一直向下跑 10+ 个 shift
+2. 一直向右跑
+3. 对角跑
+4. 回头
+5. 在 shift 临界线来回
+
+检查：
+
+- [ ] 不原地走路
+- [ ] loading circle 不死
+- [ ] 不 A/B 闪
+- [ ] Hero 不跳位置
+- [ ] camera 不突然飞
+- [ ] path 不错位
+
+---
+
+# G7. Render
+
+- [ ] 无巨大全屏水
+- [ ] 无大黑块
+- [ ] 无等待后才 pop in
+- [ ] wall 正常
+- [ ] water 动画正常
+- [ ] 同 world cell tile variant 稳定
+
+---
+
+# G8. Fog
+
+- [ ] 走过区域保持 explored
+- [ ] 走远回来不重黑
+- [ ] 1.8x 缩放不露大片错误黑雾
+- [ ] mapped/visited 稳定
+- [ ] Warping Trap 不抹永久记录
+
+---
+
+# G9. Terrain Persistence
+
+修改：
+
+- [ ] 炸一面墙
+- [ ] 挖矿
+- [ ] 开门
+- [ ] 烧书架/路障
+
+走远 streaming 后回来：
+
+- [ ] 墙仍没了
+- [ ] 矿仍挖了
+- [ ] 门状态正确
+- [ ] 破坏物不复原
+
+---
+
+# G10. Heap/Object Persistence
+
+拿：
+
+- [ ] 普通 loot
+- [ ] 箱子
+- [ ] Tomb
+- [ ] Crystal Chest
+- [ ] Food
+- [ ] Gold Garden
+- [ ] Weapon
+- [ ] Scroll
+- [ ] Potion
+
+回来：
+
+- [ ] 不重复刷新
+
+---
+
+# G11. Plants/Traps
+
+- [ ] 踩植物
+- [ ] 踩 trap
+- [ ] reveal secret trap
+
+回来：
+
+- [ ] 不复活
+- [ ] 不恢复隐藏
+- [ ] 不变成无效 sprite
+
+---
+
+# G12. Doors
+
+- [ ] 普通门
+- [ ] 普通门开关
+- [ ] LOCKED_DOOR
+- [ ] IronKey
+- [ ] Secret Door
+- [ ] Crystal Chest + CrystalKey
+
+重点：
+
+- [ ] 动态贴图不残留
+- [ ] 门口不被 random prop 堵
+
+---
+
+# G13. Teleport
+
+测试：
+
+- [ ] Teleport Scroll
+- [ ] Fadeleaf
+- [ ] Teleport Trap
+- [ ] Blink
+- [ ] Ethereal Chains
+
+检查：
+
+- [ ] 不出 window
+- [ ] world coords 同步
+- [ ] 下一次 streaming 不瞬移回旧位置
+- [ ] 不黑屏
+- [ ] 不卡 Actor
+
+---
+
+# G14. Save/Load
+
+在：
+
+- 刚 shift 后
+- 开箱后
+- 炸墙后
+- Secret Door discover 后
+- Teleport 后
+
+保存退出。
+
+重开：
+
+- [ ] Hero world pos 正确
+- [ ] 当前 window 正确
+- [ ] 修改保留
+- [ ] exploration 保留
+
+---
+
+# H. 发版流程
+
+每个版本最后：
+
+1. 开 dev branch。
+2. 修改。
+3. versionCode++。
+4. versionName 更新。
+5. workflow 加 branch。
+6. Push。
+7. 等 GitHub Actions。
+8. 如果失败：
+   - 自己读 logs
+   - 修
+   - 重跑
+9. 成功：
+   - fetch artifact
+   - 下载 ZIP
+   - 解出 APK
+   - 校验 ZIP
+   - 校验 APK
+   - SHA-256
+10. 建 stable branch。
+11. 更新：
+   - ASSIST_HANDOFF.md
+   - CHANGELOG_DETAILED.md
+   - ARCHITECTURE_AND_INVARIANTS.md（若架构变）
+   - BUG_HISTORY_AND_FIXES.md（若修严重 bug）
+   - PROJECT_STATE.json
+12. 给用户：
+   - APK
+   - ZIP 备用
+   - 简短但完整更新说明
+
+---
+
+# I. 文档本身也是发版的一部分
+
+如果只改代码不更新交接文档，未来换对话就会重新踩坑。
+
+所以从 0.4.2 起：
+
+> **文档必须视为项目状态的一部分。**
+
+新 ChatGPT 接手时，先读文档，再改代码。
