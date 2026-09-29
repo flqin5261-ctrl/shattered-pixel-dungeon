@@ -236,7 +236,18 @@ public class Tilemap extends Visual {
 
 		script.camera( camera );
 
-		script.drawQuadSet( buffer, size, 0 );
+		// GL_UNSIGNED_SHORT element indices can only address 65,536 vertices.
+		// Each tile quad uses 4 vertices, so a single draw may contain at most
+		// 16,384 tiles. Infinite World's 168x168 map has 28,224 tiles, and the
+		// old one-shot draw wrapped indices after row ~97, making the remainder
+		// of the terrain disappear and exposing the water backdrop.
+		final int maxQuadsPerDraw = 16384;
+		int quadOffset = 0;
+		while (quadOffset < size) {
+			int batch = Math.min(maxQuadsPerDraw, size - quadOffset);
+			script.drawQuadSetVertexOffset(buffer, batch, quadOffset);
+			quadOffset += batch;
+		}
 
 	}
 	
