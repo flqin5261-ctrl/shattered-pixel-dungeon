@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Effects;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -262,6 +263,9 @@ public class EtherealChains extends Artifact {
 				Actor.add(new Pushing(hero, hero.pos, newHeroPos, new Callback() {
 					public void call() {
 						hero.pos = newHeroPos;
+						if (Dungeon.level instanceof InfiniteWorldLevel) {
+							((InfiniteWorldLevel) Dungeon.level).recordHeroMove(hero);
+						}
 
 						charge -= chargeUse;
 						Invisibility.dispel(hero);
