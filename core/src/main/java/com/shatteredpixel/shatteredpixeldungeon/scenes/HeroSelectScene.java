@@ -99,6 +99,7 @@ public class HeroSelectScene extends PixelScene {
 
 	// Set by the title-screen Extra Challenge entry. Normal play explicitly clears it.
 	public static boolean extraChallengeMode = false;
+	public static boolean infiniteWorldMode = false;
 
 	@Override
 	public void create() {
@@ -145,7 +146,9 @@ public class HeroSelectScene extends PixelScene {
 		fadeRight.angle = 180;
 		add(fadeRight);
 
-		title = PixelScene.renderTextBlock(extraChallengeMode ? "额外挑战 · 镜庭" : Messages.get(this, "title"), 12);
+		title = PixelScene.renderTextBlock(
+				infiniteWorldMode ? "额外挑战 · 无界地牢"
+						: (extraChallengeMode ? "额外挑战 · 镜庭" : Messages.get(this, "title")), 12);
 		title.hardlight(Window.TITLE_COLOR);
 		PixelScene.align(title);
 		add(title);
@@ -160,6 +163,7 @@ public class HeroSelectScene extends PixelScene {
 				Dungeon.hero = null;
 				Dungeon.daily = Dungeon.dailyReplay = false;
 				Dungeon.extraChallenge = extraChallengeMode;
+				Dungeon.infiniteWorld = infiniteWorldMode;
 				Dungeon.initSeed();
 				ActionIndicator.clearAction();
 				InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
@@ -233,7 +237,7 @@ public class HeroSelectScene extends PixelScene {
 		updateOptionsColor();
 		btnOptions.visible = false;
 
-		if(!SPDSettings.intro() && !extraChallengeMode){
+		if(!SPDSettings.intro() && !extraChallengeMode && !infiniteWorldMode){
 			add(btnOptions);
 		}
 
@@ -298,7 +302,8 @@ public class HeroSelectScene extends PixelScene {
 			heroDesc.setPos(insets.left, heroName.bottom()+5);
 			add(heroDesc);
 
-			startBtn.text(extraChallengeMode ? "进入镜庭" : Messages.titleCase(Messages.get(this, "start")));
+			startBtn.text(infiniteWorldMode ? "进入无界地牢"
+					: (extraChallengeMode ? "进入镜庭" : Messages.titleCase(Messages.get(this, "start"))));
 			startBtn.setSize(startBtn.reqWidth()+8, 21);
 			startBtn.setPos(insets.left + (leftArea - startBtn.width())/2f, title.top() + uiHeight - startBtn.height());
 			align(startBtn);
@@ -458,7 +463,7 @@ public class HeroSelectScene extends PixelScene {
 			infoButton.setPos(heroName.right(), heroName.top() + (heroName.height() - infoButton.height())/2f);
 			align(infoButton);
 
-			btnOptions.visible = btnOptions.active = !SPDSettings.intro() && !extraChallengeMode;
+			btnOptions.visible = btnOptions.active = !SPDSettings.intro() && !extraChallengeMode && !infiniteWorldMode;
 
 		} else {
 			title.visible = false;
