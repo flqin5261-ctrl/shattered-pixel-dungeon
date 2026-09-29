@@ -1566,7 +1566,11 @@ public class InfiniteWorldLevel extends Level {
             if (anomaly != 0) {
                 generateV9AnomalyChunk(out, cx, cy, ox, oy, anomaly,
                         northX, southX, westY, eastY);
-                carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+                if (state().generatorVersion >= 10) {
+                    carveV10InfiniteNetwork(out, cx, cy, ox, oy);
+                } else {
+                    carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+                }
                 return;
             }
         }
@@ -1730,7 +1734,9 @@ public class InfiniteWorldLevel extends Level {
             else carveOriginPlaza(out, ox, oy);
         }
 
-        if (state().generatorVersion >= 9) {
+        if (state().generatorVersion >= 10) {
+            carveV10InfiniteNetwork(out, cx, cy, ox, oy);
+        } else if (state().generatorVersion >= 9) {
             carveV9InfiniteBackbone(out, cx, cy, ox, oy);
         }
     }
@@ -1846,6 +1852,84 @@ public class InfiniteWorldLevel extends Level {
         if (horizontalSpine) {
             carveRect(out, ox, oy + 11, ox + CHUNK_SIZE - 1, oy + 12, Terrain.EMPTY);
         }
+    }
+
+
+    private void carveV10InfiniteNetwork(int[] out, int cx, int cy, int ox, int oy) {
+        // Keep the V9 primary grid as the guaranteed skeleton.
+        carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+
+        // V10 adds secondary infinite branches. These are not short decorative
+        // corridors: an entire selected chunk row becomes one endlessly extending
+        // east-west route, and an entire selected chunk column becomes one
+        // endlessly extending north-south route.
+        //
+        // One secondary row/column is selected deterministically in every 18-chunk
+        // band, excluding the primary 6-chunk grid. This gives the world multiple
+        // independent infinite routes without turning every chunk into a rigid grid.
+        if (v10SecondaryHorizontalRow(cy)) {
+            int westY = v10HorizontalEdgeY(cx, cy);
+            int eastY = v10HorizontalEdgeY(cx + 1, cy);
+
+            carveWanderPathV5(out,
+                    ox, oy + westY,
+                    ox + CHUNK_SIZE - 1, oy + eastY,
+                    cx, cy, 24000, 1);
+
+            carveGateway(out, ox, oy + westY, false);
+            carveGateway(out, ox + CHUNK_SIZE - 1, oy + eastY, false);
+        }
+
+        if (v10SecondaryVerticalColumn(cx)) {
+            int northX = v10VerticalEdgeX(cx, cy);
+            int southX = v10VerticalEdgeX(cx, cy + 1);
+
+            carveWanderPathV5(out,
+                    ox + northX, oy,
+                    ox + southX, oy + CHUNK_SIZE - 1,
+                    cx, cy, 24010, 1);
+
+            carveGateway(out, ox + northX, oy, true);
+            carveGateway(out, ox + southX, oy + CHUNK_SIZE - 1, true);
+        }
+    }
+
+    private boolean v10SecondaryHorizontalRow(int cy) {
+        int band = Math.floorDiv(cy, 18);
+        int local = Math.floorMod(cy, 18);
+        int chosen = v10SecondaryOffset(band, true);
+        return local == chosen;
+    }
+
+    private boolean v10SecondaryVerticalColumn(int cx) {
+        int band = Math.floorDiv(cx, 18);
+        int local = Math.floorMod(cx, 18);
+        int chosen = v10SecondaryOffset(band, false);
+        return local == chosen;
+    }
+
+    private int v10SecondaryOffset(int band, boolean horizontal) {
+        int offset = (int)Math.floorMod(
+                hash(horizontal ? band : 24050, horizontal ? 24050 : band,
+                        horizontal ? 24051 : 24052),
+                18L);
+
+        // Primary spines occupy coordinates divisible by 6. Shift secondary
+        // branches away from them so they are visibly separate routes.
+        while (offset % 6 == 0) {
+            offset = (offset + 1) % 18;
+        }
+        return offset;
+    }
+
+    private int v10HorizontalEdgeY(int edgeX, int branchCy) {
+        // The same boundary coordinate is calculated by both neighboring chunks,
+        // so the secondary branch cannot break at a chunk seam.
+        return 3 + (int)Math.floorMod(hash(edgeX, branchCy, 24060), CHUNK_SIZE - 6L);
+    }
+
+    private int v10VerticalEdgeX(int branchCx, int edgeY) {
+        return 3 + (int)Math.floorMod(hash(branchCx, edgeY, 24070), CHUNK_SIZE - 6L);
     }
 
     // ------------------------------------------------------------------------
