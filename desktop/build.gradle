@@ -63,7 +63,8 @@ runtime {
 
     jpackage {
         mainClass = appMainClass
-        appVersion = (appVersionName =~ /\d+\.\d+\.\d+/)[0]
+        def packageVersionMatch = (appVersionName =~ /\d+\.\d+\.\d+/)
+        appVersion = packageVersionMatch.find() ? packageVersionMatch.group() : appVersionName + ".0"
         imageName = appName
     }
 
