@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.4.2",
-    "version_code": 943,
+    "version_name": "0.4.3",
+    "version_code": 944,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.4.2-stable",
-    "development_branch": "assist-0.4.2-secrets",
-    "release_code_sha": "21eb31d97ba0bf46b920a6f622a587ea97c560f0",
-    "world_generator_version": 8
+    "stable_branch": "assist-0.4.3-stable",
+    "development_branch": "assist-0.4.3-liminal",
+    "release_code_sha": "a513fc1a099d272c356c3127f874c3dd861e2799",
+    "world_generator_version": 9
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -44,7 +44,23 @@
     "persistent_chests": true,
     "persistent_objects": true,
     "monsters_enabled": false,
-    "bosses_enabled": false
+    "bosses_enabled": false,
+    "world_scale_backbone": {
+      "enabled": true,
+      "spacing_chunks": 6,
+      "purpose": "Guarantees that the origin-connected world component has routes extending infinitely in all cardinal directions while ordinary side branches may dead-end."
+    },
+    "liminal_macro_regions": {
+      "enabled": true,
+      "macro_size_chunks": 5,
+      "approximate_region_chance_percent": 8,
+      "start_area_exclusion_chunks": 4,
+      "types": [
+        "repeating_offices",
+        "pool_halls",
+        "endless_hall"
+      ]
+    }
   },
   "current_content": {
     "environment_tilesets": [
@@ -65,7 +81,10 @@
       "crystal_vault",
       "trap_workshop",
       "gold_garden",
-      "mixed_treasury"
+      "mixed_treasury",
+      "repeating_office_anomaly",
+      "pool_hall_anomaly",
+      "endless_hall_anomaly"
     ],
     "door_types": [
       "regular",
@@ -88,7 +107,23 @@
       "scroll_of_foresight",
       "stone_of_clairvoyance",
       "assist_floor_teleport"
-    ]
+    ],
+    "guide_sections": [
+      "adventurers_guide",
+      "infinite_world_field_notes"
+    ],
+    "infinite_world_notes": [
+      "Liminal_Offices",
+      "Pool_Halls",
+      "Endless_Hall"
+    ],
+    "v9_balance": {
+      "ambient_loot": "reduced sharply",
+      "ambient_secret_traps": "reduced sharply",
+      "room_rewards": "reduced to preserve long-term exploration value",
+      "locked_door_rate": "reduced",
+      "secret_room_discovery": "one deterministic forced secret-room candidate per 3x3 chunk macro plus random secret rooms; close-range passive search boosted in Infinite World"
+    }
   },
   "hard_invariants": [
     "Do not change applicationId.",
@@ -105,14 +140,18 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
-    "0.4.2 dynamic locked-door sprite fix requires continued real-device regression testing.",
+    "0.4.3 V9 global infinite backbone should be stress-tested by travelling very far and repeatedly backtracking from dead-end side branches.",
+    "0.4.3 forced secret rooms and 55% close-range passive discovery should be verified on a fresh V9 world.",
+    "0.4.3 liminal 5x5 macro-regions should remain traversable across chunk streaming boundaries and should not regress the old water/black-map rendering fixes.",
     "A newly discovered secret room may not receive its room-specific environment overlay until the next overlay/window rebuild.",
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
-    "Add more upstream-inspired small and medium room templates: wells, runestones, libraries, pools, fire rooms, mine rooms, trap corridors, broken cell blocks, small mazes and ritual/statue rooms.",
+    "Real-device test V9 infinite-backbone, anomaly-region streaming, field-note collection and the rebalanced loot/trap density.",
+    "Continue adding upstream-inspired small/medium room templates only if the world still lacks variety; avoid re-inflating reward density.",
     "Implement local room/chunk accent-overlay refresh for discovered secret doors and destructible room terrain.",
-    "After map content is dense enough, introduce streaming-aware persistent monster ecology.",
+    "Expand Infinite World field notes as new anomalous spaces are added.",
+    "After map content and persistence are stable enough, introduce streaming-aware persistent monster ecology.",
     "After normal monster persistence is stable, add rare persistent boss landmark chunks and boss-state persistence."
   ],
   "handoff_files": [
