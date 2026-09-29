@@ -1823,11 +1823,35 @@ public class InfiniteWorldLevel extends Level {
             // room. Remaining rooms mix regular, locked and hidden entrances.
             if (index > 0) {
                 int doorRoll = range(cx, cy, 20920 + index, 0, 99);
-                if (doorRoll < 24 && theme != 4) {
-                    doorTerrain = Terrain.LOCKED_DOOR;
-                } else if (doorRoll < 50) {
-                    doorTerrain = Terrain.SECRET_DOOR;
-                    secret = 1;
+
+                if (state().generatorVersion >= 9) {
+                    // One deterministic chunk in each 3x3 macro-cell gets a forced
+                    // secret room, so secret content is discoverable in normal play
+                    // without making every corridor look suspicious.
+                    int mx = Math.floorDiv(cx, 3);
+                    int my = Math.floorDiv(cy, 3);
+                    int secretLocalX = (int)Math.floorMod(hash(mx, my, 20910), 3L);
+                    int secretLocalY = (int)Math.floorMod(hash(mx, my, 20911), 3L);
+                    boolean forcedSecret = index == 1
+                            && Math.floorMod(cx, 3) == secretLocalX
+                            && Math.floorMod(cy, 3) == secretLocalY;
+
+                    if (forcedSecret) {
+                        doorTerrain = Terrain.SECRET_DOOR;
+                        secret = 1;
+                    } else if (doorRoll < 18 && theme != 4) {
+                        doorTerrain = Terrain.LOCKED_DOOR;
+                    } else if (doorRoll < 38) {
+                        doorTerrain = Terrain.SECRET_DOOR;
+                        secret = 1;
+                    }
+                } else {
+                    if (doorRoll < 24 && theme != 4) {
+                        doorTerrain = Terrain.LOCKED_DOOR;
+                    } else if (doorRoll < 50) {
+                        doorTerrain = Terrain.SECRET_DOOR;
+                        secret = 1;
+                    }
                 }
             }
 
