@@ -97,6 +97,9 @@ public class HeroSelectScene extends PixelScene {
 	private static boolean heroWasRandomized = true;
 	private static boolean chalWasRandomized = false;
 
+	// Set by the title-screen Extra Challenge entry. Normal play explicitly clears it.
+	public static boolean extraChallengeMode = false;
+
 	@Override
 	public void create() {
 		super.create();
@@ -142,7 +145,7 @@ public class HeroSelectScene extends PixelScene {
 		fadeRight.angle = 180;
 		add(fadeRight);
 
-		title = PixelScene.renderTextBlock(Messages.get(this, "title"), 12);
+		title = PixelScene.renderTextBlock(extraChallengeMode ? "额外挑战 · 镜庭" : Messages.get(this, "title"), 12);
 		title.hardlight(Window.TITLE_COLOR);
 		PixelScene.align(title);
 		add(title);
@@ -156,6 +159,7 @@ public class HeroSelectScene extends PixelScene {
 
 				Dungeon.hero = null;
 				Dungeon.daily = Dungeon.dailyReplay = false;
+				Dungeon.extraChallenge = extraChallengeMode;
 				Dungeon.initSeed();
 				ActionIndicator.clearAction();
 				InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
@@ -229,7 +233,7 @@ public class HeroSelectScene extends PixelScene {
 		updateOptionsColor();
 		btnOptions.visible = false;
 
-		if(!SPDSettings.intro()){
+		if(!SPDSettings.intro() && !extraChallengeMode){
 			add(btnOptions);
 		}
 
@@ -294,7 +298,7 @@ public class HeroSelectScene extends PixelScene {
 			heroDesc.setPos(insets.left, heroName.bottom()+5);
 			add(heroDesc);
 
-			startBtn.text(Messages.titleCase(Messages.get(this, "start")));
+			startBtn.text(extraChallengeMode ? "进入镜庭" : Messages.titleCase(Messages.get(this, "start")));
 			startBtn.setSize(startBtn.reqWidth()+8, 21);
 			startBtn.setPos(insets.left + (leftArea - startBtn.width())/2f, title.top() + uiHeight - startBtn.height());
 			align(startBtn);
@@ -454,7 +458,7 @@ public class HeroSelectScene extends PixelScene {
 			infoButton.setPos(heroName.right(), heroName.top() + (heroName.height() - infoButton.height())/2f);
 			align(infoButton);
 
-			btnOptions.visible = btnOptions.active = !SPDSettings.intro();
+			btnOptions.visible = btnOptions.active = !SPDSettings.intro() && !extraChallengeMode;
 
 		} else {
 			title.visible = false;
