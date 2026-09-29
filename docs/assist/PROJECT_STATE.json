@@ -173,6 +173,22 @@
       "docs/assist/ARCHITECTURE_AND_INVARIANTS.md when architecture changes",
       "docs/assist/BUG_HISTORY_AND_FIXES.md when bugs or failed approaches are involved",
       "docs/assist/ROADMAP_AND_TEST_CHECKLIST.md when roadmap/tests change"
-    ]
+    ],
+    "efficiency_first_context_reading": true,
+    "default_context_strategy": "For routine local changes, inspect current code first and read only recent/directly relevant notes as needed. Do not reread the full project history by default.",
+    "full_history_review_triggers": [
+      "streaming core changes",
+      "save-state architecture changes",
+      "absolute world-coordinate changes",
+      "major generator/WORLD_GEN_VERSION changes",
+      "render/VBO/water/fog core issues",
+      "cross-version compatibility work",
+      "a bug that persists after repeated fixes",
+      "code/documentation contradictions",
+      "historical failed-solution investigation",
+      "applicationId/signing/build infrastructure changes",
+      "monster persistence or boss persistence architecture"
+    ],
+    "always_update_records_after_changes": true
   }
 }
