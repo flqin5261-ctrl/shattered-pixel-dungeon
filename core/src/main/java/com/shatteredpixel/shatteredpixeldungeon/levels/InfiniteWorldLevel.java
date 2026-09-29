@@ -581,6 +581,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private int v5ContainerCount(int cx, int cy) {
+        if (state().generatorVersion >= 9) {
+            if (v9AnomalyType(cx, cy) != 0) return 0;
+            return Math.floorMod(hash(cx, cy, 18200), 100L) < 28 ? 1 : 0;
+        }
         return 2 + range(cx, cy, 18200, 0, 3);
     }
 
@@ -667,7 +671,13 @@ public class InfiniteWorldLevel extends Level {
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
-                int count = 1 + range(cx, cy, 19000, 0, 2);
+                int count;
+                if (state().generatorVersion >= 9) {
+                    count = v9AnomalyType(cx, cy) == 0
+                            && Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                } else {
+                    count = 1 + range(cx, cy, 19000, 0, 2);
+                }
                 for (int index = 0; index < count; index++) {
                     int cell = v6ObjectCell(cx, cy, ox, oy, index, 19100);
                     if (cell < 0) continue;
@@ -689,10 +699,14 @@ public class InfiniteWorldLevel extends Level {
 
                 // Keys are intentionally separate from random loot so an endless
                 // world never runs out of ways to open remote locks.
-                if (Math.floorMod(hash(cx, cy, 19400), 100L) < 38) {
+                int ironChance = state().generatorVersion >= 9 ? 8 : 38;
+                int crystalChance = state().generatorVersion >= 9 ? 5 : 32;
+                if (v9AnomalyType(cx, cy) == 0
+                        && Math.floorMod(hash(cx, cy, 19400), 100L) < ironChance) {
                     generateV6KeyHeap(cx, cy, ox, oy, 0, new IronKey(Dungeon.depth));
                 }
-                if (Math.floorMod(hash(cx, cy, 19401), 100L) < 32) {
+                if (v9AnomalyType(cx, cy) == 0
+                        && Math.floorMod(hash(cx, cy, 19401), 100L) < crystalChance) {
                     generateV6KeyHeap(cx, cy, ox, oy, 1, new CrystalKey(Dungeon.depth));
                 }
             }
@@ -725,7 +739,13 @@ public class InfiniteWorldLevel extends Level {
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
-                int count = 1 + range(cx, cy, 19000, 0, 2);
+                int count;
+                if (state().generatorVersion >= 9) {
+                    count = v9AnomalyType(cx, cy) == 0
+                            && Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                } else {
+                    count = 1 + range(cx, cy, 19000, 0, 2);
+                }
                 for (int index = 0; index < count; index++) {
                     int cell = v6ObjectCell(cx, cy, ox, oy, index, 19100);
                     if (cell < 0) continue;
@@ -736,10 +756,14 @@ public class InfiniteWorldLevel extends Level {
                     }
                 }
 
-                if (Math.floorMod(hash(cx, cy, 19400), 100L) < 38) {
+                int ironChance = state().generatorVersion >= 9 ? 8 : 38;
+                int crystalChance = state().generatorVersion >= 9 ? 5 : 32;
+                if (v9AnomalyType(cx, cy) == 0
+                        && Math.floorMod(hash(cx, cy, 19400), 100L) < ironChance) {
                     snapshotV6KeyState(cx, cy, ox, oy, 0);
                 }
-                if (Math.floorMod(hash(cx, cy, 19401), 100L) < 32) {
+                if (v9AnomalyType(cx, cy) == 0
+                        && Math.floorMod(hash(cx, cy, 19401), 100L) < crystalChance) {
                     snapshotV6KeyState(cx, cy, ox, oy, 1);
                 }
             }
@@ -763,7 +787,13 @@ public class InfiniteWorldLevel extends Level {
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
-                int count = 1 + range(cx, cy, 19600, 0, 3);
+                int count;
+                if (state().generatorVersion >= 9) {
+                    count = v9AnomalyType(cx, cy) == 0
+                            && Math.floorMod(hash(cx, cy, 19600), 100L) < 45 ? 1 : 0;
+                } else {
+                    count = 1 + range(cx, cy, 19600, 0, 3);
+                }
                 for (int index = 0; index < count; index++) {
                     int cell = v6ObjectCell(cx, cy, ox, oy, index, 19700);
                     if (cell < 0) continue;
@@ -790,7 +820,13 @@ public class InfiniteWorldLevel extends Level {
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
-                int count = 1 + range(cx, cy, 19600, 0, 3);
+                int count;
+                if (state().generatorVersion >= 9) {
+                    count = v9AnomalyType(cx, cy) == 0
+                            && Math.floorMod(hash(cx, cy, 19600), 100L) < 45 ? 1 : 0;
+                } else {
+                    count = 1 + range(cx, cy, 19600, 0, 3);
+                }
                 for (int index = 0; index < count; index++) {
                     int cell = v6ObjectCell(cx, cy, ox, oy, index, 19700);
                     if (cell < 0) continue;
@@ -1932,7 +1968,8 @@ public class InfiniteWorldLevel extends Level {
         } else if (theme == 7) { // trap workshop
             for (int y = innerTop; y <= innerBottom; y++) {
                 for (int x = innerLeft; x <= innerRight; x++) {
-                    if (Math.floorMod(hash(x, y, 20970), 100L) < 22) {
+                    int trapChance = state().generatorVersion >= 9 ? 10 : 22;
+                    if (Math.floorMod(hash(x, y, 20970), 100L) < trapChance) {
                         out[x + y * MAP_SIZE] = Terrain.SECRET_TRAP;
                     }
                 }
@@ -2720,6 +2757,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private boolean hasChest(int cx, int cy) {
+        if (state().generatorVersion >= 9) {
+            if (v9AnomalyType(cx, cy) != 0) return false;
+            return Math.floorMod(hash(cx, cy, 6001), 100) < 12;
+        }
         return Math.floorMod(hash(cx, cy, 6001), 100) < 42;
     }
 
