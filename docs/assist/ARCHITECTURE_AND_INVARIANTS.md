@@ -183,7 +183,7 @@ Streaming 时需要处理：
 当前：
 
 ```
-WORLD_GEN_VERSION = 9
+WORLD_GEN_VERSION = 10
 ```
 
 旧存档保存自己的 generatorVersion。
@@ -1303,3 +1303,103 @@ Boss Arena 也不应永久破坏 Infinite Backbone。
 - 战斗结束恢复；
 - 不把永久 WALL override 写进所有 backbone 通路。
 
+
+
+# 42. Generator V10：多层级无限路线网络
+
+V9 只从“世界整体连通性”角度保证无限：每 6 Chunk 一组横纵主干。
+
+V10 进一步解决“只有主干无限、旁路经常死”的体验问题。
+
+## 42.1 两级无限网络
+
+### 一级：Primary Spine
+
+继续使用 V9：
+
+- `cx mod 6 == 0`：纵向双格主干
+- `cy mod 6 == 0`：横向双格主干
+
+### 二级：Secondary Infinite Routes
+
+横向：
+
+- 每 18 个 Chunk 高度为一个 band
+- 每个 band seed/hash 决定一个非主干 Chunk row
+- 这一整行 Chunk 都生成无限东西向支线
+
+纵向：
+
+- 每 18 个 Chunk 宽度为一个 band
+- 每个 band seed/hash 决定一个非主干 Chunk column
+- 这一整列 Chunk 都生成无限南北向支线
+
+## 42.2 Shared Boundary Contract
+
+次级路线不能简单在每个 Chunk 独立随机入口。
+
+横向支线：
+
+```
+westY = hash(edgeX = cx, branchCy)
+eastY = hash(edgeX = cx + 1, branchCy)
+```
+
+相邻 Chunk 对共同边界使用同一个 `edgeX`，因此得到相同 Y。
+
+纵向同理：
+
+```
+northX = hash(branchCx, edgeY = cy)
+southX = hash(branchCx, edgeY = cy + 1)
+```
+
+这个共享边界规则是 V10 支线不会在 seam 断裂的关键。
+
+## 42.3 为什么支线不是孤岛
+
+横向 secondary route 会在所有 `cx % 6 == 0` Chunk 中穿过纵向 primary spine。
+
+纵向 secondary route 会在所有 `cy % 6 == 0` Chunk 中穿过横向 primary spine。
+
+因此：
+
+- 次级线周期性重新接入主干；
+- 横纵次级线也会互相交叉；
+- 玩家可以从主干进入次级线后无限走；
+- 也可以从次级线再回到别的主干区域。
+
+## 42.4 为什么仍允许普通 Dead End
+
+并不是所有局部 corridor 都提升为 secondary route。
+
+否则地图会变成高密度规则网格。
+
+V10 保留：
+
+- local hub tree dead end
+- themed room dead end
+- secret room
+- short side corridor
+- small cul-de-sac
+
+设计目标：
+
+> 保证“有很多条无限路线”，而不是“每条路线都无限”。
+
+## 42.5 Generator 顺序约束
+
+V10 network 必须在：
+
+- themed room
+- biome decoration
+- props
+- anomaly layout
+
+之后 carve。
+
+否则后生成墙体可能重新堵住 secondary route。
+
+对于 anomaly chunk，生成 anomaly 后再 carve V10 network。
+
+未来任何 V11+ 大地形步骤也必须遵守这一顺序，或者显式保护 V10 route cells。
