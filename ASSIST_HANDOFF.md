@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.4.3-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.4.4-stable`。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -88,7 +88,7 @@
 - 当前最新稳定版本：**0.4.4**
 - 当前 versionCode：**945**
 - 当前最新稳定分支：`assist-0.4.4-stable`
-- 当前发布代码 SHA：`a513fc1a099d272c356c3127f874c3dd861e2799`
+- 当前发布代码 SHA：`02689bb5b1ed0d91424de21779d6f94cc96c8c83`
 - 当前对应开发分支：`assist-0.4.4-branch-network`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 10**
 
@@ -103,8 +103,8 @@
 新的 ChatGPT 开始工作时，不要先问用户“项目在哪”“现在做到哪”。直接：
 
 1. 打开仓库 `flqin5261-ctrl/shattered-pixel-dungeon`。
-2. 读取本文件 `ASSIST_HANDOFF.md`。
-3. 读取：
+2. 先读取本文件顶部的“接手效率规则”和当前项目身份。
+3. 普通小改只读取当前代码、近期版本和直接相关记录；只有遇到该规则列出的重大架构/反复故障情形时，才完整读取：
    - `docs/assist/CHANGELOG_DETAILED.md`
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
