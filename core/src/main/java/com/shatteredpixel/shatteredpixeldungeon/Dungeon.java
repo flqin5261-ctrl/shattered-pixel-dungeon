@@ -981,6 +981,9 @@ public class Dungeon {
 		}
 	
 		GameScene.updateFog(l, t, width, height);
+		if (level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel) level).syncExplorationArea(l, t, width, height);
+		}
 
 		if (hero.buff(MindVision.class) != null || hero.buff(DivineSense.DivineSenseTracker.class) != null){
 			for (Mob m : level.mobs.toArray(new Mob[0])){
