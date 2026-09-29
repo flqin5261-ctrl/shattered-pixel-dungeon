@@ -292,6 +292,37 @@ public class SPDSettings extends GameSettings {
 		return getInt(KEY_VAULT_INJURE_WARNS, 0);
 	}
 
+	//Assist edition
+
+	public static final String KEY_ASSIST_ENABLED     = "assist_enabled";
+	public static final String KEY_ASSIST_INVINCIBLE  = "assist_invincible";
+	public static final String KEY_ASSIST_NO_CONSUME  = "assist_no_consume";
+	public static final String KEY_ASSIST_TELEPORT    = "assist_teleport";
+	public static final String KEY_ASSIST_WEAPON_10   = "assist_weapon_10";
+	public static final String KEY_ASSIST_ARTIFACT    = "assist_artifact";
+	public static final String KEY_ASSIST_SPEED       = "assist_speed";
+
+	public static void assistEnabled(boolean value){ put(KEY_ASSIST_ENABLED, value); }
+	public static boolean assistEnabled(){ return getBoolean(KEY_ASSIST_ENABLED, false); }
+
+	public static void assistInvincible(boolean value){ put(KEY_ASSIST_INVINCIBLE, value); }
+	public static boolean assistInvincible(){ return getBoolean(KEY_ASSIST_INVINCIBLE, false); }
+
+	public static void assistNoConsume(boolean value){ put(KEY_ASSIST_NO_CONSUME, value); }
+	public static boolean assistNoConsume(){ return getBoolean(KEY_ASSIST_NO_CONSUME, false); }
+
+	public static void assistTeleport(boolean value){ put(KEY_ASSIST_TELEPORT, value); }
+	public static boolean assistTeleport(){ return getBoolean(KEY_ASSIST_TELEPORT, false); }
+
+	public static void assistWeapon10(boolean value){ put(KEY_ASSIST_WEAPON_10, value); }
+	public static boolean assistWeapon10(){ return getBoolean(KEY_ASSIST_WEAPON_10, false); }
+
+	public static void assistArtifact(boolean value){ put(KEY_ASSIST_ARTIFACT, value); }
+	public static boolean assistArtifact(){ return getBoolean(KEY_ASSIST_ARTIFACT, false); }
+
+	public static void assistSpeed(boolean value){ put(KEY_ASSIST_SPEED, value); }
+	public static boolean assistSpeed(){ return getBoolean(KEY_ASSIST_SPEED, false); }
+
 	//Input
 
 	public static final String KEY_CONTROLLER_SENS  = "controller_sens";
