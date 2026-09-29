@@ -441,7 +441,7 @@ public class TitleScene extends PixelScene {
 						InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
 						Game.switchScene(InterlevelScene.class);
 					} else if (index == 1) {
-						Dungeon.deleteGame(GamesInProgress.INFINITE_WORLD_SLOT, true);
+						GamesInProgress.deleteCompletely(GamesInProgress.INFINITE_WORLD_SLOT);
 						startNewInfiniteWorld();
 					}
 				}
@@ -452,9 +452,12 @@ public class TitleScene extends PixelScene {
 	}
 
 	private void startNewInfiniteWorld() {
+		Dungeon.hero = null;
+		Dungeon.level = null;
 		Dungeon.extraChallenge = false;
 		Dungeon.infiniteWorld = true;
 		Dungeon.infiniteWorldState = new com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState();
+		Dungeon.initInfiniteWorldSeed();
 		Dungeon.daily = Dungeon.dailyReplay = false;
 		HeroSelectScene.extraChallengeMode = false;
 		HeroSelectScene.infiniteWorldMode = true;
