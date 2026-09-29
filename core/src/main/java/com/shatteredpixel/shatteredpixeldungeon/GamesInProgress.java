@@ -39,6 +39,7 @@ public class GamesInProgress {
 	// Dedicated hidden save slot for the standalone Extra Challenge mode.
 	// checkAll()/firstEmpty() intentionally ignore it, so it never mixes with normal runs.
 	public static final int EXTRA_CHALLENGE_SLOT = MAX_SLOTS + 1;
+	public static final int INFINITE_WORLD_SLOT = MAX_SLOTS + 2;
 	
 	//null means we have loaded info and it is empty, no entry means unknown.
 	private static HashMap<Integer, Info> slotStates = new HashMap<>();
