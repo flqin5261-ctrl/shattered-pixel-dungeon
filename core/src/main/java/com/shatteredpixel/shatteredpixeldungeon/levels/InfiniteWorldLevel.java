@@ -593,7 +593,9 @@ public class InfiniteWorldLevel extends Level {
             int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
             int cell = ox + x + (oy + y) * width();
 
-            if (state().generatorVersion >= 7 && v7LocalCellInsideRoom(cx, cy, x, y)) continue;
+            if (state().generatorVersion >= 7
+                    && (v7LocalCellInsideRoom(cx, cy, x, y)
+                    || v8LocalCellReservedForRoomAccess(cx, cy, x, y))) continue;
 
             int t = map[cell];
             if ((t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
@@ -808,7 +810,9 @@ public class InfiniteWorldLevel extends Level {
             int y = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
             int cell = ox + x + (oy + y) * width();
 
-            if (state().generatorVersion >= 7 && v7LocalCellInsideRoom(cx, cy, x, y)) continue;
+            if (state().generatorVersion >= 7
+                    && (v7LocalCellInsideRoom(cx, cy, x, y)
+                    || v8LocalCellReservedForRoomAccess(cx, cy, x, y))) continue;
 
             int t = baseWindow != null && cell < baseWindow.length ? baseWindow[cell] : map[cell];
 
@@ -826,6 +830,16 @@ public class InfiniteWorldLevel extends Level {
         for (int i = 0; i < count; i++) {
             int[] s = v7RoomSpec(cx, cy, i);
             if (x >= s[0] && x <= s[2] && y >= s[1] && y <= s[3]) return true;
+        }
+        return false;
+    }
+
+    private boolean v8LocalCellReservedForRoomAccess(int cx, int cy, int x, int y) {
+        if (state().generatorVersion < 8 || (cx == 0 && cy == 0)) return false;
+        int count = v7RoomCount(cx, cy);
+        for (int i = 0; i < count; i++) {
+            int[] s = v7RoomSpec(cx, cy, i);
+            if ((x == s[4] && y == s[5]) || (x == s[6] && y == s[7])) return true;
         }
         return false;
     }
