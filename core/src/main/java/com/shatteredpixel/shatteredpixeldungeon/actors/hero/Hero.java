@@ -2342,9 +2342,8 @@ public class Hero extends Char {
 
 		super.move( step, travelling);
 
-		if (Dungeon.level instanceof InfiniteWorldLevel
-				&& ((InfiniteWorldLevel) Dungeon.level).afterHeroMove(this)) {
-			return;
+		if (Dungeon.level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel) Dungeon.level).recordHeroMove(this);
 		}
 		
 		if (!flying && travelling) {
@@ -2400,6 +2399,9 @@ public class Hero extends Char {
 	
 	@Override
 	public void onMotionComplete() {
+		if (Dungeon.level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel) Dungeon.level).afterHeroMotionComplete(this);
+		}
 		GameScene.checkKeyHold();
 	}
 	
