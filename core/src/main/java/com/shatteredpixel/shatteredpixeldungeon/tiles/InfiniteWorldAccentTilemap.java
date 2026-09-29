@@ -92,6 +92,11 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
     }
 
     private int floorVisual(int pos, int terrain) {
+        // Doors can change state at runtime (locked -> closed -> open, secret ->
+        // revealed). Leave them to the base dynamic tilemaps so a static accent
+        // layer can never leave the old door sprite painted on top.
+        if (mutableDoorTerrain(terrain)) return -1;
+
         // Reproduce the normal terrain layer with another upstream tilesheet.
         // Water stays on the world's animated water backdrop.
         int visual = DungeonTileSheet.directVisuals.get(terrain, -1);
@@ -134,6 +139,8 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
     }
 
     private int raisedVisual(int pos, int terrain) {
+        if (mutableDoorTerrain(terrain)) return -1;
+
         // Reproduce DungeonWallsTilemap's upper wall/overhang layer with the
         // alternate region texture. Together with floorVisual this swaps the
         // visible wall material, not just the floor beneath it.
@@ -144,12 +151,7 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
         if (DungeonTileSheet.wallStitcheable(terrain)) {
             if (pos + width < size && !DungeonTileSheet.wallStitcheable(map[pos + width])) {
                 int below = map[pos + width];
-                if (below == Terrain.DOOR) return DungeonTileSheet.DOOR_SIDEWAYS;
-                if (below == Terrain.LOCKED_DOOR || below == Terrain.HERO_LKD_DR) {
-                    return DungeonTileSheet.DOOR_SIDEWAYS_LOCKED;
-                }
-                if (below == Terrain.CRYSTAL_DOOR) return DungeonTileSheet.DOOR_SIDEWAYS_CRYSTAL;
-                if (below == Terrain.OPEN_DOOR) return -1;
+                if (mutableDoorTerrain(below)) return -1;
             } else {
                 return DungeonTileSheet.stitchInternalWallTile(
                         terrain,
@@ -171,11 +173,7 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
                     pos % width != 0 ? map[pos - 1 + width] : -1);
         } else if (pos + width < size) {
             int below = map[pos + width];
-            if (below == Terrain.DOOR || below == Terrain.LOCKED_DOOR || below == Terrain.HERO_LKD_DR) {
-                return DungeonTileSheet.DOOR_OVERHANG;
-            }
-            if (below == Terrain.OPEN_DOOR) return DungeonTileSheet.DOOR_OVERHANG_OPEN;
-            if (below == Terrain.CRYSTAL_DOOR) return DungeonTileSheet.DOOR_OVERHANG_CRYSTAL;
+            if (mutableDoorTerrain(below)) return -1;
             if (below == Terrain.STATUE) return DungeonTileSheet.STATUE_OVERHANG;
             if (below == Terrain.STATUE_SP) return DungeonTileSheet.STATUE_SP_OVERHANG;
             if (below == Terrain.REGION_DECO) return DungeonTileSheet.REGION_DECO_OVERHANG;
@@ -191,6 +189,17 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
         }
 
         return -1;
+    }
+
+    private boolean mutableDoorTerrain(int terrain) {
+        return terrain == Terrain.DOOR
+                || terrain == Terrain.OPEN_DOOR
+                || terrain == Terrain.LOCKED_DOOR
+                || terrain == Terrain.HERO_LKD_DR
+                || terrain == Terrain.CRYSTAL_DOOR
+                || terrain == Terrain.SECRET_DOOR
+                || terrain == Terrain.LOCKED_EXIT
+                || terrain == Terrain.UNLOCKED_EXIT;
     }
 
     @Override
