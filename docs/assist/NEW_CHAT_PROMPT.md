@@ -27,7 +27,7 @@
 - versionCode：945
 - stable：`assist-0.4.4-stable`
 - 对应代码 release SHA：
-  `a513fc1a099d272c356c3127f874c3dd861e2799`
+  `02689bb5b1ed0d91424de21779d6f94cc96c8c83`
 - Infinite World Generator：V10
 - 包名：
   `com.shatteredpixel.shatteredpixeldungeon.assist`
