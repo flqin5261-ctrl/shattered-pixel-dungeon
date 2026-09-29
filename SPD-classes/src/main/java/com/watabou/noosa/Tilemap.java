@@ -125,6 +125,13 @@ public class Tilemap extends Visual {
 						topLeftUpdating * 16,
 						bottomRightUpdating * 16);
 			}
+			// updateVertices(...) on Vertexbuffer only marks GL data as dirty.
+			// Streaming refreshes call this method from the render thread and need the
+			// new VBO contents to exist before the next frame begins, otherwise the
+			// layer can still draw stale/empty geometry for one frame.
+			if (buffer != null) {
+				buffer.updateGLData();
+			}
 			topLeftUpdating = -1;
 			updating.setEmpty();
 		}
