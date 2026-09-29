@@ -22,8 +22,9 @@ task updateRoboVMProps(){
 
     props.setProperty ('appVersionCode', appVersionCode.toString())
     props.setProperty ('appVersionName', appVersionName)
-    //parse out just #.#.# from version name, this is an apple requirement
-    props.setProperty ('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
+    // Apple requires #.#.#. Assist releases may use a shorter public version such as 0.1.
+    def shortVersionMatch = (appVersionName =~ /\d+\.\d+\.\d+/)
+    props.setProperty ('appShortVersionName', shortVersionMatch.find() ? shortVersionMatch.group() : appVersionName + ".0")
 
     props.setProperty ('appMainclass', appPackageName + ".ios.IOSLauncher")
     props.setProperty ('appExecutable', "IOSLauncher")
