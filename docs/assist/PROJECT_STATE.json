@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "Shattered Pixel Dungeon · Assist",
+    "repository": "flqin5261-ctrl/shattered-pixel-dungeon",
+    "upstream": "00-Evan/shattered-pixel-dungeon",
+    "upstream_base": "v4.0.0",
+    "license": "GPL-3.0"
+  },
+  "current_release": {
+    "version_name": "0.4.2",
+    "version_code": 943,
+    "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
+    "stable_branch": "assist-0.4.2-stable",
+    "development_branch": "assist-0.4.2-secrets",
+    "release_code_sha": "21eb31d97ba0bf46b920a6f622a587ea97c560f0",
+    "world_generator_version": 8
+  },
+  "build": {
+    "workflow": ".github/workflows/build-assist.yml",
+    "java": 21,
+    "android_compile_sdk": 36,
+    "android_build_tools": "36.0.0",
+    "signing": {
+      "must_remain_stable": true,
+      "source_repo": "aosp-mirror/platform_build",
+      "source_commit": "045a3d6a3e359633a14853a5a5e1e4f2a11cbdae",
+      "key": "target/product/security/testkey.pk8",
+      "certificate": "target/product/security/testkey.x509.pem"
+    }
+  },
+  "infinite_world": {
+    "chunk_size": 24,
+    "window_chunks": 7,
+    "map_size": 168,
+    "shift_step_chunks": 3,
+    "shift_low_cell": 24,
+    "shift_high_cell": 144,
+    "chunk_cache_limit": 128,
+    "absolute_hero_coordinates": true,
+    "deterministic_generation": true,
+    "persistent_exploration": true,
+    "persistent_terrain_overrides": true,
+    "persistent_chests": true,
+    "persistent_objects": true,
+    "monsters_enabled": false,
+    "bosses_enabled": false
+  },
+  "current_content": {
+    "environment_tilesets": [
+      "Sewers",
+      "Prison",
+      "Caves",
+      "City",
+      "Halls"
+    ],
+    "room_level_environment_mixing": true,
+    "room_types": [
+      "plant_garden",
+      "scroll_archive",
+      "potion_laboratory",
+      "food_storage",
+      "key_room",
+      "armory",
+      "crystal_vault",
+      "trap_workshop",
+      "gold_garden",
+      "mixed_treasury"
+    ],
+    "door_types": [
+      "regular",
+      "iron_locked",
+      "secret"
+    ],
+    "interactions": [
+      "bomb_breaks_walls",
+      "pickaxe_mines_ore",
+      "ethereal_chains",
+      "safe_random_teleport",
+      "plants",
+      "traps",
+      "alchemy",
+      "doors",
+      "crystal_chests"
+    ],
+    "disabled_in_infinite_world": [
+      "scroll_of_magic_mapping",
+      "scroll_of_foresight",
+      "stone_of_clairvoyance",
+      "assist_floor_teleport"
+    ]
+  },
+  "hard_invariants": [
+    "Do not change applicationId.",
+    "Do not change signing certificate/key.",
+    "Always increment versionCode for installable builds.",
+    "Do not stream/rebuild the Infinite World window before Hero movement tween completion.",
+    "Do not remove streaming hysteresis without redesigning and stress-testing it.",
+    "Do not permanently hide the normal animated water backdrop.",
+    "Tilemap synchronous streaming refresh must actually upload dirty VBO data to GL.",
+    "Do not treat generated chunks as explored chunks.",
+    "All cross-position Hero movement must synchronize absolute world coordinates.",
+    "Major world-generation formula changes require WORLD_GEN_VERSION increment.",
+    "Old saves must keep their original generator version.",
+    "Stable branches must not be overwritten."
+  ],
+  "known_items_to_verify": [
+    "0.4.2 dynamic locked-door sprite fix requires continued real-device regression testing.",
+    "A newly discovered secret room may not receive its room-specific environment overlay until the next overlay/window rebuild.",
+    "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
+  ],
+  "next_priorities": [
+    "Add more upstream-inspired small and medium room templates: wells, runestones, libraries, pools, fire rooms, mine rooms, trap corridors, broken cell blocks, small mazes and ritual/statue rooms.",
+    "Implement local room/chunk accent-overlay refresh for discovered secret doors and destructible room terrain.",
+    "After map content is dense enough, introduce streaming-aware persistent monster ecology.",
+    "After normal monster persistence is stable, add rare persistent boss landmark chunks and boss-state persistence."
+  ],
+  "handoff_files": [
+    "ASSIST_HANDOFF.md",
+    "docs/assist/CHANGELOG_DETAILED.md",
+    "docs/assist/ARCHITECTURE_AND_INVARIANTS.md",
+    "docs/assist/BUG_HISTORY_AND_FIXES.md",
+    "docs/assist/ROADMAP_AND_TEST_CHECKLIST.md",
+    "docs/assist/PROJECT_STATE.json",
+    "docs/assist/NEW_CHAT_PROMPT.md"
+  ]
+}
