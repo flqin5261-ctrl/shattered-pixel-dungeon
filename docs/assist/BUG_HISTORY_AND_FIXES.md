@@ -915,3 +915,225 @@ terrainOverrides 只保存“相对基础地形的变化”。
 ### 不可回退原则
 
 以后维护者不能“优化”掉什么。
+
+
+# 31. 0.4.2 后：局部地图看起来可能“有限”
+
+## 用户表现
+
+用户曾在某个较早世界中遇到：
+
+- 一条路走到头；
+- 换另一条支路也走到头；
+- 最终所有可见分支都被墙封死；
+- 因此怀疑 Infinite World 实际上只是一个有限随机迷宫。
+
+0.4.2 最新测试没有再完整复现“所有路都死”的情况，但普通死胡同依然存在。
+
+用户明确要求：
+
+> 不需要每一条岔路都有出口，但必须从整体结构上保证这个世界真的可以无限走下去。
+
+## 原因
+
+V2～V8 的理论无限性建立在：
+
+- 每个 Chunk 有 shared-edge gateway；
+- gateway 与内部 hub 相连。
+
+但后续 generator 层不断叠加：
+
+- landmark
+- terrain props
+- themed room shell
+- room corridors
+- wall replacement
+
+即使 shared-edge 本身存在，后生成结构仍可能重写内部连接。
+
+而“每个 Chunk 都是确定性生成”只意味着坐标无限，不自动证明出生点所在 passable component 无限。
+
+## 不采用的方案
+
+### 强制所有 Chunk 四边都永远连到中心
+
+这样当然容易证明连通，但会导致：
+
+- 地图过度规则；
+- 所有岔路都没有真正终点；
+- 房间/异常区域很难形成压迫感；
+- 重新回到早期“格子生成器”的观感。
+
+## V9 最终方案
+
+加入稀疏 world-scale Infinite Backbone：
+
+- 每第 6 个 Chunk 列有南北贯通双格通路；
+- 每第 6 个 Chunk 行有东西贯通双格通路；
+- 原点位于交叉主干；
+- Backbone 在普通 generator 所有墙/房间/装饰之后最后 carve。
+
+因此：
+
+- 普通支路依然允许 dead end；
+- 玩家可能需要回头寻找主路；
+- 但出生点所属主连通分量在数学结构上有无限东西/南北延伸。
+
+## 回归测试
+
+- 新 V9 世界向四方向长跑；
+- 故意进入多个 dead-end 支路再返回；
+- 连续跨越多个 6-Chunk spine intersection；
+- 测试主题房和 anomaly 区是否覆盖 spine；
+- save/load 后 spine 不应凭空变墙。
+
+## 不可回退原则
+
+以后新增房间/Boss Arena/大型 landmark：
+
+不得在 backbone carve 之后永久覆盖其通路，除非另有等价的全局无限性证明。
+
+---
+
+# 32. 0.4.2：内容越加越多后经济密度失控
+
+## 用户表现
+
+用户反馈：
+
+- 新开世界没跑多远就能拿到大量物品；
+- 卷轴、药剂、装备、食物等很快大量收集；
+- 探索后续区域缺少“还能发现什么”的动力；
+- 隐藏陷阱也明显太多。
+
+## 根因
+
+不是单一房间奖励设置错误，而是历史内容层叠加：
+
+1. 旧基础 chest
+2. V5 container
+3. V5 ambient prop/trap
+4. V6 loose loot
+5. V6 ambient keys
+6. V6 wild plants
+7. V7 themed room loot
+8. V8 secret-room bonus
+
+每一层单独看都合理，但同一个 Chunk 可以同时命中多层。
+
+这属于典型“增量功能叠加导致总经济失衡”。
+
+## V9 修复
+
+不是删除内容类型，而是为 V9 给旧层增加稀疏 gate：
+
+- chest 42% -> 12%
+- V5 container -> 约 28% Chunk 1 个
+- loose loot -> 约 30% Chunk 1 件
+- ambient IronKey -> 约 8%
+- ambient CrystalKey -> 约 5%
+- wild Plant -> 约 45% Chunk 1 株
+- ambient secret trap 权重大幅降低
+- trap workshop trap chance 22% -> 10%
+- themed room reward count 全面下降
+
+同时保留：
+
+- 锁门旁 guaranteed IronKey
+- Crystal Vault guaranteed CrystalKey
+
+所以不会因为降密导致 soft-lock。
+
+## 回归测试
+
+比较新 V9 世界前 10～20 Chunk：
+
+- 总 loose loot 数
+- 武器/装备数
+- 卷轴药剂数
+- key 数
+- trap 数
+
+目标不是“贫瘠”，而是：
+
+> 场景很多、互动很多，但真正拿进背包的资源不再每几步一件。
+
+---
+
+# 33. 0.4.2：Secret Room 存在但实机很难碰到
+
+## 用户表现
+
+用户明确说：
+
+> “隐藏房间我没找到。”
+
+## 根因
+
+V8 Secret Door 只是每个普通 themed room 的概率分支。
+
+随机世界中：
+
+- 某段路线可能完全没抽到；
+- 抽到了也可能不在玩家实际经过的墙边；
+- 原版被动 Secret Door 发现概率较低。
+
+因此功能“代码上存在”，但不是可靠可测试内容。
+
+## V9 修复
+
+两层措施：
+
+1. 每个 3×3 Chunk macro 确定一个强制 Secret Room 候选。
+2. Infinite World 中近距离被动搜索 SECRET_DOOR chance 提升到 55%。
+
+主动 Search 保留原版机制。
+
+SECRET_TRAP 没有使用这个 55%，防止进一步增强陷阱干扰。
+
+## 回归测试
+
+在全新 V9：
+
+- 不主动 Search，只贴墙走过多个 3×3 macro；
+- 应在合理时间内发现至少一间 Secret Room；
+- 主动 Search 可更稳定确认；
+- 远处不能看到 Secret Room 独立 tileset；
+- discover 后 reload 不得重新隐藏。
+
+---
+
+# 34. V9 Pool Hall 必须防止历史 Water Render 回归
+
+V9 新增大型 Pool Hall anomaly。
+
+它会产生远大于普通房间的 WATER 面积。
+
+历史 0.3.6 曾经出现：
+
+- 巨大假水背景
+- 黑地
+- VBO 延迟上传
+
+V9 Pool Hall **没有**新建一套局部 Water renderer。
+
+仍然：
+
+- Terrain.WATER 使用原版 normal animated water backdrop；
+- custom room/anomaly tileset 只负责兼容 floor/wall；
+- streaming 继续使用 synchronous Tilemap VBO upload。
+
+回归时如果看到：
+
+- 整片水先出现、地形后 pop-in
+- 黑色可走区域
+
+不要先怀疑 Pool Hall 地形公式。
+
+优先重新检查：
+
+- Tilemap.flushMapUpdate
+- Vertexbuffer.updateGLData
+- water backdrop visibility
+- large Tilemap batching
+
