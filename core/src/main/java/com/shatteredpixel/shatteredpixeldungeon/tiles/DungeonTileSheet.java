@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.tiles;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.utils.Random;
@@ -543,9 +544,16 @@ public class DungeonTileSheet {
 	//e.g. a 67% and a 33% chance work out to 33% chance each with a 33% chance of no alt
 	public static int getVisualWithAlts(int visual, int pos){
 		if (tileAltVisuals.containsKey(visual)){
+			int variance;
+			if (Dungeon.level instanceof InfiniteWorldLevel){
+				variance = ((InfiniteWorldLevel) Dungeon.level).stableTileVariance(pos);
+			} else {
+				variance = tileVariance[pos];
+			}
+
 			tileAlt alts = tileAltVisuals.get(visual);
 			for (int i = 0; i < alts.chances.length; i++){
-				if (tileVariance[pos] < alts.chances[i]){
+				if (variance < alts.chances[i]){
 					visual = alts.alts[i];
 				}
 			}
