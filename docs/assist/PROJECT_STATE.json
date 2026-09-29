@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.4.3",
-    "version_code": 944,
+    "version_name": "0.4.4",
+    "version_code": 945,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.4.3-stable",
-    "development_branch": "assist-0.4.3-liminal",
-    "release_code_sha": "a513fc1a099d272c356c3127f874c3dd861e2799",
-    "world_generator_version": 9
+    "stable_branch": "assist-0.4.4-stable",
+    "development_branch": "assist-0.4.4-branch-network",
+    "release_code_sha": "02689bb5b1ed0d91424de21779d6f94cc96c8c83",
+    "world_generator_version": 10
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -60,6 +60,15 @@
         "pool_halls",
         "endless_hall"
       ]
+    },
+    "multi_level_infinite_network": {
+      "enabled": true,
+      "primary_spine_spacing_chunks": 6,
+      "secondary_band_size_chunks": 18,
+      "secondary_horizontal_routes": "one deterministic infinite east-west route per 18-chunk row band, excluding primary rows",
+      "secondary_vertical_routes": "one deterministic infinite north-south route per 18-chunk column band, excluding primary columns",
+      "seam_safe": true,
+      "dead_ends_still_allowed": true
     }
   },
   "current_content": {
@@ -140,6 +149,7 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.4.4 V10 secondary infinite routes should be stress-tested over long travel in both directions and across multiple primary/secondary intersections.",
     "0.4.3 V9 global infinite backbone should be stress-tested by travelling very far and repeatedly backtracking from dead-end side branches.",
     "0.4.3 forced secret rooms and 55% close-range passive discovery should be verified on a fresh V9 world.",
     "0.4.3 liminal 5x5 macro-regions should remain traversable across chunk streaming boundaries and should not regress the old water/black-map rendering fixes.",
