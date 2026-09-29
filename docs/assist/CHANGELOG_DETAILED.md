@@ -1711,3 +1711,16 @@ Infinite World 每次 Window shift 会移动 3 Chunk，即 72 cell。
 - 之后附近空缺由生态控制器按低频率重新生成新怪。
 
 这符合用户明确要求的“走远后直接消失”，也避免为无限世界维护无限增长的 mob world-state 数据。
+
+
+## 0.5.0 Build
+
+0.5.0 release workflow：
+
+- run：36601486694
+- artifact：11049646020
+- artifact name：ShatteredPD-Assist-Base
+- build head：`c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
+- result：success
+- artifact ZIP SHA-256：`441b1baca7fc84867ce66f58612e9f6c42a57d9bd02edc98d3544175495a3f90`
+- APK SHA-256：`6f350229df052ccc38ff66d8c1ac2d2b3eaaf10cd40f4b24d528fc8c679dc683`
