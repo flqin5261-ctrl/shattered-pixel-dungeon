@@ -1190,3 +1190,69 @@ V10 新世界里：
 - secondary route 不在 seam 处断
 - 仍能遇到普通 dead end
 - 不需要每次一撞死路就退回唯一主干
+
+
+# 36. 怪物距离消失不能调用 Mob.destroy/die
+
+## 背景
+
+0.5.0 要求类似 Minecraft：
+
+> 怪离玩家足够远后直接消失，并且不产生掉落物。
+
+## 容易犯的错误
+
+直接：
+
+```java
+mob.die(...)
+```
+
+或：
+
+```java
+mob.destroy()
+```
+
+## 为什么错
+
+`Mob.die()` 会：
+
+- rollToDropLoot()
+- 处理死亡 Talent
+- 进入正常死亡流程
+
+`Mob.destroy()` 会：
+
+- Statistics.enemiesSlain++
+- Bestiary seen/encounter
+- 处理 EXP
+- Monk energy
+- Ascension kill logic
+
+所以即使视觉上“怪消失了”，后台仍会把它当成玩家击杀。
+
+## 0.5.0 正确方式
+
+新增：
+
+`Mob.despawnFromInfiniteWorld()`
+
+只执行：
+
+- Actor.remove
+- Level.mobs.remove
+- sprite interrupt
+- sprite killAndErase
+
+不触发死亡奖励。
+
+## Elite 特别注意
+
+ChampionEnemy.Blazing 的 `detach()` 自己会制造火焰。
+
+即使不调用 die，Actor.remove 会 detach buffs。
+
+因此 0.5.0 Elite pool 明确不使用 Blazing。
+
+以后任何具有 onDetach 世界副作用的 Buff 都要做同样检查。
