@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Berserk;
@@ -365,6 +366,11 @@ abstract public class Weapon extends KindOfWeapon {
 	@Override
 	public int level() {
 		int level = super.level();
+		if (SPDSettings.assistEnabled() && SPDSettings.assistWeapon10()
+				&& Dungeon.hero != null
+				&& (isEquipped(Dungeon.hero) || Dungeon.hero.belongings.contains(this))) {
+			level = Math.max(level, 10);
+		}
 		if (curseInfusionBonus) level += 1 + level/6;
 		return level;
 	}
