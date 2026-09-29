@@ -14,7 +14,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -291,10 +293,13 @@ public class WndAssist extends Window {
 
             @Override
             public boolean itemSelectable(Item item) {
+                // Match every normal upgradeable equipment family. Wands are included too;
+                // the Mage's Staff is a Weapon and gets a special synchronization pass below.
                 return item instanceof Weapon
                         || item instanceof Armor
                         || item instanceof Artifact
-                        || item instanceof Ring;
+                        || item instanceof Ring
+                        || item instanceof Wand;
             }
 
             @Override
@@ -306,15 +311,28 @@ public class WndAssist extends Window {
                     artifact.identify();
                     int before = artifact.visiblyUpgraded();
                     int after = artifact.assistBoostVisibleLevel(amount);
-                    GLog.p("已强化：" + artifact.name() + "，神器等级 " + before + " → " + after);
+                    GLog.p("已强化：" + artifact.name() + "，神器等级 " + before + " → " + after
+                            + "（神器遵循自身等级上限）");
                 } else {
                     int before = item.trueLevel();
-                    long desired = (long)before + amount;
-                    int after = desired > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)desired;
-                    item.level(after);
+
+                    // Do NOT write the raw level field here. Every equipment family can have
+                    // upgrade side effects/caches. Calling upgrade() repeatedly is equivalent
+                    // to real upgrade-scroll progression and invokes each subclass hook.
+                    item.upgrade(amount);
                     item.identify();
-                    GLog.p("已强化：" + item.name() + "，+" + before + " → +" + item.trueLevel());
+
+                    // Mage's Staff owns an internal Wand. Its upgrade() already syncs on each
+                    // step, and this final pass also repairs saves created by the old Assist
+                    // implementation where only the outer staff level was changed.
+                    if (item instanceof MagesStaff) {
+                        ((MagesStaff)item).updateWand(false);
+                    }
+
+                    int after = item.trueLevel();
+                    GLog.p("已强化：" + item.name() + "，+" + before + " → +" + after);
                 }
+
                 Item.updateQuickslot();
             }
         });
