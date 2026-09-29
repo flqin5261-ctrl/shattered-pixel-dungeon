@@ -768,7 +768,7 @@ public class InfiniteWorldLevel extends Level {
                     }
 
                     Plant.Seed seed = v6PlantSeed(cx, cy, index);
-                    Plant plant = seed.couch(cell, this);
+                    Plant plant = seed.couch(cell, InfiniteWorldLevel.this);
                     plants.put(cell, plant);
                 }
             }
