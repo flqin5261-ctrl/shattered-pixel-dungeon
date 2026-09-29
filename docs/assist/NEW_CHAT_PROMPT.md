@@ -23,11 +23,11 @@
 
 当前已知基线：
 
-- 最新稳定版：0.4.4
-- versionCode：945
-- stable：`assist-0.4.4-stable`
+- 最新稳定版：0.5.0
+- versionCode：946
+- stable：`assist-0.5.0-stable`
 - 对应代码 release SHA：
-  `02689bb5b1ed0d91424de21779d6f94cc96c8c83`
+  `c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
 - Infinite World Generator：V10
 - 包名：
   `com.shatteredpixel.shatteredpixeldungeon.assist`
@@ -154,3 +154,20 @@
 - V10 多层级无限路线网络已经替代“只有主干保证无限”的单层方案。
 - 除每 6 Chunk 的 Primary Spine 外，每 18 Chunk band 还会生成一条真正无限的横向或纵向 Secondary Route。
 - 普通死胡同仍保留，但玩家离开主干后也有机会沿次级支线无限探索。
+
+
+当前怪物阶段：
+
+- 0.5.0 已正式加入玩家中心型稀疏怪物生态。
+- 普通刷怪 target cap=5，hard cap=6。
+- 新怪只在 Hero 约 14～28 cell 外、不可见且可达的位置低频出现。
+- 生态检查约每 32～50 turn 一次，一次最多生成 1 只。
+- 超过约 40 cell 的普通/精英怪直接 reward-free despawn。
+- 远距 despawn 不能调用 Mob.die() 或 Mob.destroy()。
+- Window streaming 时附近怪必须调用 rebaseForInfiniteWorld() 清旧 path/target 并更新 local pos。
+- 精英基础概率约 6%，同时最多 1 只；当前使用 Projecting/AntiMagic/Blessed/Growing。
+- Boss 暂时不加。
+- Thief 暂时不加，避免偷物后 despawn 造成玩家物品消失。
+- WORLD_GEN_VERSION 仍为 10，因此 0.5.0 不要求为怪物功能重开 V10 世界。
+
+下一步优先实机调整怪物数量、刷新间隔、消失距离和精英概率；这些稳定后再扩怪物种类，不要急着加 Boss。
