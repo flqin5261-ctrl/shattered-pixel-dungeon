@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -160,6 +161,23 @@ public class InfiniteWorldLevel extends Level {
         int worldX = st.heroWorldX;
         int worldY = st.heroWorldY;
 
+        // Preserve any cell-based action as an absolute-world target before the
+        // local window is rebased. Otherwise a long path can resume toward the
+        // old local cell, which looks like the hero is walking back to spawn.
+        int curTargetWorldX = Integer.MIN_VALUE;
+        int curTargetWorldY = Integer.MIN_VALUE;
+        int lastTargetWorldX = Integer.MIN_VALUE;
+        int lastTargetWorldY = Integer.MIN_VALUE;
+
+        if (isCellAction(hero.curAction)) {
+            curTargetWorldX = (oldCenterX - HALF_WINDOW) * CHUNK_SIZE + hero.curAction.dst % width();
+            curTargetWorldY = (oldCenterY - HALF_WINDOW) * CHUNK_SIZE + hero.curAction.dst / width();
+        }
+        if (isCellAction(hero.lastAction)) {
+            lastTargetWorldX = (oldCenterX - HALF_WINDOW) * CHUNK_SIZE + hero.lastAction.dst % width();
+            lastTargetWorldY = (oldCenterY - HALF_WINDOW) * CHUNK_SIZE + hero.lastAction.dst / width();
+        }
+
         snapshotForSave();
 
         st.centerChunkX += shiftX;
@@ -183,8 +201,11 @@ public class InfiniteWorldLevel extends Level {
 
         hero.pos = newLocalX + newLocalY * width();
 
-        // Stop any old multi-cell path because its local cell indices belonged to the old window.
-        hero.interrupt();
+        // Translate active/paused destinations into the new local window. If a target
+        // falls outside the new canvas, cancel it instead of allowing stale local
+        // coordinates to pull the hero back across the world.
+        hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
+        hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
 
         final int shiftedCellsX = shiftX * CHUNK_SIZE;
         final int shiftedCellsY = shiftY * CHUNK_SIZE;
@@ -198,6 +219,33 @@ public class InfiniteWorldLevel extends Level {
         });
 
         return true;
+    }
+
+    private boolean isCellAction(HeroAction action) {
+        return action instanceof HeroAction.Move
+                || action instanceof HeroAction.PickUp
+                || action instanceof HeroAction.OpenChest
+                || action instanceof HeroAction.Buy
+                || action instanceof HeroAction.Unlock
+                || action instanceof HeroAction.LvlTransition
+                || action instanceof HeroAction.Mine
+                || action instanceof HeroAction.Alchemy;
+    }
+
+    private HeroAction rebaseCellAction(HeroAction action, int worldX, int worldY, InfiniteWorldState st) {
+        if (!isCellAction(action) || worldX == Integer.MIN_VALUE || worldY == Integer.MIN_VALUE) {
+            return action;
+        }
+
+        int localX = worldX - (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
+        int localY = worldY - (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
+
+        if (localX < 0 || localX >= width() || localY < 0 || localY >= height()) {
+            return null;
+        }
+
+        action.dst = localX + localY * width();
+        return action;
     }
 
     public void snapshotForSave() {
@@ -275,11 +323,11 @@ public class InfiniteWorldLevel extends Level {
             int cx = Math.floorDiv(wx, CHUNK_SIZE);
             int cy = Math.floorDiv(wy, CHUNK_SIZE);
 
-            // Once a chunk has been generated it stays on the world record. Returning to it
-            // never puts the whole chunk back under black fog; actually walked cells remain visited.
-            boolean exploredChunk = st.chunkExplored(cx, cy);
-            mapped[cell] = st.chunkGenerated(cx, cy) || st.wasMapped(worldKey);
-            visited[cell] = exploredChunk || st.wasVisited(worldKey);
+            // Generated only means "the generator has produced this chunk before".
+            // It is deliberately NOT the same as explored. Only genuinely observed cells,
+            // or cells revealed by mapping effects, remain visible when revisiting.
+            mapped[cell] = st.wasMapped(worldKey);
+            visited[cell] = st.wasVisited(worldKey);
         }
     }
 
