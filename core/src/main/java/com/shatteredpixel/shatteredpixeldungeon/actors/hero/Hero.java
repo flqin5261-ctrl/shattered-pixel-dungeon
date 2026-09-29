@@ -2593,6 +2593,14 @@ public class Hero extends Char {
 						//unintentional trap detection scales from 40% at floor 0 to 30% at floor 25
 						} else if (Dungeon.level.map[curr] == Terrain.SECRET_TRAP) {
 							chance = 0.4f - (Dungeon.depth / 250f);
+
+						//Infinite World secret rooms are intended to be found by
+						//careful close-range exploration. The hero auto-searches
+						//after movement, so adjacent hidden doors get a much more
+						//noticeable chance without revealing them at a distance.
+						} else if (Dungeon.infiniteWorld
+								&& Dungeon.level.map[curr] == Terrain.SECRET_DOOR) {
+							chance = 0.55f;
 							
 						//unintentional door detection scales from 20% at floor 0 to 0% at floor 20
 						} else {
