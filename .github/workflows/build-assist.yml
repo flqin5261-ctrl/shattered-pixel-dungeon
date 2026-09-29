@@ -30,12 +30,38 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew :android:assembleDebug --stacktrace
+      - name: Build release APK
+        run: ./gradlew :android:assembleRelease --stacktrace
+
+      - name: Sign with stable Assist test certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          AOSP_BUILD_SHA=045a3d6a3e359633a14853a5a5e1e4f2a11cbdae
+          curl -L --fail -o /tmp/assist-testkey.pk8 \
+            "https://raw.githubusercontent.com/aosp-mirror/platform_build/$AOSP_BUILD_SHA/target/product/security/testkey.pk8"
+          curl -L --fail -o /tmp/assist-testkey.x509.pem \
+            "https://raw.githubusercontent.com/aosp-mirror/platform_build/$AOSP_BUILD_SHA/target/product/security/testkey.x509.pem"
+
+          UNSIGNED="$(find android/build/outputs/apk/release -type f -name '*unsigned*.apk' | head -n 1)"
+          test -n "$UNSIGNED"
+
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f -v 4 \
+            "$UNSIGNED" /tmp/ShatteredPD-Assist-aligned.apk
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --key /tmp/assist-testkey.pk8 \
+            --cert /tmp/assist-testkey.x509.pem \
+            --out android/build/outputs/apk/release/ShatteredPD-Assist-base.apk \
+            /tmp/ShatteredPD-Assist-aligned.apk
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify \
+            --verbose --print-certs \
+            android/build/outputs/apk/release/ShatteredPD-Assist-base.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ShatteredPD-Assist-v1
-          path: android/build/outputs/apk/debug/android-debug.apk
+          name: ShatteredPD-Assist-Base
+          path: android/build/outputs/apk/release/ShatteredPD-Assist-base.apk
           if-no-files-found: error
