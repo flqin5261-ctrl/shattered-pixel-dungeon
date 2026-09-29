@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -50,7 +51,19 @@ public class ScrollOfMagicMapping extends Scroll {
 		
 		boolean noticed = false;
 		
+		int heroX = curUser.pos % Dungeon.level.width();
+		int heroY = curUser.pos / Dungeon.level.width();
+		int infiniteRadius = InfiniteWorldLevel.CHUNK_SIZE * 2;
+
 		for (int i=0; i < length; i++) {
+
+			if (Dungeon.infiniteWorld) {
+				int x = i % Dungeon.level.width();
+				int y = i / Dungeon.level.width();
+				if (Math.abs(x - heroX) > infiniteRadius || Math.abs(y - heroY) > infiniteRadius) {
+					continue;
+				}
+			}
 			
 			int terr = map[i];
 			
