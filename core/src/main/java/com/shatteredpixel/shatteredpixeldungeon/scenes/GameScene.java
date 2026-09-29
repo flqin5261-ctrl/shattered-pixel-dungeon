@@ -1391,6 +1391,13 @@ public class GameScene extends PixelScene {
 				scene.addHeapSprite(heap);
 			}
 
+			// Chunk streaming may regenerate the visual-only mixed-material overlays.
+			// Rebuild their render group together with the logical window.
+			scene.customTiles.clear();
+			for (CustomTilemap visual : Dungeon.level.customTiles) {
+				scene.addCustomTile(visual);
+			}
+
 			resetMap();
 
 			// map() prepares CPU-side tile data, but normal Tilemap rendering does not
