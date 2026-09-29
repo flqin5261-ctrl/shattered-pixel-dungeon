@@ -301,6 +301,8 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_ASSIST_WEAPON_10   = "assist_weapon_10";
 	public static final String KEY_ASSIST_ARTIFACT    = "assist_artifact";
 	public static final String KEY_ASSIST_SPEED       = "assist_speed";
+	public static final String KEY_ASSIST_UPGRADE_AMT = "assist_upgrade_amount";
+	public static final String KEY_ASSIST_SPEED_PCT   = "assist_speed_percent";
 
 	public static void assistEnabled(boolean value){ put(KEY_ASSIST_ENABLED, value); }
 	public static boolean assistEnabled(){ return getBoolean(KEY_ASSIST_ENABLED, false); }
@@ -322,6 +324,14 @@ public class SPDSettings extends GameSettings {
 
 	public static void assistSpeed(boolean value){ put(KEY_ASSIST_SPEED, value); }
 	public static boolean assistSpeed(){ return getBoolean(KEY_ASSIST_SPEED, false); }
+
+	public static void assistUpgradeAmount(int value){ put(KEY_ASSIST_UPGRADE_AMT, Math.max(1, Math.min(1000, value))); }
+	public static int assistUpgradeAmount(){ return getInt(KEY_ASSIST_UPGRADE_AMT, 10, 1, 1000); }
+
+	// Stored as percent so decimal multipliers such as 1.5x persist without float preferences.
+	public static void assistSpeedPercent(int value){ put(KEY_ASSIST_SPEED_PCT, Math.max(25, Math.min(5000, value))); }
+	public static int assistSpeedPercent(){ return getInt(KEY_ASSIST_SPEED_PCT, 200, 25, 5000); }
+	public static float assistSpeedMultiplier(){ return assistSpeedPercent()/100f; }
 
 	//Input
 
