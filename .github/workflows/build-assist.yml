@@ -8,6 +8,7 @@ on:
       - assist-0.1-fix2
       - assist-0.2-extra-challenge
       - assist-0.2-fix1
+      - assist-0.3-infinite-world
   workflow_dispatch:
 
 permissions:
