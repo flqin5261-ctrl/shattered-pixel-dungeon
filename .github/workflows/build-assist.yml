@@ -22,6 +22,7 @@ on:
       - assist-0.4.1-themedrooms
       - assist-0.4.2-secrets
       - assist-0.4.3-liminal
+      - assist-0.4.4-branch-network
   workflow_dispatch:
 
 permissions:
