@@ -239,7 +239,16 @@ public class Dungeon {
 	
 	public static void initInfiniteWorldSeed(){
 		customSeedText = "";
-		seed = DungeonSeed.randomSeed();
+
+		long previous = seed;
+		long mixed = System.nanoTime() ^ System.currentTimeMillis() ^ Random.Long(false);
+		mixed = Math.floorMod(mixed, DungeonSeed.TOTAL_SEEDS);
+
+		if (mixed == previous) {
+			mixed = (mixed + 1) % DungeonSeed.TOTAL_SEEDS;
+		}
+
+		seed = mixed;
 	}
 
 
