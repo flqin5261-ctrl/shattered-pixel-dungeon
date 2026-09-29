@@ -6,6 +6,7 @@ on:
       - assist-v1
       - assist-0.1-fix1
       - assist-0.1-fix2
+      - assist-0.2-extra-challenge
   workflow_dispatch:
 
 permissions:
