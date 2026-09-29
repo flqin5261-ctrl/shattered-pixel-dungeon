@@ -143,6 +143,29 @@ public class NoosaScript extends Script {
 		
 		Gdx.gl20.glDrawElements( Gdx.gl20.GL_TRIANGLES, Quad.SIZE * length, Gdx.gl20.GL_UNSIGNED_SHORT, Quad.SIZE * Short.SIZE/8 * offset );
 	}
+
+	// Draws a quad range by rebasing the vertex attribute pointers into the VBO.
+	// This is required for tilemaps larger than 16,384 quads: GL_UNSIGNED_SHORT
+	// indices can address at most 65,536 vertices (4 vertices per quad).
+	public void drawQuadSetVertexOffset( Vertexbuffer buffer, int length, int vertexQuadOffset ){
+
+		if (length == 0) {
+			return;
+		}
+
+		buffer.updateGLData();
+
+		buffer.bind();
+
+		int vertexFloatOffset = vertexQuadOffset * 16;
+		aXY.vertexBuffer( 2, 4, vertexFloatOffset );
+		aUV.vertexBuffer( 2, 4, vertexFloatOffset + 2 );
+
+		buffer.release();
+
+		// Always reuse the first (non-overflowing) section of the ushort index buffer.
+		Gdx.gl20.glDrawElements( Gdx.gl20.GL_TRIANGLES, Quad.SIZE * length, Gdx.gl20.GL_UNSIGNED_SHORT, 0 );
+	}
 	
 	public void lighting( float rm, float gm, float bm, float am, float ra, float ga, float ba, float aa ) {
 		uColorM.value4f( rm, gm, bm, am );
