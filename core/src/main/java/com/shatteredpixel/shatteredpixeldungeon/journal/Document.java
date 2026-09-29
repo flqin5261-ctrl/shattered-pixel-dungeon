@@ -38,6 +38,7 @@ public enum Document {
 	
 	ADVENTURERS_GUIDE(ItemSpriteSheet.GUIDE_PAGE, false),
 	ALCHEMY_GUIDE(ItemSpriteSheet.ALCH_PAGE, false),
+	INFINITE_WORLD_NOTES(ItemSpriteSheet.GUIDE_PAGE, false),
 
 	INTROS(Icons.STAIRS, true),
 	SEWERS_GUARD(ItemSpriteSheet.SEWER_PAGE, true),
@@ -286,6 +287,11 @@ public enum Document {
 		ALCHEMY_GUIDE.pagesStates.put("Weapons",                debug ? READ : NOT_FOUND);
 		ALCHEMY_GUIDE.pagesStates.put("Brews_Elixirs",          debug ? READ : NOT_FOUND);
 		ALCHEMY_GUIDE.pagesStates.put("Spells",                 debug ? READ : NOT_FOUND);
+
+		// Infinite World field notes are found inside rare liminal districts.
+		INFINITE_WORLD_NOTES.pagesStates.put("Liminal_Offices",  debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Pool_Halls",       debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Endless_Hall",     debug ? READ : NOT_FOUND);
 
 		INTROS.pagesStates.put("Dungeon",                       READ);
 		INTROS.pagesStates.put("Sewers",                        debug ? READ : NOT_FOUND);
