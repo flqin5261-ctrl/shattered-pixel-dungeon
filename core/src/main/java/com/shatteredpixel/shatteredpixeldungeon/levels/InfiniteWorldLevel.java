@@ -1,6 +1,6 @@
 /*
  * Shattered Pixel Dungeon - Assist Edition
- * 0.3 infinite-world technical prototype.
+ * Infinite world prototype, generator v2.
  */
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
@@ -17,22 +17,28 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
-import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
-import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
-import com.watabou.utils.SparseArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class InfiniteWorldLevel extends Level {
 
     public static final int CHUNK_SIZE = 24;
-    public static final int WINDOW_CHUNKS = 3;
-    public static final int MAP_SIZE = CHUNK_SIZE * WINDOW_CHUNKS;
+
+    // Seven chunks are rendered at once. The active canvas is therefore 168x168,
+    // but only nearby actors will be simulated when mobs are added later.
+    public static final int WINDOW_CHUNKS = 7;
+    private static final int HALF_WINDOW = WINDOW_CHUNKS / 2;
+    private static final int MAP_SIZE = CHUNK_SIZE * WINDOW_CHUNKS;
+
+    // Shift three chunks at once. This leaves a two-chunk safety margin and makes
+    // streaming far less frequent than v0.3's every-chunk scene rebuild.
+    private static final int SHIFT_STEP = 3;
+    private static final int SHIFT_LOW = CHUNK_SIZE * 2;
+    private static final int SHIFT_HIGH = CHUNK_SIZE * (WINDOW_CHUNKS - 2);
 
     private boolean shifting;
 
@@ -67,22 +73,20 @@ public class InfiniteWorldLevel extends Level {
     protected boolean build() {
         setSize(MAP_SIZE, MAP_SIZE);
 
-        InfiniteWorldState state = state();
-        int[] base = generateBaseWindow(state.centerChunkX, state.centerChunkY);
+        int[] base = generateBaseWindow(state().centerChunkX, state().centerChunkY);
         System.arraycopy(base, 0, map, 0, map.length);
         applyTerrainOverrides();
         restoreExploration();
 
         transitions.clear();
-        int spawn = centerCellForChunk(state.centerChunkX, state.centerChunkY);
-        transitions.add(new LevelTransition(this, spawn, LevelTransition.Type.REGULAR_ENTRANCE));
-
+        transitions.add(new LevelTransition(this, centerCell(), LevelTransition.Type.REGULAR_ENTRANCE));
         return true;
     }
 
     @Override
     protected void createMobs() {
-        // 0.3 intentionally has no enemies. This version validates world streaming first.
+        // Generator v2 still intentionally spawns no enemies.
+        // Later versions will save/freeze mobs per world chunk and only simulate nearby chunks.
     }
 
     @Override
@@ -102,61 +106,65 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     public boolean activateTransition(Hero hero, LevelTransition transition) {
-        // The only transition is a hidden spawn anchor. There are no floors or stairs here.
+        // This world has no stairs/floors. The transition only exists as a spawn anchor.
         return false;
     }
 
     @Override
     public int randomRespawnCell(Char ch) {
-        return centerCellForChunk(state().centerChunkX, state().centerChunkY);
+        return centerCell();
     }
 
-    public boolean afterHeroMove(Hero hero) {
+    /**
+     * Called after the hero moves. The local 168x168 canvas is recentred in-place
+     * when the hero reaches the outer streaming band. No GameScene recreation is used.
+     */
+    public boolean afterHeroMove(final Hero hero) {
         if (shifting || hero == null || Dungeon.level != this) return false;
 
         int x = hero.pos % width();
         int y = hero.pos / width();
 
-        int dx = 0;
-        int dy = 0;
-        if (x < CHUNK_SIZE) dx = -1;
-        else if (x >= CHUNK_SIZE * 2) dx = 1;
-        if (y < CHUNK_SIZE) dy = -1;
-        else if (y >= CHUNK_SIZE * 2) dy = 1;
+        int shiftX = 0;
+        int shiftY = 0;
 
-        if (dx == 0 && dy == 0) return false;
+        if (x < SHIFT_LOW) shiftX = -SHIFT_STEP;
+        else if (x >= SHIFT_HIGH) shiftX = SHIFT_STEP;
+
+        if (y < SHIFT_LOW) shiftY = -SHIFT_STEP;
+        else if (y >= SHIFT_HIGH) shiftY = SHIFT_STEP;
+
+        if (shiftX == 0 && shiftY == 0) return false;
 
         shifting = true;
 
-        InfiniteWorldState state = state();
-        int oldCenterX = state.centerChunkX;
-        int oldCenterY = state.centerChunkY;
+        InfiniteWorldState st = state();
+        int oldCenterX = st.centerChunkX;
+        int oldCenterY = st.centerChunkY;
 
         int localX = hero.pos % width();
         int localY = hero.pos / width();
-        int worldX = (oldCenterX - 1) * CHUNK_SIZE + localX;
-        int worldY = (oldCenterY - 1) * CHUNK_SIZE + localY;
+        int worldX = (oldCenterX - HALF_WINDOW) * CHUNK_SIZE + localX;
+        int worldY = (oldCenterY - HALF_WINDOW) * CHUNK_SIZE + localY;
 
         snapshotForSave();
 
-        state.centerChunkX += dx;
-        state.centerChunkY += dy;
+        st.centerChunkX += shiftX;
+        st.centerChunkY += shiftY;
 
         rebuildWindow();
 
-        int newLocalX = worldX - (state.centerChunkX - 1) * CHUNK_SIZE;
-        int newLocalY = worldY - (state.centerChunkY - 1) * CHUNK_SIZE;
+        int newLocalX = worldX - (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
+        int newLocalY = worldY - (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
         hero.pos = newLocalX + newLocalY * width();
 
+        // Stop any old multi-cell path because its local cell indices belonged to the old window.
         hero.interrupt();
-
-        GLog.i("无界世界：区块 (" + state.centerChunkX + ", " + state.centerChunkY + ")");
 
         ShatteredPixelDungeon.runOnRenderThread(new Callback() {
             @Override
             public void call() {
-                InterlevelScene.mode = InterlevelScene.Mode.NONE;
-                ShatteredPixelDungeon.switchNoFade(GameScene.class);
+                GameScene.refreshInfiniteWorldWindow();
                 shifting = false;
             }
         });
@@ -165,29 +173,26 @@ public class InfiniteWorldLevel extends Level {
     }
 
     public void snapshotForSave() {
-        InfiniteWorldState state = state();
-        int[] base = generateBaseWindow(state.centerChunkX, state.centerChunkY);
+        InfiniteWorldState st = state();
+        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
 
         for (int cell = 0; cell < length(); cell++) {
             long key = worldKeyForLocalCell(cell);
 
-            if (map[cell] != base[cell]) {
-                state.setTerrainOverride(key, map[cell]);
-            } else {
-                state.setTerrainOverride(key, null);
-            }
+            if (map[cell] != base[cell]) st.setTerrainOverride(key, map[cell]);
+            else st.setTerrainOverride(key, null);
 
-            if (visited[cell]) state.markVisited(key);
-            if (mapped[cell]) state.markMapped(key);
+            if (visited[cell]) st.markVisited(key);
+            if (mapped[cell]) st.markMapped(key);
         }
 
         snapshotChestStates();
     }
 
     private void rebuildWindow() {
-        InfiniteWorldState state = state();
+        InfiniteWorldState st = state();
 
-        int[] base = generateBaseWindow(state.centerChunkX, state.centerChunkY);
+        int[] base = generateBaseWindow(st.centerChunkX, st.centerChunkY);
         System.arraycopy(base, 0, map, 0, map.length);
         applyTerrainOverrides();
 
@@ -196,17 +201,17 @@ public class InfiniteWorldLevel extends Level {
         Arrays.fill(heroFOV, false);
         restoreExploration();
 
-        transitions = new ArrayList<>();
-        int spawn = centerCellForChunk(state.centerChunkX, state.centerChunkY);
-        transitions.add(new LevelTransition(this, spawn, LevelTransition.Type.REGULAR_ENTRANCE));
+        transitions.clear();
+        transitions.add(new LevelTransition(this, centerCell(), LevelTransition.Type.REGULAR_ENTRANCE));
 
-        heaps = new SparseArray<>();
-        plants = new SparseArray<>();
-        traps = new SparseArray<>();
-        blobs = new HashMap<>();
-        customTiles = new ArrayList<>();
-        customTerrain = new ArrayList<>();
-        customWalls = new ArrayList<>();
+        // Keep the same container objects so GameScene tile layers retain valid references.
+        heaps.clear();
+        plants.clear();
+        traps.clear();
+        blobs.clear();
+        customTiles.clear();
+        customTerrain.clear();
+        customWalls.clear();
 
         buildFlagMaps();
         cleanWalls();
@@ -216,24 +221,33 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void applyTerrainOverrides() {
-        InfiniteWorldState state = state();
+        InfiniteWorldState st = state();
         for (int cell = 0; cell < length(); cell++) {
-            Integer override = state.terrainOverride(worldKeyForLocalCell(cell));
+            Integer override = st.terrainOverride(worldKeyForLocalCell(cell));
             if (override != null) map[cell] = override;
         }
     }
 
     private void restoreExploration() {
-        InfiniteWorldState state = state();
+        InfiniteWorldState st = state();
+
         for (int cell = 0; cell < length(); cell++) {
-            long key = worldKeyForLocalCell(cell);
-            visited[cell] = state.wasVisited(key);
-            mapped[cell] = state.wasMapped(key);
+            long worldKey = worldKeyForLocalCell(cell);
+            int wx = worldXForLocalCell(cell);
+            int wy = worldYForLocalCell(cell);
+            int cx = Math.floorDiv(wx, CHUNK_SIZE);
+            int cy = Math.floorDiv(wy, CHUNK_SIZE);
+
+            // Once a chunk has been generated it stays on the world record. Returning to it
+            // never puts the whole chunk back under black fog; actually walked cells remain visited.
+            mapped[cell] = st.chunkGenerated(cx, cy) || st.wasMapped(worldKey);
+            visited[cell] = st.wasVisited(worldKey);
         }
     }
 
     private void snapshotChestStates() {
-        InfiniteWorldState state = state();
+        final InfiniteWorldState st = state();
+
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
@@ -245,19 +259,15 @@ public class InfiniteWorldLevel extends Level {
                 long key = encodeWorld((long)cx * CHUNK_SIZE + lx, (long)cy * CHUNK_SIZE + ly);
 
                 Heap heap = heaps.get(cell);
-                if (heap == null) {
-                    state.setChestState(key, 2);
-                } else if (heap.type == Heap.Type.CHEST) {
-                    state.setChestState(key, 0);
-                } else {
-                    state.setChestState(key, 1);
-                }
+                if (heap == null) st.setChestState(key, 2);
+                else if (heap.type == Heap.Type.CHEST) st.setChestState(key, 0);
+                else st.setChestState(key, 1);
             }
         });
     }
 
     private void generateChestHeaps() {
-        final InfiniteWorldState state = state();
+        final InfiniteWorldState st = state();
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
@@ -268,13 +278,13 @@ public class InfiniteWorldLevel extends Level {
                 int ly = chestLocalY(cx, cy);
                 int cell = ox + lx + (oy + ly) * width();
                 long key = encodeWorld((long)cx * CHUNK_SIZE + lx, (long)cy * CHUNK_SIZE + ly);
-                int chestState = state.chestState(key);
+                int chestState = st.chestState(key);
 
                 if (chestState >= 2) return;
 
                 Heap heap = new Heap();
                 heap.pos = cell;
-                heap.seen = visited[cell];
+                heap.seen = mapped[cell] || visited[cell];
                 heap.type = chestState == 0 ? Heap.Type.CHEST : Heap.Type.HEAP;
                 heap.drop(chestItem(cx, cy));
                 heaps.put(cell, heap);
@@ -292,20 +302,295 @@ public class InfiniteWorldLevel extends Level {
         int[] result = new int[MAP_SIZE * MAP_SIZE];
         Arrays.fill(result, Terrain.WALL);
 
-        for (int wy = -1; wy <= 1; wy++) {
-            for (int wx = -1; wx <= 1; wx++) {
+        InfiniteWorldState st = state();
+
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
                 int cx = centerChunkX + wx;
                 int cy = centerChunkY + wy;
-                int ox = (wx + 1) * CHUNK_SIZE;
-                int oy = (wy + 1) * CHUNK_SIZE;
-                generateChunk(result, cx, cy, ox, oy);
+                int ox = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                int oy = (wy + HALF_WINDOW) * CHUNK_SIZE;
+
+                if (st.generatorVersion <= 1) generateChunkV1(result, cx, cy, ox, oy);
+                else generateChunkV2(result, cx, cy, ox, oy);
+
+                st.markChunkGenerated(cx, cy);
             }
         }
 
         return result;
     }
 
-    private void generateChunk(int[] result, int cx, int cy, int ox, int oy) {
+    // ------------------------------------------------------------------------
+    // Generator v2: deterministic pseudo-random fragments with shared edges.
+    // ------------------------------------------------------------------------
+
+    private void generateChunkV2(int[] out, int cx, int cy, int ox, int oy) {
+        int northX = edgeHorizontal(cx, cy);
+        int southX = edgeHorizontal(cx, cy + 1);
+        int westY = edgeVertical(cx, cy);
+        int eastY = edgeVertical(cx + 1, cy);
+
+        int hubCount = 3 + range(cx, cy, 101, 0, 3);
+        int[] hx = new int[hubCount];
+        int[] hy = new int[hubCount];
+
+        for (int i = 0; i < hubCount; i++) {
+            hx[i] = 4 + range(cx, cy, 110 + i * 2, 0, CHUNK_SIZE - 9);
+            hy[i] = 4 + range(cx, cy, 111 + i * 2, 0, CHUNK_SIZE - 9);
+            carveHub(out, cx, cy, ox, oy, hx[i], hy[i], i);
+        }
+
+        // Connect the hubs into a guaranteed tree first.
+        for (int i = 1; i < hubCount; i++) {
+            int parent = range(cx, cy, 180 + i, 0, i - 1);
+            carveWanderPath(out,
+                    ox + hx[i], oy + hy[i],
+                    ox + hx[parent], oy + hy[parent],
+                    cx, cy, 200 + i);
+        }
+
+        // Shared edge gateways are each connected to a pseudo-random hub.
+        int nHub = range(cx, cy, 250, 0, hubCount - 1);
+        int sHub = range(cx, cy, 251, 0, hubCount - 1);
+        int wHub = range(cx, cy, 252, 0, hubCount - 1);
+        int eHub = range(cx, cy, 253, 0, hubCount - 1);
+
+        carveWanderPath(out, ox + northX, oy, ox + hx[nHub], oy + hy[nHub], cx, cy, 260);
+        carveWanderPath(out, ox + southX, oy + CHUNK_SIZE - 1, ox + hx[sHub], oy + hy[sHub], cx, cy, 261);
+        carveWanderPath(out, ox, oy + westY, ox + hx[wHub], oy + hy[wHub], cx, cy, 262);
+        carveWanderPath(out, ox + CHUNK_SIZE - 1, oy + eastY, ox + hx[eHub], oy + hy[eHub], cx, cy, 263);
+
+        carveGateway(out, ox + northX, oy, true);
+        carveGateway(out, ox + southX, oy + CHUNK_SIZE - 1, true);
+        carveGateway(out, ox, oy + westY, false);
+        carveGateway(out, ox + CHUNK_SIZE - 1, oy + eastY, false);
+
+        // Extra loops and side routes make the chunk topology much less predictable.
+        int extraLinks = 1 + range(cx, cy, 280, 0, 2);
+        for (int i = 0; i < extraLinks; i++) {
+            int a = range(cx, cy, 281 + i * 2, 0, hubCount - 1);
+            int b = range(cx, cy, 282 + i * 2, 0, hubCount - 1);
+            if (a != b) {
+                carveWanderPath(out, ox + hx[a], oy + hy[a], ox + hx[b], oy + hy[b],
+                        cx, cy, 300 + i);
+            }
+        }
+
+        // Large-area style changes only every ~4 chunks, giving coherent pseudo-biomes.
+        int regionX = Math.floorDiv(cx, 4);
+        int regionY = Math.floorDiv(cy, 4);
+        int biome = range(regionX, regionY, 401, 0, 4);
+        decorateBiome(out, cx, cy, ox, oy, biome);
+
+        // 0-2 doors placed only on narrow-ish floor cells.
+        int doorCount = range(cx, cy, 430, 0, 2);
+        for (int i = 0; i < doorCount; i++) {
+            placeSafeDoor(out, cx, cy, ox, oy, 440 + i);
+        }
+
+        if (hasChest(cx, cy)) {
+            int chestX = chestLocalX(cx, cy);
+            int chestY = chestLocalY(cx, cy);
+            carveHub(out, cx, cy, ox, oy, chestX, chestY, 90);
+            int nearest = nearestHub(hx, hy, chestX, chestY);
+            carveWanderPath(out, ox + chestX, oy + chestY, ox + hx[nearest], oy + hy[nearest],
+                    cx, cy, 500);
+            out[ox + chestX + (oy + chestY) * MAP_SIZE] = Terrain.EMPTY_DECO;
+        }
+
+        if (cx == 0 && cy == 0) {
+            carveOriginPlaza(out, ox, oy);
+        }
+    }
+
+    private void carveHub(int[] out, int cx, int cy, int ox, int oy, int x, int y, int index) {
+        int shape = range(cx, cy, 520 + index, 0, 4);
+        int rx = 2 + range(cx, cy, 560 + index, 0, 3);
+        int ry = 2 + range(cx, cy, 600 + index, 0, 3);
+
+        switch (shape) {
+            case 0:
+                carveRect(out, ox + x - rx, oy + y - ry, ox + x + rx, oy + y + ry, Terrain.EMPTY);
+                break;
+            case 1:
+                for (int dy = -ry; dy <= ry; dy++) {
+                    for (int dx = -rx; dx <= rx; dx++) {
+                        if (Math.abs(dx) * ry + Math.abs(dy) * rx <= rx * ry + Math.max(rx, ry)) {
+                            setFloor(out, ox + x + dx, oy + y + dy);
+                        }
+                    }
+                }
+                break;
+            case 2:
+                carveRect(out, ox + x - rx, oy + y - 1, ox + x + rx, oy + y + 1, Terrain.EMPTY);
+                carveRect(out, ox + x - 1, oy + y - ry, ox + x + 1, oy + y + ry, Terrain.EMPTY);
+                break;
+            case 3:
+                carveRect(out, ox + x - rx, oy + y - ry, ox + x + 1, oy + y + ry, Terrain.EMPTY);
+                carveRect(out, ox + x - rx, oy + y - 1, ox + x + rx, oy + y + ry, Terrain.EMPTY);
+                break;
+            default:
+                // noisy organic blob
+                for (int dy = -ry - 1; dy <= ry + 1; dy++) {
+                    for (int dx = -rx - 1; dx <= rx + 1; dx++) {
+                        long n = hash(cx * 31 + x + dx, cy * 31 + y + dy, 650 + index);
+                        float nx = dx / (float)(rx + 1);
+                        float ny = dy / (float)(ry + 1);
+                        if (nx * nx + ny * ny < 1.15f && Math.floorMod(n, 7) != 0) {
+                            setFloor(out, ox + x + dx, oy + y + dy);
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
+    private void carveWanderPath(int[] out, int x1, int y1, int x2, int y2, int cx, int cy, int salt) {
+        int x = x1;
+        int y = y1;
+        int guard = 0;
+
+        setFloor(out, x, y);
+
+        while ((x != x2 || y != y2) && guard++ < 160) {
+            boolean canX = x != x2;
+            boolean canY = y != y2;
+
+            boolean takeX;
+            if (!canY) takeX = true;
+            else if (!canX) takeX = false;
+            else {
+                long h = hash(cx * 131 + x, cy * 131 + y, salt + guard);
+                takeX = Math.floorMod(h, 100) < 50;
+            }
+
+            if (takeX) x += Integer.compare(x2, x);
+            else y += Integer.compare(y2, y);
+
+            setFloor(out, x, y);
+
+            // Randomly widen parts of the route to avoid identical 3-wide corridors everywhere.
+            long h = hash(cx * 97 + x, cy * 97 + y, salt + guard * 3);
+            int widen = (int)Math.floorMod(h, 5);
+            if (widen <= 1) {
+                setFloor(out, x + 1, y);
+                setFloor(out, x - 1, y);
+            } else if (widen == 2) {
+                setFloor(out, x, y + 1);
+                setFloor(out, x, y - 1);
+            }
+        }
+    }
+
+    private void decorateBiome(int[] out, int cx, int cy, int ox, int oy, int biome) {
+        for (int y = 2; y < CHUNK_SIZE - 2; y++) {
+            for (int x = 2; x < CHUNK_SIZE - 2; x++) {
+                int cell = ox + x + (oy + y) * MAP_SIZE;
+                if (out[cell] != Terrain.EMPTY && out[cell] != Terrain.EMPTY_DECO) continue;
+
+                long h = hash(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, 800 + biome);
+                int roll = (int)Math.floorMod(h, 100);
+
+                switch (biome) {
+                    case 0: // overgrown courts
+                        if (roll < 18) out[cell] = Terrain.HIGH_GRASS;
+                        else if (roll < 30) out[cell] = Terrain.GRASS;
+                        break;
+                    case 1: // flooded ruins
+                        if (roll < 15 && floorNeighbours(out, ox + x, oy + y) >= 5) out[cell] = Terrain.WATER;
+                        else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                    case 2: // archives
+                        if (roll < 8 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.BOOKSHELF;
+                        else if (roll < 18) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                    case 3: // broken plazas
+                        if (roll < 5 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE;
+                        else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                    default: // mixed old district
+                        if (roll < 8) out[cell] = Terrain.GRASS;
+                        else if (roll < 13 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
+                        else if (roll < 20) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                }
+            }
+        }
+    }
+
+    private void placeSafeDoor(int[] out, int cx, int cy, int ox, int oy, int salt) {
+        for (int attempt = 0; attempt < 18; attempt++) {
+            int x = 3 + range(cx, cy, salt + attempt * 2, 0, CHUNK_SIZE - 7);
+            int y = 3 + range(cx, cy, salt + attempt * 2 + 1, 0, CHUNK_SIZE - 7);
+            int gx = ox + x;
+            int gy = oy + y;
+            int cell = gx + gy * MAP_SIZE;
+
+            if (out[cell] != Terrain.EMPTY) continue;
+
+            boolean lr = isFloorLike(out, gx - 1, gy) && isFloorLike(out, gx + 1, gy)
+                    && !isFloorLike(out, gx, gy - 1) && !isFloorLike(out, gx, gy + 1);
+            boolean ud = isFloorLike(out, gx, gy - 1) && isFloorLike(out, gx, gy + 1)
+                    && !isFloorLike(out, gx - 1, gy) && !isFloorLike(out, gx + 1, gy);
+
+            if (lr || ud) {
+                out[cell] = Terrain.DOOR;
+                return;
+            }
+        }
+    }
+
+    private void carveOriginPlaza(int[] out, int ox, int oy) {
+        carveRect(out, ox + 6, oy + 6, ox + 17, oy + 17, Terrain.EMPTY);
+        for (int x = 8; x <= 15; x++) {
+            out[ox + x + (oy + 8) * MAP_SIZE] = Terrain.WATER;
+            out[ox + x + (oy + 15) * MAP_SIZE] = Terrain.WATER;
+        }
+        for (int y = 9; y <= 14; y++) {
+            out[ox + 8 + (oy + y) * MAP_SIZE] = Terrain.WATER;
+            out[ox + 15 + (oy + y) * MAP_SIZE] = Terrain.WATER;
+        }
+        out[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.EMPTY_DECO;
+        out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
+    }
+
+    private int nearestHub(int[] hx, int[] hy, int x, int y) {
+        int best = 0;
+        int bestDist = Integer.MAX_VALUE;
+        for (int i = 0; i < hx.length; i++) {
+            int d = Math.abs(hx[i] - x) + Math.abs(hy[i] - y);
+            if (d < bestDist) {
+                bestDist = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    private int floorNeighbours(int[] out, int x, int y) {
+        int count = 0;
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dy == 0) continue;
+                if (isFloorLike(out, x + dx, y + dy)) count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean isFloorLike(int[] out, int x, int y) {
+        if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return false;
+        int t = out[x + y * MAP_SIZE];
+        return t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.GRASS
+                || t == Terrain.HIGH_GRASS || t == Terrain.WATER || t == Terrain.DOOR;
+    }
+
+    // ------------------------------------------------------------------------
+    // Generator v1 retained only so old 0.3 saves never mutate underneath players.
+    // ------------------------------------------------------------------------
+
+    private void generateChunkV1(int[] result, int cx, int cy, int ox, int oy) {
         int centerX = 9 + range(cx, cy, 11, 0, 5);
         int centerY = 9 + range(cx, cy, 12, 0, 5);
 
@@ -314,14 +599,13 @@ public class InfiniteWorldLevel extends Level {
         int westY = edgeVertical(cx, cy);
         int eastY = edgeVertical(cx + 1, cy);
 
-        // A guaranteed central court keeps every edge connection reachable.
         carveRect(result, ox + centerX - 4, oy + centerY - 4,
                 ox + centerX + 4, oy + centerY + 4, Terrain.EMPTY);
 
-        carvePath(result, ox + centerX, oy + centerY, ox + northX, oy, cx, cy, 21);
-        carvePath(result, ox + centerX, oy + centerY, ox + southX, oy + CHUNK_SIZE - 1, cx, cy, 22);
-        carvePath(result, ox + centerX, oy + centerY, ox, oy + westY, cx, cy, 23);
-        carvePath(result, ox + centerX, oy + centerY, ox + CHUNK_SIZE - 1, oy + eastY, cx, cy, 24);
+        carvePathV1(result, ox + centerX, oy + centerY, ox + northX, oy, cx, cy, 21);
+        carvePathV1(result, ox + centerX, oy + centerY, ox + southX, oy + CHUNK_SIZE - 1, cx, cy, 22);
+        carvePathV1(result, ox + centerX, oy + centerY, ox, oy + westY, cx, cy, 23);
+        carvePathV1(result, ox + centerX, oy + centerY, ox + CHUNK_SIZE - 1, oy + eastY, cx, cy, 24);
 
         carveGateway(result, ox + northX, oy, true);
         carveGateway(result, ox + southX, oy + CHUNK_SIZE - 1, true);
@@ -331,39 +615,17 @@ public class InfiniteWorldLevel extends Level {
         int style = range(cx, cy, 31, 0, 3);
         switch (style) {
             case 0:
-                decorateGarden(result, cx, cy, ox, oy, centerX, centerY);
+                decorateGardenV1(result, cx, cy, ox, oy, centerX, centerY);
                 break;
             case 1:
-                decorateWaterCourt(result, cx, cy, ox, oy, centerX, centerY);
+                decorateWaterCourtV1(result, ox, oy, centerX, centerY);
                 break;
             case 2:
-                decorateArchive(result, cx, cy, ox, oy, centerX, centerY);
+                decorateArchiveV1(result, ox, oy, centerX, centerY);
                 break;
             default:
-                decorateRuins(result, cx, cy, ox, oy, centerX, centerY);
+                decorateRuinsV1(result, cx, cy, ox, oy);
                 break;
-        }
-
-        // Add one ordinary door on a side corridor. Door state is persisted as terrain override.
-        int doorChoice = range(cx, cy, 51, 0, 3);
-        int doorX;
-        int doorY;
-        if (doorChoice == 0) {
-            doorX = northX;
-            doorY = 5;
-        } else if (doorChoice == 1) {
-            doorX = southX;
-            doorY = CHUNK_SIZE - 6;
-        } else if (doorChoice == 2) {
-            doorX = 5;
-            doorY = westY;
-        } else {
-            doorX = CHUNK_SIZE - 6;
-            doorY = eastY;
-        }
-        int dc = ox + doorX + (oy + doorY) * MAP_SIZE;
-        if (result[dc] == Terrain.EMPTY || result[dc] == Terrain.EMPTY_DECO) {
-            result[dc] = Terrain.DOOR;
         }
 
         if (hasChest(cx, cy)) {
@@ -371,23 +633,25 @@ public class InfiniteWorldLevel extends Level {
             int chestY = chestLocalY(cx, cy);
             carveRect(result, ox + chestX - 1, oy + chestY - 1,
                     ox + chestX + 1, oy + chestY + 1, Terrain.EMPTY);
-            carvePath(result, ox + centerX, oy + centerY, ox + chestX, oy + chestY, cx, cy, 81);
+            carvePathV1(result, ox + centerX, oy + centerY, ox + chestX, oy + chestY, cx, cy, 81);
             result[ox + chestX + (oy + chestY) * MAP_SIZE] = Terrain.EMPTY_DECO;
         }
 
-        // World origin gets a recognizable spawn plaza.
-        if (cx == 0 && cy == 0) {
-            carveRect(result, ox + 7, oy + 7, ox + 16, oy + 16, Terrain.EMPTY);
-            for (int x = 9; x <= 14; x++) {
-                result[ox + x + (oy + 9) * MAP_SIZE] = Terrain.WATER;
-                result[ox + x + (oy + 14) * MAP_SIZE] = Terrain.WATER;
-            }
-            result[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.EMPTY_DECO;
-            result[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.EMPTY_DECO;
+        if (cx == 0 && cy == 0) carveOriginPlaza(result, ox, oy);
+    }
+
+    private void carvePathV1(int[] map, int x1, int y1, int x2, int y2, int cx, int cy, int salt) {
+        boolean horizontalFirst = (hash(cx, cy, salt) & 1L) == 0;
+        if (horizontalFirst) {
+            carveHorizontal(map, x1, x2, y1);
+            carveVertical(map, y1, y2, x2);
+        } else {
+            carveVertical(map, y1, y2, x1);
+            carveHorizontal(map, x1, x2, y2);
         }
     }
 
-    private void decorateGarden(int[] map, int cx, int cy, int ox, int oy, int centerX, int centerY) {
+    private void decorateGardenV1(int[] map, int cx, int cy, int ox, int oy, int centerX, int centerY) {
         for (int y = centerY - 3; y <= centerY + 3; y++) {
             for (int x = centerX - 3; x <= centerX + 3; x++) {
                 long h = hash(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, 101);
@@ -397,7 +661,7 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
-    private void decorateWaterCourt(int[] map, int cx, int cy, int ox, int oy, int centerX, int centerY) {
+    private void decorateWaterCourtV1(int[] map, int ox, int oy, int centerX, int centerY) {
         for (int x = centerX - 4; x <= centerX + 4; x++) {
             setIfFloor(map, ox + x, oy + centerY - 4, Terrain.WATER);
             setIfFloor(map, ox + x, oy + centerY + 4, Terrain.WATER);
@@ -412,7 +676,7 @@ public class InfiniteWorldLevel extends Level {
         setIfFloor(map, ox + centerX + 4, oy + centerY, Terrain.EMPTY);
     }
 
-    private void decorateArchive(int[] map, int cx, int cy, int ox, int oy, int centerX, int centerY) {
+    private void decorateArchiveV1(int[] map, int ox, int oy, int centerX, int centerY) {
         int left = Math.max(2, centerX - 5);
         int right = Math.min(CHUNK_SIZE - 3, centerX + 5);
         int top = Math.max(2, centerY - 5);
@@ -425,7 +689,7 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
-    private void decorateRuins(int[] map, int cx, int cy, int ox, int oy, int centerX, int centerY) {
+    private void decorateRuinsV1(int[] map, int cx, int cy, int ox, int oy) {
         for (int i = 0; i < 8; i++) {
             int x = 4 + range(cx, cy, 201 + i, 0, CHUNK_SIZE - 9);
             int y = 4 + range(cx, cy, 301 + i, 0, CHUNK_SIZE - 9);
@@ -436,16 +700,9 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
-    private void carvePath(int[] map, int x1, int y1, int x2, int y2, int cx, int cy, int salt) {
-        boolean horizontalFirst = (hash(cx, cy, salt) & 1L) == 0;
-        if (horizontalFirst) {
-            carveHorizontal(map, x1, x2, y1);
-            carveVertical(map, y1, y2, x2);
-        } else {
-            carveVertical(map, y1, y2, x1);
-            carveHorizontal(map, x1, x2, y2);
-        }
-    }
+    // ------------------------------------------------------------------------
+    // Shared generator helpers.
+    // ------------------------------------------------------------------------
 
     private void carveHorizontal(int[] map, int x1, int x2, int y) {
         int from = Math.min(x1, x2);
@@ -506,38 +763,43 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private int edgeHorizontal(int cx, int boundaryY) {
-        return 5 + range(cx, boundaryY, 5001, 0, CHUNK_SIZE - 11);
+        return 4 + range(cx, boundaryY, 5001, 0, CHUNK_SIZE - 9);
     }
 
     private int edgeVertical(int boundaryX, int cy) {
-        return 5 + range(boundaryX, cy, 5002, 0, CHUNK_SIZE - 11);
+        return 4 + range(boundaryX, cy, 5002, 0, CHUNK_SIZE - 9);
     }
 
     private boolean hasChest(int cx, int cy) {
-        return Math.floorMod(hash(cx, cy, 6001), 3) == 0;
+        return Math.floorMod(hash(cx, cy, 6001), 100) < 42;
     }
 
     private int chestLocalX(int cx, int cy) {
-        return 6 + range(cx, cy, 6101, 0, CHUNK_SIZE - 13);
+        return 5 + range(cx, cy, 6101, 0, CHUNK_SIZE - 11);
     }
 
     private int chestLocalY(int cx, int cy) {
-        return 6 + range(cx, cy, 6102, 0, CHUNK_SIZE - 13);
+        return 5 + range(cx, cy, 6102, 0, CHUNK_SIZE - 11);
     }
 
-    private int centerCellForChunk(int cx, int cy) {
-        // Center chunk always occupies the middle third of the active window.
-        int localX = CHUNK_SIZE + 12;
-        int localY = CHUNK_SIZE + 12;
+    private int centerCell() {
+        int localX = HALF_WINDOW * CHUNK_SIZE + CHUNK_SIZE / 2;
+        int localY = HALF_WINDOW * CHUNK_SIZE + CHUNK_SIZE / 2;
         return localX + localY * width();
     }
 
-    private long worldKeyForLocalCell(int cell) {
+    private int worldXForLocalCell(int cell) {
         int lx = cell % width();
+        return (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE + lx;
+    }
+
+    private int worldYForLocalCell(int cell) {
         int ly = cell / width();
-        long wx = (long)(state().centerChunkX - 1) * CHUNK_SIZE + lx;
-        long wy = (long)(state().centerChunkY - 1) * CHUNK_SIZE + ly;
-        return encodeWorld(wx, wy);
+        return (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE + ly;
+    }
+
+    private long worldKeyForLocalCell(int cell) {
+        return encodeWorld(worldXForLocalCell(cell), worldYForLocalCell(cell));
     }
 
     private static long encodeWorld(long x, long y) {
@@ -567,14 +829,14 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void forEachActiveChunk(ChunkVisitor visitor) {
-        InfiniteWorldState state = state();
-        for (int wy = -1; wy <= 1; wy++) {
-            for (int wx = -1; wx <= 1; wx++) {
+        InfiniteWorldState st = state();
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
                 visitor.visit(
-                        state.centerChunkX + wx,
-                        state.centerChunkY + wy,
-                        (wx + 1) * CHUNK_SIZE,
-                        (wy + 1) * CHUNK_SIZE);
+                        st.centerChunkX + wx,
+                        st.centerChunkY + wy,
+                        (wx + HALF_WINDOW) * CHUNK_SIZE,
+                        (wy + HALF_WINDOW) * CHUNK_SIZE);
             }
         }
     }
