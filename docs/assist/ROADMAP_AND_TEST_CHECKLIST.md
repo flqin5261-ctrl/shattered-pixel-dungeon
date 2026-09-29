@@ -11,11 +11,11 @@
 
 当前最新稳定：
 
-- 版本：0.4.2
-- versionCode：943
-- Generator：V8
-- stable：`assist-0.4.2-stable`
-- dev：`assist-0.4.2-secrets`
+- 版本：0.4.3
+- versionCode：944
+- Generator：V9
+- stable：`assist-0.4.3-stable`
+- dev：`assist-0.4.3-liminal`
 
 当前核心已经具备：
 
@@ -156,6 +156,75 @@
 - [ ] 真实可触发
 - [ ] 触发后状态正确
 - [ ] 走远再回来不会复活全部植物
+
+---
+
+# B7. 0.4.3 V9 专项测试
+
+0.4.3 新增了世界级 Infinite Backbone、5×5 anomaly macro、异境便笺和大幅资源降密。
+
+必须在“重新开始”的 V9 世界执行。
+
+## B7.1 真无限性
+
+- [ ] 从出生区域沿任意正常路线探索。
+- [ ] 刻意走入多个 dead end。
+- [ ] 能回到主干继续前进。
+- [ ] 向东跑至少 12+ Chunk。
+- [ ] 向西跑至少 12+ Chunk。
+- [ ] 向南跑至少 12+ Chunk。
+- [ ] 向北跑至少 12+ Chunk。
+- [ ] 跨过多个 cx/6 或 cy/6 backbone 交叉点。
+- [ ] 不出现整张世界所有可达分支同时永久封死。
+
+注意：
+
+允许单独支路死路；测试目标不是“每条路有出口”，而是“整体主连通分量无限”。
+
+## B7.2 Secret Room
+
+- [ ] 在多个 3×3 Chunk macro 内贴墙探索。
+- [ ] 被动 Search 能在合理距离发现 Secret Door。
+- [ ] 主动 Search 能更稳定发现。
+- [ ] Secret Trap 数量明显少于 0.4.2。
+- [ ] Secret Door 在远处仍不可见。
+- [ ] 发现后不重新隐藏。
+- [ ] 房内奖励约 2～3 件额外高价值物，而不是满地物资。
+
+## B7.3 资源曲线
+
+前 10～20 Chunk 统计体感：
+
+- [ ] 普通野外 loose loot 不再每 Chunk 都有。
+- [ ] 普通箱子明显变少。
+- [ ] Scroll Room 约 1～2 张。
+- [ ] Potion Room 约 1～2 瓶。
+- [ ] Armory 约 1～2 件装备。
+- [ ] Crystal Vault 约 1 个水晶箱。
+- [ ] 锁门仍总能找到对应 IronKey。
+- [ ] 水晶箱仍能找到 CrystalKey。
+- [ ] 不应该“刚开图没走多远就基本把装备/卷轴/药剂收齐”。
+
+## B7.4 Liminal Macro
+
+寻找远离出生区域的 anomaly：
+
+- [ ] Repeating Offices 至少连续跨多个 Chunk 保持同一重复空间气质。
+- [ ] Pool Halls 水面和干路正常。
+- [ ] Endless Hall 足够空旷，不被普通 loot/主题房塞满。
+- [ ] anomaly 与普通 Chunk 接壤处可通。
+- [ ] anomaly 内 Infinite Backbone 可通。
+- [ ] streaming 多次后无黑图。
+- [ ] Pool Halls 无“整片假水先加载”回归。
+
+## B7.5 Field Notes / Guide
+
+- [ ] 5×5 anomaly 中只出现一张对应便笺。
+- [ ] 拾取便笺后打开 Guide。
+- [ ] Guide 内出现独立“无界异境记录”栏目。
+- [ ] 对应条目从 missing 变为可读。
+- [ ] save/load 后条目保留。
+- [ ] 回到原 anomaly 后便笺不重刷。
 
 ---
 
@@ -977,3 +1046,35 @@ Boss 激活后：
 > **文档必须视为项目状态的一部分。**
 
 新 ChatGPT 接手时，先读文档，再改代码。
+
+
+# J. 0.4.3 之后的优先级
+
+当前 V9 已经开始从“不断加东西”转向“控制节奏和世界层次”。
+
+下一阶段建议按以下顺序：
+
+1. 先根据用户实机反馈调整：
+   - backbone 是否太明显；
+   - anomaly 出现频率；
+   - loot 是否又过稀或仍过密；
+   - Secret Room 实际发现率。
+2. 再增加少量**低奖励、高环境辨识度**的房间，而不是继续堆高价值物资：
+   - Magic Well
+   - Runestone
+   - Library
+   - Fire/Barricade
+   - Mine
+   - Broken Cell Block
+   - Ritual/Statue
+3. 对每一种真正“异常空间”继续增加 Field Note 页面；Field Notes 系统已经完成，不需要重做 Journal 架构。
+4. 完成 room/chunk accent overlay 局部刷新：
+   - Secret Door discover 后立即更新房间主题；
+   - 炸墙/烧书架后局部 overlay 不残影。
+5. 地图与经济曲线稳定后，正式进入普通怪物 persistence。
+6. 普通怪 streaming/persistence 稳定后才进入 Boss。
+
+新增地图内容时必须遵守 V9 的经济原则：
+
+> **可以增加大量视觉结构和交互，但不要让每个新房间都同时成为新的奖励来源。**
+
