@@ -62,6 +62,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.DeadEndLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.ExtraChallengeLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
@@ -212,6 +214,8 @@ public class Dungeon {
 	public static boolean dailyReplay;
 	// Standalone one-floor mode launched from the title screen. It is not an original challenge flag.
 	public static boolean extraChallenge;
+	public static boolean infiniteWorld;
+	public static InfiniteWorldState infiniteWorldState = new InfiniteWorldState();
 	public static String customSeedText = "";
 	public static long seed;
 	public static long lastPlayed;
@@ -236,7 +240,7 @@ public class Dungeon {
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
-		challenges = extraChallenge ? 0 : SPDSettings.challenges();
+		challenges = (extraChallenge || infiniteWorld) ? 0 : SPDSettings.challenges();
 		mobsToChampion = 1;
 
 		Actor.clear();
@@ -266,6 +270,7 @@ public class Dungeon {
 		depth = 1;
 		branch = 0;
 		generatedLevels.clear();
+		infiniteWorldState = new InfiniteWorldState();
 
 		gold = 0;
 		energy = 0;
@@ -303,7 +308,9 @@ public class Dungeon {
 		Actor.clear();
 		
 		Level level;
-		if (extraChallenge) {
+		if (infiniteWorld) {
+			level = new InfiniteWorldLevel();
+		} else if (extraChallenge) {
 			level = new ExtraChallengeLevel();
 		} else if (branch == 0) {
 			switch (depth) {
@@ -402,7 +409,7 @@ public class Dungeon {
 		
 		level.create();
 		
-		if (!extraChallenge && branch == 0) Statistics.qualifiedForNoKilling = !bossLevel();
+		if (!extraChallenge && !infiniteWorld && branch == 0) Statistics.qualifiedForNoKilling = !bossLevel();
 		Statistics.qualifiedForBossChallengeBadge = false;
 		
 		return level;
@@ -458,7 +465,7 @@ public class Dungeon {
 	}
 
 	public static boolean interfloorTeleportAllowed(){
-		if (extraChallenge || Dungeon.level.locked
+		if (extraChallenge || infiniteWorld || Dungeon.level.locked
 				|| Dungeon.level instanceof MiningLevel || Dungeon.level instanceof VaultLevel
 				|| (Dungeon.hero != null && Dungeon.hero.belongings.getItem(Amulet.class) != null)){
 			return false;
@@ -610,6 +617,8 @@ public class Dungeon {
 	private static final String DAILY	    = "daily";
 	private static final String DAILY_REPLAY= "daily_replay";
 	private static final String EXTRA_CHALLENGE = "extra_challenge";
+	private static final String INFINITE_WORLD = "infinite_world";
+	private static final String INFINITE_WORLD_STATE = "infinite_world_state";
 	private static final String LAST_PLAYED = "last_played";
 	private static final String CHALLENGES	= "challenges";
 	private static final String MOBS_TO_CHAMPION	= "mobs_to_champion";
@@ -629,6 +638,10 @@ public class Dungeon {
 	
 	public static void saveGame( int save ) {
 		try {
+			if (infiniteWorld && level instanceof InfiniteWorldLevel) {
+				((InfiniteWorldLevel) level).snapshotForSave();
+			}
+
 			Bundle bundle = new Bundle();
 
 			bundle.put( INIT_VER, initialVersion );
@@ -638,6 +651,8 @@ public class Dungeon {
 			bundle.put( DAILY, daily );
 			bundle.put( DAILY_REPLAY, dailyReplay );
 			bundle.put( EXTRA_CHALLENGE, extraChallenge );
+			bundle.put( INFINITE_WORLD, infiniteWorld );
+			if (infiniteWorldState != null) bundle.put( INFINITE_WORLD_STATE, infiniteWorldState );
 			bundle.put( LAST_PLAYED, lastPlayed = Game.realTime);
 			bundle.put( CHALLENGES, challenges );
 			bundle.put( MOBS_TO_CHAMPION, mobsToChampion );
@@ -739,6 +754,11 @@ public class Dungeon {
 		daily = bundle.getBoolean( DAILY );
 		dailyReplay = bundle.getBoolean( DAILY_REPLAY );
 		extraChallenge = bundle.contains(EXTRA_CHALLENGE) && bundle.getBoolean(EXTRA_CHALLENGE);
+		infiniteWorld = bundle.contains(INFINITE_WORLD) && bundle.getBoolean(INFINITE_WORLD);
+		if (bundle.contains(INFINITE_WORLD_STATE)) {
+			infiniteWorldState = (InfiniteWorldState) bundle.get(INFINITE_WORLD_STATE);
+		}
+		if (infiniteWorldState == null) infiniteWorldState = new InfiniteWorldState();
 
 		Actor.clear();
 		Actor.restoreNextID( bundle );
