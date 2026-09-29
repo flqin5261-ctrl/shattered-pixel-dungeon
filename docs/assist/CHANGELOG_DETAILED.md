@@ -36,6 +36,7 @@
 | 秘密房/房间级主题 | 0.4.2 | 943 | assist-0.4.2-stable | 21eb31d97ba0bf46b920a6f622a587ea97c560f0 |
 | 无限骨架/阈限异常区 | 0.4.3 | 944 | assist-0.4.3-stable | a513fc1a099d272c356c3127f874c3dd861e2799 |
 | 多层无限支线网络 | 0.4.4 | 945 | assist-0.4.4-stable | 02689bb5b1ed0d91424de21779d6f94cc96c8c83 |
+| 玩家中心怪物生态 | 0.5.0 | 946 | assist-0.5.0-stable | c01cabebd7e9c453c11b3dc0f886a1579d9543fd |
 
 特别说明：
 
@@ -1566,3 +1567,147 @@ V10 没有把每一条普通局部岔路强行改成无限。
 > 世界里不只有一套无限主干，而是同时存在多条可长期离开主干继续探索的无限支线。
 
 这样既保留迷宫和死胡同，也避免“所有旁路最终都只能返回高速公路”的单调体验。
+
+
+# 22. 0.5.0 — 玩家中心稀疏怪物生态
+
+版本：
+
+- 0.5.0
+- versionCode 946
+- dev：`assist-0.5.0-mobs`
+- stable：`assist-0.5.0-stable`
+- Generator 仍为 V10
+- release code SHA：`c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
+
+这是 Infinite World 正式进入怪物阶段的第一版。
+
+用户明确要求：
+
+- 怪物数量不能太多；
+- 仿照 Minecraft，离玩家太远的怪直接消失；
+- 距离消失不产生掉落；
+- 玩家附近怪物刷新不要频繁；
+- 探索是主要玩法，战斗只占一部分；
+- 玩家周围怪物有硬上限；
+- 暂时不加 Boss；
+- 普通小怪为主，精英怪极少。
+
+## 22.1 不使用原版“整层预生成怪群”
+
+Infinite World 的 `createMobs()` 仍不在世界构建时一次性塞怪。
+
+改为独立 `InfiniteWorldMobEcology` Actor：
+
+- Hero 进入世界后延迟约 20～32 回合才开始生态刷新；
+- 每次生态检查后等待约 32～50 回合；
+- 一次最多只刷 1 只；
+- 数量越接近上限，成功刷怪概率越低；
+- 异常宏区刷新概率再乘 0.45，使阈限空间维持更空旷的气氛。
+
+## 22.2 数量上限
+
+- 正常刷怪目标上限：5
+- 绝对硬上限：6
+- 精英怪同时最多：1
+
+普通情况下预期玩家身边常见约 1～3 只，而不是一直顶满上限。
+
+## 22.3 出现与消失范围
+
+普通生态怪只会尝试生成在：
+
+- 距玩家路径距离至少 14 格；
+- 最远约 28 格；
+- 不在 Hero 当前 FOV；
+- 可通行；
+- 非实体墙/坑/秘密 terrain；
+- 没有角色、箱子、Trap 或 Plant 占位的位置。
+
+距离玩家超过约 40 格后：
+
+- 直接从 Actor 和 Level mob 集合移除；
+- Sprite 直接销毁；
+- 不走 `die()`；
+- 不走 `Mob.destroy()`；
+- 不掉 Loot；
+- 不给 EXP；
+- 不计入击杀统计。
+
+为了实现这一点，在 `Mob` 中加入专门的 `despawnFromInfiniteWorld()`，不能用正常死亡入口代替。
+
+## 22.4 Streaming 中的怪物处理
+
+Infinite World 每次 Window shift 会移动 3 Chunk，即 72 cell。
+
+若不处理，Mob.pos 仍是旧 local cell，会产生严重坐标错位。
+
+0.5.0 在 shift 后：
+
+- 按 shiftedCellsX/Y 把仍在有效范围内的 Mob local pos 重算；
+- 清空旧 path/target/enemy；
+- 重设为 WANDERING；
+- Sprite 重新 place 到新 local cell；
+- 超出新 window、距离太远或落入无效 terrain 的怪直接无奖励 despawn。
+
+新增 `Mob.rebaseForInfiniteWorld()` 专门清理旧 local navigation state。
+
+## 22.5 怪物池
+
+近距离/初期：
+
+- Rat
+- Snake
+- Gnoll
+- Crab
+- Slime
+
+玩家等级提高或探索到更远 world chunk 后，逐步混入：
+
+- Skeleton
+- DM100
+- Bat
+- Brute
+- Spinner
+
+很远或角色等级较高时，少量混入：
+
+- Warlock
+- Monk
+
+暂时没有：
+
+- Boss
+- Miniboss
+- Thief（避免偷走玩家物品后距离 despawn 导致物品永久消失）
+- 大量召唤型怪物
+
+## 22.6 精英怪
+
+精英使用原版 `ChampionEnemy` buff，而不是新建第二套怪物类。
+
+- 单只怪成为精英的基础概率约 6%；
+- 同时最多 1 只；
+- 新角色出生附近不会立刻刷精英；
+- 当前只使用：
+  - Projecting
+  - AntiMagic
+  - Blessed
+  - Growing
+
+刻意不使用：
+
+- Blazing：Buff detach 时会制造火焰，不符合“距离 despawn 无副作用”；
+- Giant：改变 LARGE/placement 需求，第一版暂不引入。
+
+## 22.7 存档策略
+
+0.5.0 的生态设计不是“每个世界 Chunk 永久保存一只固定怪”。
+
+它更接近 Minecraft 式临时生态：
+
+- 当前仍在玩家附近的 Mob 会继续由原版 Level MOBS 序列化，正常 save/load；
+- 一旦玩家走远超过 despawn radius，该怪物就永久离开当前生态，不保存到远处 Chunk；
+- 之后附近空缺由生态控制器按低频率重新生成新怪。
+
+这符合用户明确要求的“走远后直接消失”，也避免为无限世界维护无限增长的 mob world-state 数据。
