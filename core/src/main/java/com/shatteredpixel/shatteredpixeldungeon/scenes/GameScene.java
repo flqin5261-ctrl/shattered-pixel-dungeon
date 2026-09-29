@@ -270,12 +270,6 @@ public class GameScene extends PixelScene {
 			}
 		};
 		water.autoAdjust = true;
-		if (Dungeon.infiniteWorld) {
-			// Infinite World renders WATER as ordinary tiles. Keeping the original
-			// full-level water skin visible would turn any transient render hole into
-			// a giant fake lake during streaming.
-			water.visible = false;
-		}
 		terrain.add( water );
 
 		ripples = new Group();
@@ -1424,9 +1418,6 @@ public class GameScene extends PixelScene {
 			updateFog();
 			scene.wallBlocking.flushMapUpdate();
 
-			// Deliberately remain hidden for Infinite World. Its real water cells are
-			// rendered by DungeonTerrainTilemap instead of this full-screen skin.
-			if (scene.water != null) scene.water.visible = !Dungeon.infiniteWorld;
 		}
 	}
 
