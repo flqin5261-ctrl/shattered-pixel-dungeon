@@ -108,15 +108,15 @@ public class HeroSprite extends CharSprite {
 	}
 
 	public synchronized void rebaseInfiniteWorld(int p, float cameraShiftX, float cameraShiftY) {
-		// Stop and remove the tween that was created for the just-completed step before
-		// moving the sprite into the rebased local window. Merely calling stop(false)
-		// leaves the old tween referenced and isMoving=true, which can later snap or stall.
+		// Normal streaming now runs from onMotionComplete(), where motion is already null.
+		// Keep this defensive cleanup only for unusual external movement paths.
 		if (motion != null) {
 			motion.stop(false);
 			motion.killAndErase();
 			motion = null;
 		}
 		isMoving = false;
+		notifyAll();
 		super.place(p);
 		if (Game.scene() instanceof GameScene) {
 			Camera.main.shift(new PointF(cameraShiftX, cameraShiftY));
