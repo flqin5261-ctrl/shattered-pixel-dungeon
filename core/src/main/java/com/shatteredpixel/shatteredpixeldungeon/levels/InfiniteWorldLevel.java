@@ -1066,8 +1066,9 @@ public class InfiniteWorldLevel extends Level {
 
         // Large-area styles form coherent districts, but v4 has eight distinct
         // families instead of five.
-        int regionX = Math.floorDiv(cx, 4);
-        int regionY = Math.floorDiv(cy, 4);
+        int biomeRegionSize = state().generatorVersion >= 6 ? 3 : 4;
+        int regionX = Math.floorDiv(cx, biomeRegionSize);
+        int regionY = Math.floorDiv(cy, biomeRegionSize);
         int biomeMax = state().generatorVersion >= 4 ? 7 : 4;
         int biome = range(regionX, regionY, 401, 0, biomeMax);
         decorateBiome(out, cx, cy, ox, oy, biome);
@@ -1982,21 +1983,59 @@ public class InfiniteWorldLevel extends Level {
             for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
                 int cx = state().centerChunkX + wx;
                 int cy = state().centerChunkY + wy;
+                int localX = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                int localY = (wy + HALF_WINDOW) * CHUNK_SIZE;
 
-                // About two thirds of chunks carry a foreign-material floor patch.
-                if (Math.floorMod(hash(cx, cy, 16001), 100L) >= 66) continue;
+                if (state().generatorVersion < 6) {
+                    // Preserve the sparse v4/v5 mixed-floor look exactly for old saves.
+                    if (Math.floorMod(hash(cx, cy, 16001), 100L) >= 66) continue;
 
-                int alt = range(Math.floorDiv(cx, 2), Math.floorDiv(cy, 2), 16002, 0, 4);
-                if (alt == base) alt = (alt + 1 + range(cx, cy, 16003, 0, 2)) % 5;
+                    int alt = range(Math.floorDiv(cx, 2), Math.floorDiv(cy, 2), 16002, 0, 4);
+                    if (alt == base) alt = (alt + 1 + range(cx, cy, 16003, 0, 2)) % 5;
 
-                InfiniteWorldAccentTilemap accent =
-                        new InfiniteWorldAccentTilemap(textures[alt], (int)hash(cx, cy, 16004));
-                accent.setRect(
-                        (wx + HALF_WINDOW) * CHUNK_SIZE,
-                        (wy + HALF_WINDOW) * CHUNK_SIZE,
-                        CHUNK_SIZE,
-                        CHUNK_SIZE);
-                customTiles.add(accent);
+                    InfiniteWorldAccentTilemap accent =
+                            new InfiniteWorldAccentTilemap(textures[alt], (int)hash(cx, cy, 16004));
+                    accent.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                    customTiles.add(accent);
+                    continue;
+                }
+
+                // V6 uses coherent 2x2/3x3 "material districts". Most chunks in a
+                // district are strongly reskinned, so walking can genuinely feel
+                // like moving between sewers, prison, caves, city and halls.
+                int macroSize = 2 + range(Math.floorDiv(cx, 5), Math.floorDiv(cy, 5), 16100, 0, 1);
+                int mx = Math.floorDiv(cx, macroSize);
+                int my = Math.floorDiv(cy, macroSize);
+                int alt = range(mx, my, 16101, 0, 4);
+
+                // Some districts intentionally keep the base world's material as a
+                // visual breathing space; all others are forced to a foreign set.
+                boolean keepBase = Math.floorMod(hash(mx, my, 16102), 100L) < 16;
+                if (!keepBase && alt == base) {
+                    alt = (alt + 1 + range(mx, my, 16103, 0, 3)) % 5;
+                }
+                if (keepBase && alt == base) continue;
+
+                int floorCoverage = 86 + range(cx, cy, 16104, 0, 14);
+                int wallCoverage = 82 + range(cx, cy, 16105, 0, 18);
+
+                InfiniteWorldAccentTilemap floorAccent =
+                        new InfiniteWorldAccentTilemap(
+                                textures[alt],
+                                (int)hash(cx, cy, 16106),
+                                floorCoverage,
+                                InfiniteWorldAccentTilemap.MODE_FLOOR);
+                floorAccent.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                customTiles.add(floorAccent);
+
+                InfiniteWorldAccentTilemap wallAccent =
+                        new InfiniteWorldAccentTilemap(
+                                textures[alt],
+                                (int)hash(cx, cy, 16107),
+                                wallCoverage,
+                                InfiniteWorldAccentTilemap.MODE_WALLS);
+                wallAccent.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                customWalls.add(wallAccent);
             }
         }
     }
