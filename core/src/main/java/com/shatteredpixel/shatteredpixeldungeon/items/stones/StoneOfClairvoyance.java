@@ -26,8 +26,10 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CheckedCell;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ShadowCaster;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Point;
 
@@ -41,6 +43,11 @@ public class StoneOfClairvoyance extends Runestone {
 	
 	@Override
 	protected void activate(final int cell) {
+		if (Dungeon.infiniteWorld) {
+			GLog.w(Messages.get(this, "infinite_blocked"));
+			return;
+		}
+
 		Point c = Dungeon.level.cellToPoint(cell);
 		
 		int[] rounding = ShadowCaster.rounding[DIST];
