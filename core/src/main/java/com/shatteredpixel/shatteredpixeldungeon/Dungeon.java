@@ -237,6 +237,12 @@ public class Dungeon {
 		}
 	}
 	
+	public static void initInfiniteWorldSeed(){
+		customSeedText = "";
+		seed = DungeonSeed.randomSeed();
+	}
+
+
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
