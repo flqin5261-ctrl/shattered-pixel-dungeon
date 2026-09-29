@@ -21,6 +21,7 @@ public class InfiniteWorldState implements Bundlable {
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
+    private final HashSet<Long> exploredChunks = new HashSet<>();
     private final HashSet<Long> visited = new HashSet<>();
     private final HashSet<Long> mapped = new HashSet<>();
     private final HashMap<Long, Integer> chestStates = new HashMap<>();
@@ -41,6 +42,14 @@ public class InfiniteWorldState implements Bundlable {
 
     public int generatedChunkCount() {
         return generatedChunks.size();
+    }
+
+    public void markChunkExplored(int chunkX, int chunkY) {
+        exploredChunks.add(chunkKey(chunkX, chunkY));
+    }
+
+    public boolean chunkExplored(int chunkX, int chunkY) {
+        return exploredChunks.contains(chunkKey(chunkX, chunkY));
     }
 
     private static long chunkKey(int x, int y) {
@@ -83,6 +92,7 @@ public class InfiniteWorldState implements Bundlable {
     private static final String CY = "cy";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
+    private static final String EXPLORED_CHUNKS = "explored_chunks";
     private static final String TERRAIN_VALUES = "terrain_values";
     private static final String VISITED = "visited";
     private static final String MAPPED = "mapped";
@@ -110,6 +120,11 @@ public class InfiniteWorldState implements Bundlable {
         i = 0;
         for (Long key : generatedChunks) generated[i++] = key;
         bundle.put(GENERATED_CHUNKS, generated);
+
+        long[] explored = new long[exploredChunks.size()];
+        i = 0;
+        for (Long key : exploredChunks) explored[i++] = key;
+        bundle.put(EXPLORED_CHUNKS, explored);
 
         long[] visitedKeys = new long[visited.size()];
         i = 0;
@@ -151,6 +166,10 @@ public class InfiniteWorldState implements Bundlable {
         generatedChunks.clear();
         long[] generated = bundle.getLongArray(GENERATED_CHUNKS);
         if (generated != null) for (long key : generated) generatedChunks.add(key);
+
+        exploredChunks.clear();
+        long[] explored = bundle.getLongArray(EXPLORED_CHUNKS);
+        if (explored != null) for (long key : explored) exploredChunks.add(key);
 
         visited.clear();
         long[] visitedKeys = bundle.getLongArray(VISITED);
