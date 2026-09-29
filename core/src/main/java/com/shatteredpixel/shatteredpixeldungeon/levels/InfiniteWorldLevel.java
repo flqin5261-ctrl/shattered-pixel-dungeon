@@ -11,7 +11,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -42,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
+import com.watabou.utils.BArray;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -69,6 +72,20 @@ public class InfiniteWorldLevel extends Level {
     private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
     private boolean shifting;
+
+    // Infinite World ecology is deliberately sparse. The player should normally
+    // see only a few enemies at a time, with exploration remaining the main loop.
+    private static final int MOB_SPAWN_TARGET_CAP = 5;
+    private static final int MOB_HARD_CAP = 6;
+    private static final int MOB_SPAWN_MIN_DISTANCE = 14;
+    private static final int MOB_SPAWN_MAX_DISTANCE = 28;
+    private static final int MOB_DESPAWN_DISTANCE = 40;
+    private static final int ELITE_HARD_CAP = 1;
+    private static final int ELITE_CHANCE_PERCENT = 6;
+    private static final float MOB_RESPAWN_MIN_TURNS = 32f;
+    private static final float MOB_RESPAWN_MAX_TURNS = 50f;
+
+    private InfiniteWorldMobEcology mobEcology;
 
     // Keep recently generated chunks in memory. The world itself is still seed-driven;
     // this cache only avoids rebuilding chunks when the player walks back and forth.
@@ -169,18 +186,296 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     protected void createMobs() {
-        // Generator v2 still intentionally spawns no enemies.
-        // Later versions will save/freeze mobs per world chunk and only simulate nearby chunks.
+        // No enemies are pre-populated during level generation. The ecology
+        // controller begins after the hero enters the world and adds one enemy at
+        // a time on a slow cadence.
     }
 
     @Override
     public Actor addRespawner() {
-        return null;
+        if (mobEcology == null) {
+            mobEcology = new InfiniteWorldMobEcology();
+        }
+        Actor.addDelayed(mobEcology, 20f + Random.Float() * 12f);
+        return mobEcology;
+    }
+
+    @Override
+    public int mobLimit() {
+        return MOB_HARD_CAP;
     }
 
     @Override
     public Mob createMob() {
-        return null;
+        return createInfiniteWorldMob();
+    }
+
+    @Override
+    public int randomRespawnCell(Char ch) {
+        return findInfiniteWorldMobSpawnCell(ch);
+    }
+
+    private class InfiniteWorldMobEcology extends Actor {
+        {
+            actPriority = BUFF_PRIO;
+        }
+
+        @Override
+        protected boolean act() {
+            if (Dungeon.level != InfiniteWorldLevel.this
+                    || Dungeon.hero == null
+                    || !Dungeon.hero.isAlive()) {
+                Actor.remove(this);
+                return true;
+            }
+
+            pruneInfiniteWorldMobs();
+
+            int count = activeEnemyCount();
+            if (count < MOB_SPAWN_TARGET_CAP) {
+                float chance;
+                if (count == 0) chance = 0.82f;
+                else if (count <= 2) chance = 0.58f;
+                else chance = 0.32f;
+
+                int heroChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+                int heroChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+                if (v9AnomalyType(heroChunkX, heroChunkY) != 0) {
+                    // Liminal macro-regions are intentionally quieter and emptier.
+                    chance *= 0.45f;
+                }
+
+                if (Random.Float() < chance) {
+                    spawnInfiniteWorldMob();
+                }
+            }
+
+            spend(MOB_RESPAWN_MIN_TURNS
+                    + Random.Float() * (MOB_RESPAWN_MAX_TURNS - MOB_RESPAWN_MIN_TURNS));
+            return true;
+        }
+    }
+
+    private boolean spawnInfiniteWorldMob() {
+        if (Dungeon.hero == null || !Dungeon.hero.isAlive()) return false;
+        if (activeEnemyCount() >= MOB_SPAWN_TARGET_CAP) return false;
+
+        Mob mob = createInfiniteWorldMob();
+        int cell = findInfiniteWorldMobSpawnCell(mob);
+        if (cell < 0) return false;
+
+        mob.pos = cell;
+        mob.state = mob.WANDERING;
+        maybeMakeInfiniteWorldElite(mob);
+
+        GameScene.add(mob, Random.Float());
+        return true;
+    }
+
+    private Mob createInfiniteWorldMob() {
+        int heroLevel = Dungeon.hero == null ? 1 : Dungeon.hero.lvl;
+        int worldChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int worldChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        int worldDistance = Math.max(Math.abs(worldChunkX), Math.abs(worldChunkY));
+
+        int tier = 0;
+        if (heroLevel >= 4 || worldDistance >= 10) tier = 1;
+        if (heroLevel >= 9 || worldDistance >= 24) tier = 2;
+
+        int roll = Random.Int(100);
+        if (tier >= 2 && roll < 20) {
+            switch (Random.Int(5)) {
+                case 0: return new Warlock();
+                case 1: return new Monk();
+                case 2: return new Spinner();
+                case 3: return new Brute();
+                default:return new Bat();
+            }
+        }
+
+        if (tier >= 1 && roll < 55) {
+            switch (Random.Int(5)) {
+                case 0: return new Skeleton();
+                case 1: return new DM100();
+                case 2: return new Bat();
+                case 3: return new Brute();
+                default:return new Spinner();
+            }
+        }
+
+        switch (Random.Int(5)) {
+            case 0: return new Rat();
+            case 1: return new Snake();
+            case 2: return new Gnoll();
+            case 3: return new Crab();
+            default:return new Slime();
+        }
+    }
+
+    private void maybeMakeInfiniteWorldElite(Mob mob) {
+        if (mob == null || activeEliteCount() >= ELITE_HARD_CAP) return;
+
+        int heroLevel = Dungeon.hero == null ? 1 : Dungeon.hero.lvl;
+        int worldChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int worldChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        int worldDistance = Math.max(Math.abs(worldChunkX), Math.abs(worldChunkY));
+
+        // Don't surprise a brand-new character with an elite at the spawn area.
+        if (heroLevel < 3 && worldDistance < 8) return;
+        if (Random.Int(100) >= ELITE_CHANCE_PERCENT) return;
+
+        // Blazing is intentionally excluded because detaching it creates fire,
+        // which would violate reward/effect-free distance despawning. Giant is
+        // excluded because it changes placement/open-space requirements.
+        switch (Random.Int(4)) {
+            case 0:
+                Buff.affect(mob, ChampionEnemy.Projecting.class);
+                break;
+            case 1:
+                Buff.affect(mob, ChampionEnemy.AntiMagic.class);
+                break;
+            case 2:
+                Buff.affect(mob, ChampionEnemy.Blessed.class);
+                break;
+            default:
+                Buff.affect(mob, ChampionEnemy.Growing.class);
+                break;
+        }
+    }
+
+    private int findInfiniteWorldMobSpawnCell(Char ch) {
+        if (Dungeon.hero == null || ch == null) return -1;
+
+        boolean[] walkable = BArray.or(passable, avoid, null);
+        PathFinder.buildDistanceMap(Dungeon.hero.pos, walkable, MOB_SPAWN_MAX_DISTANCE);
+
+        int hx = Dungeon.hero.pos % width();
+        int hy = Dungeon.hero.pos / width();
+
+        for (int tries = 0; tries < 80; tries++) {
+            int x = hx + Random.Int(MOB_SPAWN_MAX_DISTANCE * 2 + 1) - MOB_SPAWN_MAX_DISTANCE;
+            int y = hy + Random.Int(MOB_SPAWN_MAX_DISTANCE * 2 + 1) - MOB_SPAWN_MAX_DISTANCE;
+
+            if (x <= 1 || x >= width() - 2 || y <= 1 || y >= height() - 2) continue;
+
+            int cell = x + y * width();
+            int dist = PathFinder.distance[cell];
+
+            if (dist < MOB_SPAWN_MIN_DISTANCE || dist > MOB_SPAWN_MAX_DISTANCE) continue;
+            if (heroFOV[cell]) continue;
+            if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
+            if (Actor.findChar(cell) != null) continue;
+            if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+            if (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]) continue;
+
+            return cell;
+        }
+
+        return -1;
+    }
+
+    private int activeEnemyCount() {
+        int count = 0;
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob.alignment == Char.Alignment.ENEMY
+                    && !mob.properties().contains(Char.Property.BOSS)
+                    && !mob.properties().contains(Char.Property.MINIBOSS)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int activeEliteCount() {
+        int count = 0;
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob.alignment == Char.Alignment.ENEMY
+                    && !mob.buffs(ChampionEnemy.class).isEmpty()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void pruneInfiniteWorldMobs() {
+        if (Dungeon.hero == null) return;
+
+        int hx = Dungeon.hero.pos % width();
+        int hy = Dungeon.hero.pos / width();
+
+        ArrayList<Mob> managed = new ArrayList<>();
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob.alignment != Char.Alignment.ENEMY) continue;
+            if (mob.properties().contains(Char.Property.BOSS)
+                    || mob.properties().contains(Char.Property.MINIBOSS)) continue;
+
+            int mx = mob.pos % width();
+            int my = mob.pos / width();
+            int dist = Math.max(Math.abs(mx - hx), Math.abs(my - hy));
+
+            if (dist > MOB_DESPAWN_DISTANCE) {
+                mob.despawnFromInfiniteWorld();
+            } else {
+                managed.add(mob);
+            }
+        }
+
+        // Runtime effects can occasionally add enemies outside the ecology
+        // controller. Keep an absolute cap by removing the farthest extras first.
+        while (managed.size() > MOB_HARD_CAP) {
+            Mob farthest = null;
+            int farthestDist = -1;
+            for (Mob mob : managed) {
+                int mx = mob.pos % width();
+                int my = mob.pos / width();
+                int dist = Math.max(Math.abs(mx - hx), Math.abs(my - hy));
+                if (dist > farthestDist) {
+                    farthestDist = dist;
+                    farthest = mob;
+                }
+            }
+            if (farthest == null) break;
+            farthest.despawnFromInfiniteWorld();
+            managed.remove(farthest);
+        }
+    }
+
+    private void rebaseInfiniteWorldMobs(int shiftedCellsX, int shiftedCellsY) {
+        if (Dungeon.hero == null) return;
+
+        int hx = Dungeon.hero.pos % width();
+        int hy = Dungeon.hero.pos / width();
+
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob.alignment != Char.Alignment.ENEMY) continue;
+            if (mob.properties().contains(Char.Property.BOSS)
+                    || mob.properties().contains(Char.Property.MINIBOSS)) continue;
+
+            int oldX = mob.pos % width();
+            int oldY = mob.pos / width();
+            int newX = oldX - shiftedCellsX;
+            int newY = oldY - shiftedCellsY;
+
+            if (newX <= 0 || newX >= width() - 1
+                    || newY <= 0 || newY >= height() - 1) {
+                mob.despawnFromInfiniteWorld();
+                continue;
+            }
+
+            int dist = Math.max(Math.abs(newX - hx), Math.abs(newY - hy));
+            if (dist > MOB_DESPAWN_DISTANCE) {
+                mob.despawnFromInfiniteWorld();
+                continue;
+            }
+
+            int newPos = newX + newY * width();
+            if (solid[newPos] || pit[newPos]) {
+                mob.despawnFromInfiniteWorld();
+                continue;
+            }
+
+            mob.rebaseForInfiniteWorld(newPos);
+        }
     }
 
     @Override
@@ -200,11 +495,6 @@ public class InfiniteWorldLevel extends Level {
         return false;
     }
 
-    @Override
-    public int randomRespawnCell(Char ch) {
-        return centerCell();
-    }
-
     /**
      * Called after the hero moves. The local 168x168 canvas is recentred in-place
      * when the hero reaches the outer streaming band. No GameScene recreation is used.
@@ -222,6 +512,8 @@ public class InfiniteWorldLevel extends Level {
         st.markChunkExplored(
                 Math.floorDiv(st.heroWorldX, CHUNK_SIZE),
                 Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
+
+        pruneInfiniteWorldMobs();
     }
 
     /**
@@ -292,11 +584,13 @@ public class InfiniteWorldLevel extends Level {
 
         hero.pos = newLocalX + newLocalY * width();
 
-        hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
-        hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
-
         final int shiftedCellsX = shiftX * CHUNK_SIZE;
         final int shiftedCellsY = shiftY * CHUNK_SIZE;
+
+        rebaseInfiniteWorldMobs(shiftedCellsX, shiftedCellsY);
+
+        hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
+        hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
 
         // We are already on the render thread via CharSprite.onComplete().
         GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
