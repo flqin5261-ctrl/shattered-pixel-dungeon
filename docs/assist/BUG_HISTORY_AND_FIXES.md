@@ -1137,3 +1137,56 @@ V9 Pool Hall **没有**新建一套局部 Water renderer。
 - water backdrop visibility
 - large Tilemap batching
 
+
+
+# 35. V9：世界虽然无限，但旁路仍容易全部走到头
+
+## 用户反馈
+
+V9 主干网确实解决了“整个可达世界最终全部封死”的硬问题。
+
+但用户进一步指出：
+
+> 如果只有主干路无限，而旁边支线基本都只能走到头，那么体感仍然像“高速公路无限、真正探索路线有限”。
+
+## 根因
+
+V9 只有一层 world-scale guarantee：
+
+- every 6th row/column primary spine
+
+普通局部 branch 仍来自 Chunk 内 hub/tree/corridor。
+
+这些 branch 本来就允许 dead end。
+
+所以 V9 的数学无限性成立，但“可选择的无限路线数量”不足。
+
+## V10 修复
+
+新增第二层真正无限支线：
+
+- 每 18-Chunk horizontal band 选一个无限东西向 row
+- 每 18-Chunk vertical band 选一个无限南北向 column
+- 入口位置按 shared edge hash 连续变化
+- 支线本身无限
+- 与 primary spine 周期性交叉
+
+## 不采用的方案
+
+不把所有局部支路强制贯通。
+
+原因：
+
+- 会把迷宫变规则网格
+- dead end 消失
+- secret/special room 失去封闭感
+- 地图选择反而变机械
+
+## 回归目标
+
+V10 新世界里：
+
+- 玩家可以离开 primary spine 后沿 secondary route 连续跨很多 Chunk
+- secondary route 不在 seam 处断
+- 仍能遇到普通 dead end
+- 不需要每次一撞死路就退回唯一主干
