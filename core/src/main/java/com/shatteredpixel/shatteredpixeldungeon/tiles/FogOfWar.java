@@ -320,12 +320,19 @@ public class FogOfWar extends Image {
 		return NoosaScriptNoLighting.get();
 	}
 
+	// Streaming can remap the full 168x168 window between frames. Flush the
+	// pending fog bitmap immediately on the render thread so stale black pixels
+	// from the old window cannot survive into the next frame.
+	public synchronized void flushUpdate() {
+		if (!toUpdate.isEmpty()) {
+			updateTexture(Dungeon.level.heroFOV, Dungeon.level.visited, Dungeon.level.mapped);
+		}
+	}
+
 	@Override
 	public void draw() {
 
-		if (!toUpdate.isEmpty()){
-			updateTexture(Dungeon.level.heroFOV, Dungeon.level.visited, Dungeon.level.mapped);
-		}
+		flushUpdate();
 
 		super.draw();
 	}
