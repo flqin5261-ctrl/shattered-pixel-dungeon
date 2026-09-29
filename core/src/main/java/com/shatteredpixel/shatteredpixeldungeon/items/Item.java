@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -317,6 +318,16 @@ public class Item implements Bundlable {
 	}
 	
 	public final Item detach( Bag container ) {
+
+		if (stackable && SPDSettings.assistEnabled() && SPDSettings.assistNoConsume()
+				&& Dungeon.hero != null && Dungeon.hero.belongings.contains(this)) {
+			Item detached = duplicate();
+			if (detached != null) {
+				detached.quantity(1);
+				detached.onDetach();
+			}
+			return detached;
+		}
 		
 		if (quantity <= 0) {
 			
