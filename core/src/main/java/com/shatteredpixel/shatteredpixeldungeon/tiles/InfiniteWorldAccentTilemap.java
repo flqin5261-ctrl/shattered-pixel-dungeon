@@ -92,32 +92,22 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
     }
 
     private int floorVisual(int pos, int terrain) {
-        // Water remains animated by the world's normal water layer. Walls and
-        // raised objects are handled by MODE_WALLS.
-        if (terrain == Terrain.WATER || terrain == Terrain.CHASM
-                || DungeonTileSheet.wallStitcheable(terrain)
-                || DungeonTileSheet.doorTile(terrain)
-                || terrain == Terrain.STATUE || terrain == Terrain.STATUE_SP
-                || terrain == Terrain.ALCHEMY || terrain == Terrain.BARRICADE
-                || terrain == Terrain.HIGH_GRASS || terrain == Terrain.FURROWED_GRASS
-                || terrain == Terrain.MINE_CRYSTAL || terrain == Terrain.MINE_BOULDER
-                || terrain == Terrain.REGION_DECO || terrain == Terrain.REGION_DECO_ALT) {
-            return -1;
-        }
-
+        // Reproduce the normal terrain layer with another upstream tilesheet.
+        // Water stays on the world's animated water backdrop.
         int visual = DungeonTileSheet.directVisuals.get(terrain, -1);
-        return visual >= 0 ? DungeonTileSheet.getVisualWithAlts(visual, pos) : -1;
-    }
+        if (visual >= 0 && terrain != Terrain.CUSTOM_DECO_WTR) {
+            return DungeonTileSheet.getVisualWithAlts(visual, pos);
+        }
+        if (terrain == Terrain.WATER || terrain == Terrain.CHASM) return -1;
 
-    private int raisedVisual(int pos, int terrain) {
         int width = Dungeon.level.width();
         int right = (pos + 1) % width != 0 ? Dungeon.level.map[pos + 1] : -1;
         int below = pos + width < Dungeon.level.length() ? Dungeon.level.map[pos + width] : -1;
         int left = pos % width != 0 ? Dungeon.level.map[pos - 1] : -1;
+        int above = pos >= width ? Dungeon.level.map[pos - width] : -1;
 
         if (DungeonTileSheet.doorTile(terrain)) {
-            return DungeonTileSheet.getRaisedDoorTile(terrain,
-                    pos >= width ? Dungeon.level.map[pos - width] : -1);
+            return DungeonTileSheet.getRaisedDoorTile(terrain, above);
         } else if (DungeonTileSheet.wallStitcheable(terrain)) {
             return DungeonTileSheet.getRaisedWallTile(terrain, pos, right, below, left);
         } else if (terrain == Terrain.STATUE) {
@@ -136,11 +126,70 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
             return DungeonTileSheet.RAISED_ALCHEMY_POT;
         } else if (terrain == Terrain.BARRICADE) {
             return DungeonTileSheet.RAISED_BARRICADE;
-        } else if (terrain == Terrain.HIGH_GRASS) {
-            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_HIGH_GRASS, pos);
-        } else if (terrain == Terrain.FURROWED_GRASS) {
-            return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.RAISED_FURROWED_GRASS, pos);
         }
+
+        // High grass uses a separate raised-terrain atlas in the vanilla renderer,
+        // so leave it alone rather than forcing an incompatible region tilesheet.
+        return -1;
+    }
+
+    private int raisedVisual(int pos, int terrain) {
+        // Reproduce DungeonWallsTilemap's upper wall/overhang layer with the
+        // alternate region texture. Together with floorVisual this swaps the
+        // visible wall material, not just the floor beneath it.
+        int width = Dungeon.level.width();
+        int size = Dungeon.level.length();
+        int[] map = Dungeon.level.map;
+
+        if (DungeonTileSheet.wallStitcheable(terrain)) {
+            if (pos + width < size && !DungeonTileSheet.wallStitcheable(map[pos + width])) {
+                int below = map[pos + width];
+                if (below == Terrain.DOOR) return DungeonTileSheet.DOOR_SIDEWAYS;
+                if (below == Terrain.LOCKED_DOOR || below == Terrain.HERO_LKD_DR) {
+                    return DungeonTileSheet.DOOR_SIDEWAYS_LOCKED;
+                }
+                if (below == Terrain.CRYSTAL_DOOR) return DungeonTileSheet.DOOR_SIDEWAYS_CRYSTAL;
+                if (below == Terrain.OPEN_DOOR) return -1;
+            } else {
+                return DungeonTileSheet.stitchInternalWallTile(
+                        terrain,
+                        (pos + 1) % width != 0 ? map[pos + 1] : -1,
+                        (pos + 1) % width != 0 && pos + width < size ? map[pos + 1 + width] : -1,
+                        pos + width < size ? map[pos + width] : -1,
+                        pos % width != 0 && pos + width < size ? map[pos - 1 + width] : -1,
+                        pos % width != 0 ? map[pos - 1] : -1);
+            }
+        }
+
+        if (terrain == Terrain.LOCKED_EXIT || terrain == Terrain.UNLOCKED_EXIT) {
+            return DungeonTileSheet.EXIT_UNDERHANG;
+        } else if (pos + width < size && DungeonTileSheet.wallStitcheable(map[pos + width])) {
+            return DungeonTileSheet.stitchWallOverhangTile(
+                    terrain,
+                    (pos + 1) % width != 0 ? map[pos + 1 + width] : -1,
+                    map[pos + width],
+                    pos % width != 0 ? map[pos - 1 + width] : -1);
+        } else if (pos + width < size) {
+            int below = map[pos + width];
+            if (below == Terrain.DOOR || below == Terrain.LOCKED_DOOR || below == Terrain.HERO_LKD_DR) {
+                return DungeonTileSheet.DOOR_OVERHANG;
+            }
+            if (below == Terrain.OPEN_DOOR) return DungeonTileSheet.DOOR_OVERHANG_OPEN;
+            if (below == Terrain.CRYSTAL_DOOR) return DungeonTileSheet.DOOR_OVERHANG_CRYSTAL;
+            if (below == Terrain.STATUE) return DungeonTileSheet.STATUE_OVERHANG;
+            if (below == Terrain.STATUE_SP) return DungeonTileSheet.STATUE_SP_OVERHANG;
+            if (below == Terrain.REGION_DECO) return DungeonTileSheet.REGION_DECO_OVERHANG;
+            if (below == Terrain.REGION_DECO_ALT) return DungeonTileSheet.REGION_DECO_ALT_OVERHANG;
+            if (below == Terrain.MINE_CRYSTAL) {
+                return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.MINE_CRYSTAL_OVERHANG_BLUE, pos + width);
+            }
+            if (below == Terrain.MINE_BOULDER) {
+                return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.MINE_BOULDER_OVERHANG, pos + width);
+            }
+            if (below == Terrain.ALCHEMY) return DungeonTileSheet.ALCHEMY_POT_OVERHANG;
+            if (below == Terrain.BARRICADE) return DungeonTileSheet.BARRICADE_OVERHANG;
+        }
+
         return -1;
     }
 
