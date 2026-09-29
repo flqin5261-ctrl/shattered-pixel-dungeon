@@ -38,8 +38,10 @@ public class InfiniteWorldLevel extends Level {
     // Shift three chunks at once. This leaves a two-chunk safety margin and makes
     // streaming far less frequent than v0.3's every-chunk scene rebuild.
     private static final int SHIFT_STEP = 3;
-    private static final int SHIFT_LOW = CHUNK_SIZE * 2;
-    private static final int SHIFT_HIGH = CHUNK_SIZE * (WINDOW_CHUNKS - 2);
+    // Keep a full one-chunk hysteresis band at each edge. After shifting 3 chunks,
+    // the hero lands around y/x 72..96 instead of exactly on the opposite trigger.
+    private static final int SHIFT_LOW = CHUNK_SIZE;
+    private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
     private boolean shifting;
 
@@ -128,19 +130,32 @@ public class InfiniteWorldLevel extends Level {
      * Called after the hero moves. The local 168x168 canvas is recentred in-place
      * when the hero reaches the outer streaming band. No GameScene recreation is used.
      */
-    public boolean afterHeroMove(final Hero hero) {
-        if (shifting || hero == null || Dungeon.level != this) return false;
+    public void recordHeroMove(Hero hero) {
+        if (hero == null || Dungeon.level != this) return;
 
+        InfiniteWorldState st = state();
         int x = hero.pos % width();
         int y = hero.pos / width();
 
-        InfiniteWorldState st = state();
-        int worldXNow = (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
-        int worldYNow = (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
-        st.heroWorldX = worldXNow;
-        st.heroWorldY = worldYNow;
+        st.heroWorldX = (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
+        st.heroWorldY = (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
         st.heroWorldInitialized = true;
-        st.markChunkExplored(Math.floorDiv(worldXNow, CHUNK_SIZE), Math.floorDiv(worldYNow, CHUNK_SIZE));
+        st.markChunkExplored(
+                Math.floorDiv(st.heroWorldX, CHUNK_SIZE),
+                Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
+    }
+
+    /**
+     * Streaming is deliberately performed only after the current movement tween
+     * has completed. CharSprite.onComplete() calls Hero.onMotionComplete() before
+     * waking the actor thread, so the window can rebase here without destroying
+     * a live tween or leaving Actor.process() blocked on sprite.wait().
+     */
+    public void afterHeroMotionComplete(Hero hero) {
+        if (shifting || hero == null || Dungeon.level != this) return;
+
+        int x = hero.pos % width();
+        int y = hero.pos / width();
 
         int shiftX = 0;
         int shiftY = 0;
@@ -151,19 +166,18 @@ public class InfiniteWorldLevel extends Level {
         if (y < SHIFT_LOW) shiftY = -SHIFT_STEP;
         else if (y >= SHIFT_HIGH) shiftY = SHIFT_STEP;
 
-        if (shiftX == 0 && shiftY == 0) return false;
+        if (shiftX == 0 && shiftY == 0) return;
 
         shifting = true;
 
+        InfiniteWorldState st = state();
         int oldCenterX = st.centerChunkX;
         int oldCenterY = st.centerChunkY;
 
+        // recordHeroMove() has already made these absolute coordinates authoritative.
         int worldX = st.heroWorldX;
         int worldY = st.heroWorldY;
 
-        // Preserve any cell-based action as an absolute-world target before the
-        // local window is rebased. Otherwise a long path can resume toward the
-        // old local cell, which looks like the hero is walking back to spawn.
         int curTargetWorldX = Integer.MIN_VALUE;
         int curTargetWorldY = Integer.MIN_VALUE;
         int lastTargetWorldX = Integer.MIN_VALUE;
@@ -188,37 +202,26 @@ public class InfiniteWorldLevel extends Level {
         int newLocalX = worldX - (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
         int newLocalY = worldY - (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
 
-        // Absolute coordinates are authoritative. A bad rebase must never silently
-        // fall back to the spawn/entrance position.
         if (newLocalX < 1 || newLocalX >= width()-1
                 || newLocalY < 1 || newLocalY >= height()-1) {
             st.centerChunkX = oldCenterX;
             st.centerChunkY = oldCenterY;
             rebuildWindow();
             shifting = false;
-            return false;
+            return;
         }
 
         hero.pos = newLocalX + newLocalY * width();
 
-        // Translate active/paused destinations into the new local window. If a target
-        // falls outside the new canvas, cancel it instead of allowing stale local
-        // coordinates to pull the hero back across the world.
         hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
         hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
 
         final int shiftedCellsX = shiftX * CHUNK_SIZE;
         final int shiftedCellsY = shiftY * CHUNK_SIZE;
 
-        ShatteredPixelDungeon.runOnRenderThread(new Callback() {
-            @Override
-            public void call() {
-                GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
-                shifting = false;
-            }
-        });
-
-        return true;
+        // We are already on the render thread via CharSprite.onComplete().
+        GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
+        shifting = false;
     }
 
     private boolean isCellAction(HeroAction action) {
