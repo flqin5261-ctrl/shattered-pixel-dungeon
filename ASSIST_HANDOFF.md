@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.4.4-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.0-stable`。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -85,11 +85,11 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.4.4**
-- 当前 versionCode：**945**
-- 当前最新稳定分支：`assist-0.4.4-stable`
-- 当前发布代码 SHA：`02689bb5b1ed0d91424de21779d6f94cc96c8c83`
-- 当前对应开发分支：`assist-0.4.4-branch-network`
+- 当前最新稳定版本：**0.5.0**
+- 当前 versionCode：**946**
+- 当前最新稳定分支：`assist-0.5.0-stable`
+- 当前发布代码 SHA：`c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
+- 当前对应开发分支：`assist-0.5.0-mobs`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 10**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -109,9 +109,9 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.4.4-stable` 和最新开发分支。
+4. 检查最新稳定分支 `assist-0.5.0-stable` 和最新开发分支。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
-   - `assist-0.4.5-xxxxx`
+   - `assist-0.5.1-xxxxx`
 6. **不要覆盖历史 stable 分支。**
 7. 每次可安装版本都必须：
    - versionCode 递增
@@ -839,6 +839,7 @@ Infinite World 是：
   - `assist-0.4.2-stable`
 - `assist-0.4.3-stable`
 - `assist-0.4.4-stable`
+- `assist-0.5.0-stable`
 
 主要变化：
 
@@ -1227,3 +1228,114 @@ V10 保留 V9 主干，同时加入真正无限的次级支线。
 设计目标：
 
 > **世界里同时存在多条真正可以无限探索的路线，而不是只有一套主干；但仍保留局部死胡同和迷宫感。**
+
+
+# 23. 0.5.0 — 稀疏怪物生态
+
+Infinite World 从本版本开始正式加入普通怪和稀有精英怪，但战斗仍是次要玩法。
+
+## 23.1 用户明确规则
+
+- 探索优先，杀怪只是部分玩法；
+- 不允许短距离不断刷怪；
+- 玩家周围同时存在的敌人必须有上限；
+- 怪离玩家太远后像 Minecraft 一样直接消失；
+- 距离 despawn 不掉落、不加经验、不计击杀；
+- Boss 暂时完全不加；
+- 精英怪可以有，但必须很少。
+
+## 23.2 当前参数
+
+- 常规刷怪目标上限：5
+- 绝对硬上限：6
+- 同时精英上限：1
+- 新怪出现距离：路径距离 14～28 cell
+- 强制 despawn：约 40 cell
+- 初次生态检查：进入世界后约 20～32 回合
+- 后续检查间隔：约 32～50 回合
+- 单次最多刷 1 只
+- 精英基础概率：约 6%
+- Liminal anomaly 区刷怪率再乘 0.45
+
+实际体感目标是常见约 1～3 只，不是长期顶着 5～6 只。
+
+## 23.3 怪物类别
+
+初期低危险池：
+
+- Rat
+- Snake
+- Gnoll
+- Crab
+- Slime
+
+玩家等级/世界距离提高后逐渐混入：
+
+- Skeleton
+- DM100
+- Bat
+- Brute
+- Spinner
+- Warlock
+- Monk
+
+暂时不加入 Thief，原因是它可能偷玩家物品；若它随后因距离 despawn，会造成被偷物品永久丢失。
+
+暂时不加入大量召唤型怪，以免破坏硬上限和第一版生态判断。
+
+## 23.4 精英怪
+
+复用原版 ChampionEnemy：
+
+- Projecting
+- AntiMagic
+- Blessed
+- Growing
+
+没有使用 Blazing，因为 Champion buff detach 会制造火焰；距离 despawn 时必须无奖励、无环境副作用。
+
+没有使用 Giant，因为它改变 LARGE placement 需求，第一版先保持生成规则简单。
+
+## 23.5 怪物不是无限世界永久实体
+
+当前设计特意**不做远处 Mob 世界持久化**。
+
+仍在玩家附近的怪：
+
+- 原版 Level MOBS 正常保存；
+- save/load 后继续存在。
+
+超出约 40 cell：
+
+- Actor 移除；
+- Level.mobs 移除；
+- Sprite 销毁；
+- 不保存在远处 Chunk；
+- 将来空缺由低频 ecology 重新产生新怪。
+
+这是用户要求的 Minecraft 式临时生态，而不是每只怪永久占据某个世界坐标。
+
+## 23.6 Streaming
+
+Mob.pos 是 local 168×168 cell。
+
+Window shift 3 Chunk 后必须同步重定位当前附近 Mob：
+
+- newX = oldX - shiftedCellsX
+- newY = oldY - shiftedCellsY
+- 清 path
+- 清 enemy/target
+- 状态回到 WANDERING
+- Sprite place 到新 local cell
+
+超出新 window 或超过 despawn radius 的 Mob 直接无奖励消失。
+
+因此后续改 Streaming 时必须同时回归测试怪物 rebase。
+
+## 23.7 不需要重新开始地图
+
+0.5.0 没改基础 terrain generator：
+
+- WORLD_GEN_VERSION 仍为 10。
+
+因此现有 V10 Infinite World 可以直接升级后出现怪物，不必为了怪物功能重开世界。
