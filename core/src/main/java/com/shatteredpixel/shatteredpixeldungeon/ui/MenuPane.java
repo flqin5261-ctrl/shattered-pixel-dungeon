@@ -392,8 +392,8 @@ public class MenuPane extends Component {
 			add(bg);
 
 			image = Icons.get(Icons.PREFS);
-			image.originToCenter();
-			image.scale.set(PixelScene.align(0.5f));
+			image.origin.set(0, 0);
+			image.scale.set(0.5f);
 			add(image);
 		}
 
@@ -404,9 +404,10 @@ public class MenuPane extends Component {
 			bg.x = x + 2;
 			bg.y = y + 8;
 
-			// center the icon itself, then scale around its center so it does not appear tilted/off-axis
-			image.x = bg.x + (bg.width() - image.width())/2f;
-			image.y = bg.y + (bg.height() - image.height())/2f;
+			// PREFS is 14x14 and is rendered at exactly 7x7.
+			// The button face is 13x11, so (3,2) is the exact integer-pixel center.
+			image.x = bg.x + 3;
+			image.y = bg.y + 2;
 			PixelScene.align(image);
 		}
 
