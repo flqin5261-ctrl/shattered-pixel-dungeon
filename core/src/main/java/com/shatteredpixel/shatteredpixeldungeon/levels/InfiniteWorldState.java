@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class InfiniteWorldState implements Bundlable {
 
-    public static final int WORLD_GEN_VERSION = 5;
+    public static final int WORLD_GEN_VERSION = 6;
 
     public int generatorVersion = WORLD_GEN_VERSION;
     public int centerChunkX = 0;
@@ -34,6 +34,9 @@ public class InfiniteWorldState implements Bundlable {
     private final HashMap<Long, long[]> visitedChunks = new HashMap<>();
     private final HashMap<Long, long[]> mappedChunks = new HashMap<>();
     private final HashMap<Long, Integer> chestStates = new HashMap<>();
+    // Generic persistent state for deterministic plants and loose world loot.
+    // 0 = untouched/present, 1+ = object-specific consumed/changed state.
+    private final HashMap<Long, Integer> objectStates = new HashMap<>();
 
     public InfiniteWorldState() {}
 
@@ -157,6 +160,16 @@ public class InfiniteWorldState implements Bundlable {
         else chestStates.put(key, state);
     }
 
+    public int objectState(long key) {
+        Integer state = objectStates.get(key);
+        return state == null ? 0 : state;
+    }
+
+    public void setObjectState(long key, int state) {
+        if (state <= 0) objectStates.remove(key);
+        else objectStates.put(key, state);
+    }
+
     private static final String GEN = "gen";
     private static final String CX = "cx";
     private static final String CY = "cy";
@@ -176,6 +189,8 @@ public class InfiniteWorldState implements Bundlable {
     private static final String MAPPED_CHUNK_MASKS = "mapped_chunk_masks";
     private static final String CHEST_KEYS = "chest_keys";
     private static final String CHEST_VALUES = "chest_values";
+    private static final String OBJECT_KEYS = "object_keys";
+    private static final String OBJECT_VALUES = "object_values";
 
     @Override
     public void storeInBundle(Bundle bundle) {
@@ -227,6 +242,17 @@ public class InfiniteWorldState implements Bundlable {
         }
         bundle.put(CHEST_KEYS, chestKeys);
         bundle.put(CHEST_VALUES, chestValues);
+
+        long[] objectKeys = new long[objectStates.size()];
+        int[] objectValues = new int[objectStates.size()];
+        i = 0;
+        for (Map.Entry<Long, Integer> e : objectStates.entrySet()) {
+            objectKeys[i] = e.getKey();
+            objectValues[i] = e.getValue();
+            i++;
+        }
+        bundle.put(OBJECT_KEYS, objectKeys);
+        bundle.put(OBJECT_VALUES, objectValues);
     }
 
     @Override
@@ -282,6 +308,15 @@ public class InfiniteWorldState implements Bundlable {
         if (chestKeys != null && chestValues != null) {
             for (int i = 0; i < Math.min(chestKeys.length, chestValues.length); i++) {
                 chestStates.put(chestKeys[i], chestValues[i]);
+            }
+        }
+
+        objectStates.clear();
+        long[] objectKeys = bundle.getLongArray(OBJECT_KEYS);
+        int[] objectValues = bundle.getIntArray(OBJECT_VALUES);
+        if (objectKeys != null && objectValues != null) {
+            for (int i = 0; i < Math.min(objectKeys.length, objectValues.length); i++) {
+                objectStates.put(objectKeys[i], objectValues[i]);
             }
         }
     }
