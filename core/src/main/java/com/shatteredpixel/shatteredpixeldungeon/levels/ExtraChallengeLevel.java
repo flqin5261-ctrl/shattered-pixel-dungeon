@@ -181,6 +181,12 @@ public class ExtraChallengeLevel extends Level {
 
     @Override
     public boolean activateTransition(Hero hero, LevelTransition transition) {
+        // The entrance transition is needed as a spawn anchor, but in this standalone
+        // mode it must never behave like a staircase back to "floor 0".
+        if (transition.type == LevelTransition.Type.REGULAR_ENTRANCE) {
+            return false;
+        }
+
         if (transition.type != LevelTransition.Type.REGULAR_EXIT) {
             return super.activateTransition(hero, transition);
         }
