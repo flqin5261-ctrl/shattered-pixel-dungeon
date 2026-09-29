@@ -771,6 +771,7 @@ Infinite World 是：
 - branch：
   - `assist-0.4.2-secrets`
   - `assist-0.4.2-stable`
+- `assist-0.4.3-stable`
 
 主要变化：
 
@@ -914,7 +915,7 @@ Boss 不应该每个 Chunk 随机刷。
 继续阅读：
 
 - `docs/assist/CHANGELOG_DETAILED.md`
-  - 从 Base1 到 0.4.2 的逐版本历史
+  - 从 Base1 到 0.4.3 的逐版本历史
 - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
   - Infinite World 架构、坐标、存档、渲染、对象状态
 - `docs/assist/BUG_HISTORY_AND_FIXES.md`
