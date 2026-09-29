@@ -2745,6 +2745,14 @@ public class InfiniteWorldLevel extends Level {
                         int[] s = v7RoomSpec(cx, cy, roomIndex);
                         int theme = s[8];
 
+                        // Keep still-hidden rooms visually indistinguishable from
+                        // surrounding walls. Their bespoke room tileset is only a
+                        // reward after discovery, not a giveaway from a distance.
+                        if (s.length > 10 && s[10] == 1) {
+                            int doorCell = chunkX + s[4] + (chunkY + s[5]) * width();
+                            if (map[doorCell] == Terrain.SECRET_DOOR) continue;
+                        }
+
                         int alt = range(cx, cy, 22400 + roomIndex, 0, 4);
                         // Theme contributes to the room material so repeated room
                         // types tend to have a recognizable visual bias.
