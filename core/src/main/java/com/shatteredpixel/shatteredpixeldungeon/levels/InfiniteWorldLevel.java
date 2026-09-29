@@ -1008,9 +1008,19 @@ public class InfiniteWorldLevel extends Level {
                         case 6:
                             generateV7CrystalVault(cx, cy, ox, oy, roomIndex);
                             break;
-                        default:
+                        case 7:
                             generateV7Workshop(cx, cy, ox, oy, roomIndex);
                             break;
+                        case 8:
+                            generateV8GoldGarden(cx, cy, ox, oy, roomIndex);
+                            break;
+                        default:
+                            generateV8Treasury(cx, cy, ox, oy, roomIndex);
+                            break;
+                    }
+
+                    if (state().generatorVersion >= 8 && spec.length > 10 && spec[10] == 1) {
+                        generateV8SecretBonus(cx, cy, ox, oy, roomIndex);
                     }
                 }
             }
@@ -1018,7 +1028,8 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7PlantRoom(int cx, int cy, int ox, int oy, int roomIndex) {
-        for (int slot = 0; slot < 7; slot++) {
+        int plantCount = state().generatorVersion >= 8 ? 12 : 7;
+        for (int slot = 0; slot < plantCount; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21100);
             if (cell < 0) continue;
             long key = v7RoomObjectKey(cell, roomIndex, slot, 0);
@@ -1127,6 +1138,60 @@ public class InfiniteWorldLevel extends Level {
             placeV7LooseItem(cell,
                     v7RoomObjectKey(cell, roomIndex, slot, 7),
                     items[slot]);
+        }
+    }
+
+    private void generateV8GoldGarden(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 8 + range(cx, cy, 21900 + roomIndex, 0, 4);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21920);
+            if (cell < 0) continue;
+            int qty = 8 + range(cx, cy, 21960 + roomIndex * 16 + slot, 0, 22);
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 9),
+                    new Gold(qty));
+        }
+    }
+
+    private void generateV8Treasury(int cx, int cy, int ox, int oy, int roomIndex) {
+        int count = 5 + range(cx, cy, 22000 + roomIndex, 0, 3);
+        for (int slot = 0; slot < count; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 22020);
+            if (cell < 0) continue;
+
+            Item item;
+            int roll = range(cx, cy, 22060 + roomIndex * 16 + slot, 0, 99);
+            if (roll < 28) item = v6EquipmentItem(cx, cy, 22080 + roomIndex * 16 + slot);
+            else if (roll < 48) item = v6SafeScroll(cx, cy, 22100 + roomIndex * 16 + slot);
+            else if (roll < 68) item = v6RandomPotion(cx, cy, 22120 + roomIndex * 16 + slot);
+            else if (roll < 82) item = new Gold(12 + range(cx, cy, 22140 + slot, 0, 28));
+            else if (roll < 90) item = new Bomb();
+            else item = new CrystalKey(Dungeon.depth);
+
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 10),
+                    item);
+        }
+    }
+
+    private void generateV8SecretBonus(int cx, int cy, int ox, int oy, int roomIndex) {
+        // Hidden rooms mirror upstream secret-room philosophy: small footprint,
+        // much denser reward. The secret door itself is discovered by normal search.
+        int bonus = 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
+        for (int slot = 0; slot < bonus; slot++) {
+            int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot + 12, 22220);
+            if (cell < 0) continue;
+
+            Item item;
+            int roll = range(cx, cy, 22260 + roomIndex * 16 + slot, 0, 99);
+            if (roll < 30) item = new Gold(18 + range(cx, cy, 22280 + slot, 0, 35));
+            else if (roll < 55) item = v6EquipmentItem(cx, cy, 22300 + roomIndex * 16 + slot);
+            else if (roll < 75) item = v6SafeScroll(cx, cy, 22320 + roomIndex * 16 + slot);
+            else item = v6RandomPotion(cx, cy, 22340 + roomIndex * 16 + slot);
+
+            placeV7LooseItem(cell,
+                    v7RoomObjectKey(cell, roomIndex, slot, 11),
+                    item);
         }
     }
 
@@ -1688,13 +1753,27 @@ public class InfiniteWorldLevel extends Level {
                 out[(cxm - 1) + innerTop * MAP_SIZE] = Terrain.MINE_CRYSTAL;
                 out[(cxm + 1) + innerTop * MAP_SIZE] = Terrain.MINE_CRYSTAL;
             }
-        } else { // trap workshop
+        } else if (theme == 7) { // trap workshop
             for (int y = innerTop; y <= innerBottom; y++) {
                 for (int x = innerLeft; x <= innerRight; x++) {
                     if (Math.floorMod(hash(x, y, 20970), 100L) < 22) {
                         out[x + y * MAP_SIZE] = Terrain.SECRET_TRAP;
                     }
                 }
+            }
+        } else if (theme == 8) { // gold garden
+            for (int y = innerTop; y <= innerBottom; y++) {
+                for (int x = innerLeft; x <= innerRight; x++) {
+                    out[x + y * MAP_SIZE] = ((x + y) & 1) == 0 ? Terrain.EMPTY_DECO : Terrain.GRASS;
+                }
+            }
+        } else { // mixed treasury / secret cache
+            int cxm = (innerLeft + innerRight) / 2;
+            int cym = (innerTop + innerBottom) / 2;
+            out[cxm + cym * MAP_SIZE] = Terrain.PEDESTAL;
+            if (innerRight > innerLeft) {
+                out[innerLeft + innerTop * MAP_SIZE] = Terrain.STATUE;
+                out[innerRight + innerBottom * MAP_SIZE] = Terrain.STATUE;
             }
         }
     }
