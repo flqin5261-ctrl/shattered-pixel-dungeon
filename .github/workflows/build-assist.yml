@@ -21,6 +21,7 @@ on:
       - assist-0.4.0-worldloot
       - assist-0.4.1-themedrooms
       - assist-0.4.2-secrets
+      - assist-0.4.3-liminal
   workflow_dispatch:
 
 permissions:
