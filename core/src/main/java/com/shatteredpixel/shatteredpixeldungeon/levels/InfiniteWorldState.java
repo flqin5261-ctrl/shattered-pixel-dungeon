@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class InfiniteWorldState implements Bundlable {
 
-    public static final int WORLD_GEN_VERSION = 7;
+    public static final int WORLD_GEN_VERSION = 8;
 
     public int generatorVersion = WORLD_GEN_VERSION;
     public int centerChunkX = 0;
