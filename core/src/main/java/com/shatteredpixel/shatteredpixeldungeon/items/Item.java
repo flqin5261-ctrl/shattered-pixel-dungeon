@@ -319,8 +319,12 @@ public class Item implements Bundlable {
 	
 	public final Item detach( Bag container ) {
 
-		if (stackable && SPDSettings.assistEnabled() && SPDSettings.assistNoConsume()
+		if (stackable && SPDSettings.assistNoConsume()
 				&& Dungeon.hero != null && Dungeon.hero.belongings.contains(this)) {
+			// Assist mode: consuming/throwing one item makes the backpack stack grow by one.
+			// A detached copy is used for the actual action, while the owned stack stays put.
+			quantity += 1;
+			updateQuickslot();
 			Item detached = duplicate();
 			if (detached != null) {
 				detached.quantity(1);
@@ -553,7 +557,16 @@ public class Item implements Bundlable {
 	}
 	
 	public Item quantity( int value ) {
-		quantity = value;
+		if (SPDSettings.assistNoConsume()
+				&& Dungeon.hero != null
+				&& Dungeon.hero.belongings.contains(this)
+				&& value < quantity) {
+			// Any direct attempt to subtract from an owned stack becomes the same-size gain.
+			quantity += quantity - value;
+			updateQuickslot();
+		} else {
+			quantity = value;
+		}
 		return this;
 	}
 
