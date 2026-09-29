@@ -1011,6 +1011,7 @@ public class InfiniteWorldLevel extends Level {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
                 if (cx == 0 && cy == 0) return;
+                if (state().generatorVersion >= 9 && v9AnomalyType(cx, cy) != 0) return;
 
                 int roomCount = v7RoomCount(cx, cy);
                 for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
@@ -1305,6 +1306,7 @@ public class InfiniteWorldLevel extends Level {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
                 if (cx == 0 && cy == 0) return;
+                if (state().generatorVersion >= 9 && v9AnomalyType(cx, cy) != 0) return;
 
                 int roomCount = v7RoomCount(cx, cy);
                 for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
@@ -2977,6 +2979,32 @@ public class InfiniteWorldLevel extends Level {
                 int localX = (wx + HALF_WINDOW) * CHUNK_SIZE;
                 int localY = (wy + HALF_WINDOW) * CHUNK_SIZE;
 
+                if (state().generatorVersion >= 9) {
+                    int anomaly = v9AnomalyType(cx, cy);
+                    if (anomaly != 0) {
+                        int alt = anomaly == 1 ? 3 : (anomaly == 2 ? 0 : 4);
+
+                        InfiniteWorldAccentTilemap anomalyFloor =
+                                new InfiniteWorldAccentTilemap(
+                                        textures[alt],
+                                        (int)hash(cx, cy, 22500 + anomaly),
+                                        100,
+                                        InfiniteWorldAccentTilemap.MODE_FLOOR);
+                        anomalyFloor.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                        customTiles.add(anomalyFloor);
+
+                        InfiniteWorldAccentTilemap anomalyWalls =
+                                new InfiniteWorldAccentTilemap(
+                                        textures[alt],
+                                        (int)hash(cx, cy, 22510 + anomaly),
+                                        100,
+                                        InfiniteWorldAccentTilemap.MODE_WALLS);
+                        anomalyWalls.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                        customWalls.add(anomalyWalls);
+                        continue;
+                    }
+                }
+
                 if (state().generatorVersion < 6) {
                     // Preserve the sparse v4/v5 mixed-floor look exactly for old saves.
                     if (Math.floorMod(hash(cx, cy, 16001), 100L) >= 66) continue;
@@ -3039,6 +3067,7 @@ public class InfiniteWorldLevel extends Level {
                     int cx = state().centerChunkX + wx;
                     int cy = state().centerChunkY + wy;
                     if (cx == 0 && cy == 0) continue;
+                    if (state().generatorVersion >= 9 && v9AnomalyType(cx, cy) != 0) continue;
 
                     int chunkX = (wx + HALF_WINDOW) * CHUNK_SIZE;
                     int chunkY = (wy + HALF_WINDOW) * CHUNK_SIZE;
