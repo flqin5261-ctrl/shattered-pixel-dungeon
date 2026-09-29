@@ -53,7 +53,8 @@ public abstract class DocumentPage extends Item {
 	public final boolean doPickUp(Hero hero, int pos) {
 		GameScene.pickUpJournal(this, pos);
 		GameScene.flashForDocument(document(), page());
-		if (document() == Document.ADVENTURERS_GUIDE){
+		if (document() == Document.ADVENTURERS_GUIDE
+				|| document() == Document.INFINITE_WORLD_NOTES){
 			WndJournal.last_index = 1;
 		} else if (document() == Document.ALCHEMY_GUIDE) {
 			WndJournal.last_index = 2;
