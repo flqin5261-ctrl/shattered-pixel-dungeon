@@ -13,13 +13,14 @@ import java.util.Map;
 
 public class InfiniteWorldState implements Bundlable {
 
-    public static final int WORLD_GEN_VERSION = 1;
+    public static final int WORLD_GEN_VERSION = 2;
 
     public int generatorVersion = WORLD_GEN_VERSION;
     public int centerChunkX = 0;
     public int centerChunkY = 0;
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
+    private final HashSet<Long> generatedChunks = new HashSet<>();
     private final HashSet<Long> visited = new HashSet<>();
     private final HashSet<Long> mapped = new HashSet<>();
     private final HashMap<Long, Integer> chestStates = new HashMap<>();
@@ -28,6 +29,22 @@ public class InfiniteWorldState implements Bundlable {
 
     public Integer terrainOverride(long key) {
         return terrainOverrides.get(key);
+    }
+
+    public void markChunkGenerated(int chunkX, int chunkY) {
+        generatedChunks.add(chunkKey(chunkX, chunkY));
+    }
+
+    public boolean chunkGenerated(int chunkX, int chunkY) {
+        return generatedChunks.contains(chunkKey(chunkX, chunkY));
+    }
+
+    public int generatedChunkCount() {
+        return generatedChunks.size();
+    }
+
+    private static long chunkKey(int x, int y) {
+        return ((long)x << 32) ^ (y & 0xFFFFFFFFL);
     }
 
     public void setTerrainOverride(long key, Integer value) {
@@ -65,6 +82,7 @@ public class InfiniteWorldState implements Bundlable {
     private static final String CX = "cx";
     private static final String CY = "cy";
     private static final String TERRAIN_KEYS = "terrain_keys";
+    private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String TERRAIN_VALUES = "terrain_values";
     private static final String VISITED = "visited";
     private static final String MAPPED = "mapped";
@@ -87,6 +105,11 @@ public class InfiniteWorldState implements Bundlable {
         }
         bundle.put(TERRAIN_KEYS, terrainKeys);
         bundle.put(TERRAIN_VALUES, terrainValues);
+
+        long[] generated = new long[generatedChunks.size()];
+        i = 0;
+        for (Long key : generatedChunks) generated[i++] = key;
+        bundle.put(GENERATED_CHUNKS, generated);
 
         long[] visitedKeys = new long[visited.size()];
         i = 0;
@@ -124,6 +147,10 @@ public class InfiniteWorldState implements Bundlable {
                 terrainOverrides.put(terrainKeys[i], terrainValues[i]);
             }
         }
+
+        generatedChunks.clear();
+        long[] generated = bundle.getLongArray(GENERATED_CHUNKS);
+        if (generated != null) for (long key : generated) generatedChunks.add(key);
 
         visited.clear();
         long[] visitedKeys = bundle.getLongArray(VISITED);
