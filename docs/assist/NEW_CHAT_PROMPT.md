@@ -23,12 +23,12 @@
 
 当前已知基线：
 
-- 最新稳定版：0.4.2
-- versionCode：943
-- stable：`assist-0.4.2-stable`
+- 最新稳定版：0.4.3
+- versionCode：944
+- stable：`assist-0.4.3-stable`
 - 对应代码 release SHA：
-  `21eb31d97ba0bf46b920a6f622a587ea97c560f0`
-- Infinite World Generator：V8
+  `a513fc1a099d272c356c3127f874c3dd861e2799`
+- Infinite World Generator：V9
 - 包名：
   `com.shatteredpixel.shatteredpixeldungeon.assist`
 - 固定签名不能改
@@ -74,23 +74,18 @@
 - static mixed-theme overlay 曾导致解锁后旧锁门贴图仍残留
 - 动态门现在必须由原版动态 Tilemap 绘制
 
-0.4.2 当前内容：
+0.4.3 当前内容：
 
-- 普通门房
-- 银钥匙锁门
-- Secret Door 隐藏房
-- 植物园
-- 金币园
-- 卷轴房
-- 药剂房
-- 食物房
-- 钥匙房
-- 武器库
-- 水晶宝库
-- 陷阱工坊
-- 综合藏宝室
-- Sewers/Prison/Caves/City/Halls 多环境混合
-- 房间级 tileset
+- 普通门房、银钥匙锁门、Secret Door 隐藏房
+- 植物园、金币园、卷轴房、药剂房、食物房、钥匙房、武器库、水晶宝库、陷阱工坊、综合藏宝室
+- Sewers/Prison/Caves/City/Halls 多环境混合与房间级 tileset
+- V9 世界级 Infinite Backbone：允许普通支路死路，但保证原点主连通分量真正无限
+- 三类 5×5 Chunk 阈限异常宏区：重复回廊、静水廊厅、无尽大厅
+- 异常区可收藏 InfiniteWorldNote
+- Guide 中独立“无界异境记录”栏目
+- V9 高价值物资/普通箱子/野外钥匙显著降密
+- V9 SECRET_TRAP 大幅降密
+- 每 3×3 Chunk macro 有确定性 Secret Room 候选，靠近秘密门被动发现率提高
 - Bomb 炸墙
 - Pickaxe 挖矿
 - Chains
@@ -101,25 +96,24 @@
 
 当前下一步方向：
 
-1. 继续参考原版 Room 系统增加更多小/中型真正房间：
+1. 先根据 0.4.3 实机测试调整 Infinite Backbone、Secret Room、异常宏区和资源曲线。
+2. 需要继续加房间时，优先添加低奖励但高辨识度的原版风格房间：
    - Magic Well
    - Runestone
    - Library
-   - Pool
    - Fire/Barricade
    - Mine
-   - Trap Corridor
    - Cell Block
-   - Maze
    - Ritual/Statue
-2. 做 room/chunk visual overlay 局部刷新，解决 Secret Door 被发现后主题延迟、炸墙后静态 overlay 可能残留。
-3. 地图内容足够后开始怪物：
+3. 做 room/chunk visual overlay 局部刷新，解决 Secret Door 被发现后主题延迟、炸墙后静态 overlay 可能残留。
+4. 新增异常空间时直接扩展现有 Infinite World Field Notes，不要重新造 Journal 系统。
+5. 地图和经济曲线稳定后开始怪物：
    - deterministic spawn
    - mob world state
    - dead state persistence
    - chunk unload/reload
    - active radius
-4. 普通怪稳定后再做 Boss landmark 和 Boss persistence。
+6. 普通怪稳定后再做 Boss landmark 和 Boss persistence。
 
 用户偏好：
 
