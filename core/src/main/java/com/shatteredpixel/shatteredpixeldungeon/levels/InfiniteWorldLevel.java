@@ -1078,7 +1078,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7PlantRoom(int cx, int cy, int ox, int oy, int roomIndex) {
-        int plantCount = state().generatorVersion >= 8 ? 12 : 7;
+        int plantCount = state().generatorVersion >= 9
+                ? 7 + range(cx, cy, 21101 + roomIndex, 0, 2)
+                : (state().generatorVersion >= 8 ? 12 : 7);
         for (int slot = 0; slot < plantCount; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21100);
             if (cell < 0) continue;
@@ -1093,7 +1095,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7ScrollRoom(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 4 + range(cx, cy, 21200 + roomIndex, 0, 2);
+        int count = state().generatorVersion >= 9
+                ? 1 + range(cx, cy, 21200 + roomIndex, 0, 1)
+                : 4 + range(cx, cy, 21200 + roomIndex, 0, 2);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21220);
             if (cell < 0) continue;
@@ -1104,7 +1108,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7PotionRoom(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 4 + range(cx, cy, 21300 + roomIndex, 0, 2);
+        int count = state().generatorVersion >= 9
+                ? 1 + range(cx, cy, 21300 + roomIndex, 0, 1)
+                : 4 + range(cx, cy, 21300 + roomIndex, 0, 2);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21320);
             if (cell < 0) continue;
@@ -1115,7 +1121,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7FoodRoom(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 5 + range(cx, cy, 21400 + roomIndex, 0, 3);
+        int count = state().generatorVersion >= 9
+                ? 2 + range(cx, cy, 21400 + roomIndex, 0, 1)
+                : 5 + range(cx, cy, 21400 + roomIndex, 0, 3);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21420);
             if (cell < 0) continue;
@@ -1126,6 +1134,21 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7KeyRoom(int cx, int cy, int ox, int oy, int roomIndex) {
+        if (state().generatorVersion >= 9) {
+            Item[] keys = new Item[]{
+                    new IronKey(Dungeon.depth),
+                    new CrystalKey(Dungeon.depth)
+            };
+            for (int slot = 0; slot < keys.length; slot++) {
+                int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21520);
+                if (cell < 0) continue;
+                placeV7LooseItem(cell,
+                        v7RoomObjectKey(cell, roomIndex, slot, 4),
+                        keys[slot]);
+            }
+            return;
+        }
+
         Item[] keys = new Item[]{
                 new IronKey(Dungeon.depth),
                 new IronKey(Dungeon.depth),
@@ -1148,7 +1171,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7Armory(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 3 + range(cx, cy, 21600 + roomIndex, 0, 2);
+        int count = state().generatorVersion >= 9
+                ? 1 + range(cx, cy, 21600 + roomIndex, 0, 1)
+                : 3 + range(cx, cy, 21600 + roomIndex, 0, 2);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21620);
             if (cell < 0) continue;
@@ -1159,7 +1184,8 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7CrystalVault(int cx, int cy, int ox, int oy, int roomIndex) {
-        for (int slot = 0; slot < 2; slot++) {
+        int chestCount = state().generatorVersion >= 9 ? 1 : 2;
+        for (int slot = 0; slot < chestCount; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21720);
             if (cell < 0) continue;
             long key = v7RoomObjectKey(cell, roomIndex, slot, 6);
@@ -1176,12 +1202,12 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV7Workshop(int cx, int cy, int ox, int oy, int roomIndex) {
-        Item[] items = new Item[]{
-                new Bomb(),
-                new Bomb(),
-                new StoneOfBlink(),
-                new Torch()
-        };
+        Item[] items;
+        if (state().generatorVersion >= 9) {
+            items = new Item[]{ new Bomb(), new StoneOfBlink() };
+        } else {
+            items = new Item[]{ new Bomb(), new Bomb(), new StoneOfBlink(), new Torch() };
+        }
         for (int slot = 0; slot < items.length; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21820);
             if (cell < 0) continue;
@@ -1192,11 +1218,15 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV8GoldGarden(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 8 + range(cx, cy, 21900 + roomIndex, 0, 4);
+        int count = state().generatorVersion >= 9
+                ? 4 + range(cx, cy, 21900 + roomIndex, 0, 3)
+                : 8 + range(cx, cy, 21900 + roomIndex, 0, 4);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21920);
             if (cell < 0) continue;
-            int qty = 8 + range(cx, cy, 21960 + roomIndex * 16 + slot, 0, 22);
+            int qty = state().generatorVersion >= 9
+                    ? 5 + range(cx, cy, 21960 + roomIndex * 16 + slot, 0, 12)
+                    : 8 + range(cx, cy, 21960 + roomIndex * 16 + slot, 0, 22);
             placeV7LooseItem(cell,
                     v7RoomObjectKey(cell, roomIndex, slot, 9),
                     new Gold(qty));
@@ -1204,7 +1234,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV8Treasury(int cx, int cy, int ox, int oy, int roomIndex) {
-        int count = 5 + range(cx, cy, 22000 + roomIndex, 0, 3);
+        int count = state().generatorVersion >= 9
+                ? 2 + range(cx, cy, 22000 + roomIndex, 0, 2)
+                : 5 + range(cx, cy, 22000 + roomIndex, 0, 3);
         for (int slot = 0; slot < count; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 22020);
             if (cell < 0) continue;
@@ -1214,7 +1246,7 @@ public class InfiniteWorldLevel extends Level {
             if (roll < 28) item = v6EquipmentItem(cx, cy, 22080 + roomIndex * 16 + slot);
             else if (roll < 48) item = v6SafeScroll(cx, cy, 22100 + roomIndex * 16 + slot);
             else if (roll < 68) item = v6RandomPotion(cx, cy, 22120 + roomIndex * 16 + slot);
-            else if (roll < 82) item = new Gold(12 + range(cx, cy, 22140 + slot, 0, 28));
+            else if (roll < 82) item = new Gold(8 + range(cx, cy, 22140 + slot, 0, 18));
             else if (roll < 90) item = new Bomb();
             else item = new CrystalKey(Dungeon.depth);
 
@@ -1225,16 +1257,18 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV8SecretBonus(int cx, int cy, int ox, int oy, int roomIndex) {
-        // Hidden rooms mirror upstream secret-room philosophy: small footprint,
-        // much denser reward. The secret door itself is discovered by normal search.
-        int bonus = 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
+        // Secret rooms remain richer than ordinary rooms, but V9 deliberately
+        // avoids handing out an entire inventory every few chunks.
+        int bonus = state().generatorVersion >= 9
+                ? 2 + range(cx, cy, 22200 + roomIndex, 0, 1)
+                : 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
         for (int slot = 0; slot < bonus; slot++) {
             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot + 12, 22220);
             if (cell < 0) continue;
 
             Item item;
             int roll = range(cx, cy, 22260 + roomIndex * 16 + slot, 0, 99);
-            if (roll < 30) item = new Gold(18 + range(cx, cy, 22280 + slot, 0, 35));
+            if (roll < 30) item = new Gold(12 + range(cx, cy, 22280 + slot, 0, 24));
             else if (roll < 55) item = v6EquipmentItem(cx, cy, 22300 + roomIndex * 16 + slot);
             else if (roll < 75) item = v6SafeScroll(cx, cy, 22320 + roomIndex * 16 + slot);
             else item = v6RandomPotion(cx, cy, 22340 + roomIndex * 16 + slot);
@@ -1290,7 +1324,10 @@ public class InfiniteWorldLevel extends Level {
                     int kind;
                     int salt;
                     if (theme == 0) {
-                        count = state().generatorVersion >= 8 ? 12 : 7; kind = 0; salt = 21100;
+                        count = state().generatorVersion >= 9
+                                ? 7 + range(cx, cy, 21101 + roomIndex, 0, 2)
+                                : (state().generatorVersion >= 8 ? 12 : 7);
+                        kind = 0; salt = 21100;
                         for (int slot = 0; slot < count; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
                             if (cell < 0) continue;
@@ -1300,7 +1337,7 @@ public class InfiniteWorldLevel extends Level {
                             }
                         }
                     } else if (theme == 6) {
-                        count = 2;
+                        count = state().generatorVersion >= 9 ? 1 : 2;
                         for (int slot = 0; slot < count; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, 21720);
                             if (cell < 0) continue;
@@ -1311,14 +1348,37 @@ public class InfiniteWorldLevel extends Level {
                             else st.setChestState(key, 1);
                         }
                     } else {
-                        if (theme == 1) { count = 4 + range(cx, cy, 21200 + roomIndex, 0, 2); kind = 1; salt = 21220; }
-                        else if (theme == 2) { count = 4 + range(cx, cy, 21300 + roomIndex, 0, 2); kind = 2; salt = 21320; }
-                        else if (theme == 3) { count = 5 + range(cx, cy, 21400 + roomIndex, 0, 3); kind = 3; salt = 21420; }
-                        else if (theme == 4) { count = 5; kind = 4; salt = 21520; }
-                        else if (theme == 5) { count = 3 + range(cx, cy, 21600 + roomIndex, 0, 2); kind = 5; salt = 21620; }
-                        else if (theme == 7) { count = 4; kind = 7; salt = 21820; }
-                        else if (theme == 8) { count = 8 + range(cx, cy, 21900 + roomIndex, 0, 4); kind = 9; salt = 21920; }
-                        else { count = 5 + range(cx, cy, 22000 + roomIndex, 0, 3); kind = 10; salt = 22020; }
+                        if (theme == 1) {
+                            count = state().generatorVersion >= 9 ? 1 + range(cx, cy, 21200 + roomIndex, 0, 1)
+                                    : 4 + range(cx, cy, 21200 + roomIndex, 0, 2);
+                            kind = 1; salt = 21220;
+                        } else if (theme == 2) {
+                            count = state().generatorVersion >= 9 ? 1 + range(cx, cy, 21300 + roomIndex, 0, 1)
+                                    : 4 + range(cx, cy, 21300 + roomIndex, 0, 2);
+                            kind = 2; salt = 21320;
+                        } else if (theme == 3) {
+                            count = state().generatorVersion >= 9 ? 2 + range(cx, cy, 21400 + roomIndex, 0, 1)
+                                    : 5 + range(cx, cy, 21400 + roomIndex, 0, 3);
+                            kind = 3; salt = 21420;
+                        } else if (theme == 4) {
+                            count = state().generatorVersion >= 9 ? 2 : 5;
+                            kind = 4; salt = 21520;
+                        } else if (theme == 5) {
+                            count = state().generatorVersion >= 9 ? 1 + range(cx, cy, 21600 + roomIndex, 0, 1)
+                                    : 3 + range(cx, cy, 21600 + roomIndex, 0, 2);
+                            kind = 5; salt = 21620;
+                        } else if (theme == 7) {
+                            count = state().generatorVersion >= 9 ? 2 : 4;
+                            kind = 7; salt = 21820;
+                        } else if (theme == 8) {
+                            count = state().generatorVersion >= 9 ? 4 + range(cx, cy, 21900 + roomIndex, 0, 3)
+                                    : 8 + range(cx, cy, 21900 + roomIndex, 0, 4);
+                            kind = 9; salt = 21920;
+                        } else {
+                            count = state().generatorVersion >= 9 ? 2 + range(cx, cy, 22000 + roomIndex, 0, 2)
+                                    : 5 + range(cx, cy, 22000 + roomIndex, 0, 3);
+                            kind = 10; salt = 22020;
+                        }
 
                         for (int slot = 0; slot < count; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot, salt);
@@ -1328,7 +1388,9 @@ public class InfiniteWorldLevel extends Level {
                     }
 
                     if (state().generatorVersion >= 8 && spec.length > 10 && spec[10] == 1) {
-                        int bonus = 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
+                        int bonus = state().generatorVersion >= 9
+                                ? 2 + range(cx, cy, 22200 + roomIndex, 0, 1)
+                                : 3 + range(cx, cy, 22200 + roomIndex, 0, 2);
                         for (int slot = 0; slot < bonus; slot++) {
                             int cell = v7RoomSlotCell(cx, cy, ox, oy, roomIndex, slot + 12, 22220);
                             if (cell < 0) continue;
