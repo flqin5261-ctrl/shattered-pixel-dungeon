@@ -1392,10 +1392,14 @@ public class GameScene extends PixelScene {
 			}
 
 			// Chunk streaming may regenerate the visual-only mixed-material overlays.
-			// Rebuild their render group together with the logical window.
+			// Rebuild both floor and wall environment layers together with the logical window.
 			scene.customTiles.clear();
 			for (CustomTilemap visual : Dungeon.level.customTiles) {
 				scene.addCustomTile(visual);
+			}
+			scene.customWalls.clear();
+			for (CustomTilemap visual : Dungeon.level.customWalls) {
+				scene.addCustomWall(visual);
 			}
 
 			resetMap();
