@@ -2340,6 +2340,11 @@ public class Hero extends Char {
 		boolean wasHighGrass = Dungeon.level.map[step] == Terrain.HIGH_GRASS;
 
 		super.move( step, travelling);
+
+		if (Dungeon.level instanceof InfiniteWorldLevel
+				&& ((InfiniteWorldLevel) Dungeon.level).afterHeroMove(this)) {
+			return;
+		}
 		
 		if (!flying && travelling) {
 			if (Dungeon.level.water[pos]) {
