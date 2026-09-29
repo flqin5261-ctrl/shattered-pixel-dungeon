@@ -112,6 +112,24 @@ public class Tilemap extends Visual {
 		updated.setEmpty();
 	}
 
+	public synchronized void flushMapUpdate() {
+		if (!updated.isEmpty()) {
+			updateVertices();
+			if (buffer == null) {
+				buffer = new Vertexbuffer(quads);
+			} else if (fullUpdate) {
+				buffer.updateVertices(quads);
+				fullUpdate = false;
+			} else {
+				buffer.updateVertices(quads,
+						topLeftUpdating * 16,
+						bottomRightUpdating * 16);
+			}
+			topLeftUpdating = -1;
+			updating.setEmpty();
+		}
+	}
+
 	protected void updateVertices() {
 
 		moveToUpdating();
@@ -198,23 +216,7 @@ public class Tilemap extends Visual {
 
 		super.draw();
 
-		if (!updated.isEmpty()) {
-			updateVertices();
-			if (buffer == null)
-				buffer = new Vertexbuffer(quads);
-			else {
-				if (fullUpdate) {
-					buffer.updateVertices(quads);
-					fullUpdate = false;
-				} else {
-					buffer.updateVertices(quads,
-							topLeftUpdating * 16,
-							bottomRightUpdating * 16);
-				}
-			}
-			topLeftUpdating = -1;
-			updating.setEmpty();
-		}
+		flushMapUpdate();
 
 		NoosaScript script = script();
 
