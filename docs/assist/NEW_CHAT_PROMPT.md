@@ -23,12 +23,12 @@
 
 当前已知基线：
 
-- 最新稳定版：0.4.3
-- versionCode：944
-- stable：`assist-0.4.3-stable`
+- 最新稳定版：0.4.4
+- versionCode：945
+- stable：`assist-0.4.4-stable`
 - 对应代码 release SHA：
   `a513fc1a099d272c356c3127f874c3dd861e2799`
-- Infinite World Generator：V9
+- Infinite World Generator：V10
 - 包名：
   `com.shatteredpixel.shatteredpixeldungeon.assist`
 - 固定签名不能改
@@ -147,3 +147,10 @@
 > **直接改 → 构建/验证 → 更新必要记录 → 上传/稳定分支/安装包**
 
 但注意：减少前置阅读不代表可以省略后置记录。只要项目发生实际修改，任务结束前仍必须及时更新 GitHub 交接记录。
+
+
+当前新增重点：
+
+- V10 多层级无限路线网络已经替代“只有主干保证无限”的单层方案。
+- 除每 6 Chunk 的 Primary Spine 外，每 18 Chunk band 还会生成一条真正无限的横向或纵向 Secondary Route。
+- 普通死胡同仍保留，但玩家离开主干后也有机会沿次级支线无限探索。
