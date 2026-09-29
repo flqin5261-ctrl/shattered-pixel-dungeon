@@ -188,6 +188,7 @@ public class InfiniteWorldLevel extends Level {
         generateV5Traps();
         generateV6LooseLoot();
         generateV6Plants();
+        generateV7ThemedRoomContents();
     }
 
     @Override
@@ -355,6 +356,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV5ContainerStates();
         snapshotV6LooseLootStates();
         snapshotV6PlantStates();
+        snapshotV7ThemedRoomStates();
     }
 
     private void rebuildWindow() {
@@ -391,6 +393,7 @@ public class InfiniteWorldLevel extends Level {
         generateV5Traps();
         generateV6LooseLoot();
         generateV6Plants();
+        generateV7ThemedRoomContents();
     }
 
     private void applyTerrainOverrides() {
@@ -1082,7 +1085,7 @@ public class InfiniteWorldLevel extends Level {
             placeSafeDoor(out, cx, cy, ox, oy, 440 + i);
         }
 
-        if (state().generatorVersion >= 6) {
+        if (state().generatorVersion >= 6 && state().generatorVersion < 7) {
             promoteV6LockedDoor(out, cx, cy, ox, oy);
         }
 
@@ -1109,9 +1112,225 @@ public class InfiniteWorldLevel extends Level {
             out[ox + chestX + (oy + chestY) * MAP_SIZE] = Terrain.EMPTY_DECO;
         }
 
+        if (state().generatorVersion >= 7 && (cx != 0 || cy != 0)) {
+            carveV7ThemedRooms(out, cx, cy, ox, oy, hx, hy);
+        }
+
         if (cx == 0 && cy == 0) {
             if (state().generatorVersion >= 3) carveOriginPlazaV3(out, ox, oy);
             else carveOriginPlaza(out, ox, oy);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Generator v7: true enclosed themed rooms with explicit doors.
+    // ------------------------------------------------------------------------
+
+    private void carveV7ThemedRooms(int[] out, int cx, int cy, int ox, int oy,
+                                    int[] hx, int[] hy) {
+        int roomCount = 2 + (Math.floorMod(hash(cx, cy, 20500), 100L) < 38 ? 1 : 0);
+
+        boolean[] usedQuadrants = new boolean[4];
+        for (int index = 0; index < roomCount; index++) {
+            int[] spec = v7RoomSpec(cx, cy, index, usedQuadrants);
+            int left = ox + spec[0];
+            int top = oy + spec[1];
+            int right = ox + spec[2];
+            int bottom = oy + spec[3];
+            int doorX = ox + spec[4];
+            int doorY = oy + spec[5];
+            int outsideX = ox + spec[6];
+            int outsideY = oy + spec[7];
+            int theme = spec[8];
+            int doorTerrain = spec[9];
+
+            // Solid shell + clean interior. This is deliberately stronger than the
+            // previous open-area generator so the player reads these as real rooms.
+            carveRect(out, left, top, right, bottom, Terrain.WALL);
+            carveRect(out, left + 1, top + 1, right - 1, bottom - 1, Terrain.EMPTY);
+            out[doorX + doorY * MAP_SIZE] = doorTerrain;
+
+            decorateV7RoomTerrain(out, cx, cy, left, top, right, bottom, theme);
+
+            // Create a narrow corridor from the door toward the chunk core.
+            setFloor(out, outsideX, outsideY);
+            carveWanderPathV5(out, outsideX, outsideY,
+                    ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2,
+                    cx, cy, 20600 + index, 0);
+
+            // Link the core back into at least one original hub that is outside all
+            // room rectangles. This preserves the pre-existing gateway network.
+            int hub = -1;
+            for (int h = 0; h < hx.length; h++) {
+                if (!v7AnyRoomContains(cx, cy, roomCount, hx[h], hy[h])) {
+                    hub = h;
+                    break;
+                }
+            }
+            if (hub >= 0) {
+                carveWanderPathV5(out,
+                        ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2,
+                        ox + hx[hub], oy + hy[hub],
+                        cx, cy, 20700 + index, 0);
+            }
+        }
+    }
+
+    // spec = left,top,right,bottom,doorX,doorY,outsideX,outsideY,theme,doorTerrain
+    private int[] v7RoomSpec(int cx, int cy, int index) {
+        return v7RoomSpec(cx, cy, index, null);
+    }
+
+    private int[] v7RoomSpec(int cx, int cy, int index, boolean[] usedQuadrants) {
+        int q = range(cx, cy, 20800 + index, 0, 3);
+        if (usedQuadrants != null) {
+            for (int n = 0; n < 4 && usedQuadrants[q]; n++) q = (q + 1) & 3;
+            usedQuadrants[q] = true;
+        } else {
+            // Runtime reconstruction uses the same deterministic sequence of unique
+            // quadrants without needing the generated terrain.
+            boolean[] used = new boolean[4];
+            for (int i = 0; i <= index; i++) {
+                int qi = range(cx, cy, 20800 + i, 0, 3);
+                for (int n = 0; n < 4 && used[qi]; n++) qi = (qi + 1) & 3;
+                used[qi] = true;
+                if (i == index) q = qi;
+            }
+        }
+
+        int w = 6 + range(cx, cy, 20820 + index * 2, 0, 2); // 6-8 outer width
+        int h = 6 + range(cx, cy, 20821 + index * 2, 0, 2); // 6-8 outer height
+        int jitterX = range(cx, cy, 20840 + index * 2, 0, 1);
+        int jitterY = range(cx, cy, 20841 + index * 2, 0, 1);
+
+        int left;
+        int top;
+        if (q == 0 || q == 2) left = 2 + jitterX;
+        else left = CHUNK_SIZE - 2 - w - jitterX;
+
+        if (q == 0 || q == 1) top = 2 + jitterY;
+        else top = CHUNK_SIZE - 2 - h - jitterY;
+
+        int right = left + w - 1;
+        int bottom = top + h - 1;
+
+        boolean horizontalDoor = (hash(cx, cy, 20860 + index) & 1L) == 0;
+        int doorX;
+        int doorY;
+        int outsideX;
+        int outsideY;
+
+        // Door always faces roughly toward chunk centre.
+        if (q == 0) {
+            if (horizontalDoor) {
+                doorX = right; doorY = top + h / 2;
+                outsideX = doorX + 1; outsideY = doorY;
+            } else {
+                doorX = left + w / 2; doorY = bottom;
+                outsideX = doorX; outsideY = doorY + 1;
+            }
+        } else if (q == 1) {
+            if (horizontalDoor) {
+                doorX = left; doorY = top + h / 2;
+                outsideX = doorX - 1; outsideY = doorY;
+            } else {
+                doorX = left + w / 2; doorY = bottom;
+                outsideX = doorX; outsideY = doorY + 1;
+            }
+        } else if (q == 2) {
+            if (horizontalDoor) {
+                doorX = right; doorY = top + h / 2;
+                outsideX = doorX + 1; outsideY = doorY;
+            } else {
+                doorX = left + w / 2; doorY = top;
+                outsideX = doorX; outsideY = doorY - 1;
+            }
+        } else {
+            if (horizontalDoor) {
+                doorX = left; doorY = top + h / 2;
+                outsideX = doorX - 1; outsideY = doorY;
+            } else {
+                doorX = left + w / 2; doorY = top;
+                outsideX = doorX; outsideY = doorY - 1;
+            }
+        }
+
+        int theme = range(cx, cy, 20900 + index, 0, 7);
+
+        // Key rooms and crystal vaults are always reachable without first owning
+        // the key they are intended to supply. Other treasure rooms can be locked.
+        int doorTerrain = Terrain.DOOR;
+        if (theme != 0 && theme != 4 && theme != 6) {
+            if (Math.floorMod(hash(cx, cy, 20920 + index), 100L) < 58) {
+                doorTerrain = Terrain.LOCKED_DOOR;
+            }
+        }
+
+        return new int[]{left, top, right, bottom, doorX, doorY,
+                outsideX, outsideY, theme, doorTerrain};
+    }
+
+    private boolean v7AnyRoomContains(int cx, int cy, int roomCount, int x, int y) {
+        for (int i = 0; i < roomCount; i++) {
+            int[] s = v7RoomSpec(cx, cy, i);
+            if (x >= s[0] && x <= s[2] && y >= s[1] && y <= s[3]) return true;
+        }
+        return false;
+    }
+
+    private void decorateV7RoomTerrain(int[] out, int cx, int cy,
+                                       int left, int top, int right, int bottom, int theme) {
+        int innerLeft = left + 1;
+        int innerTop = top + 1;
+        int innerRight = right - 1;
+        int innerBottom = bottom - 1;
+
+        if (theme == 0) { // conservatory
+            for (int y = innerTop; y <= innerBottom; y++) {
+                for (int x = innerLeft; x <= innerRight; x++) {
+                    if (((x + y) & 1) == 0) out[x + y * MAP_SIZE] = Terrain.HIGH_GRASS;
+                    else if (Math.floorMod(hash(x, y, 20950), 100L) < 35) {
+                        out[x + y * MAP_SIZE] = Terrain.GRASS;
+                    }
+                }
+            }
+        } else if (theme == 1) { // scroll archive
+            for (int x = innerLeft; x <= innerRight; x += 2) {
+                out[x + innerTop * MAP_SIZE] = Terrain.BOOKSHELF;
+            }
+        } else if (theme == 2) { // potion laboratory
+            int cxm = (innerLeft + innerRight) / 2;
+            int cym = (innerTop + innerBottom) / 2;
+            out[cxm + cym * MAP_SIZE] = Terrain.ALCHEMY;
+            out[innerLeft + innerTop * MAP_SIZE] = Terrain.EMBERS;
+            out[innerRight + innerBottom * MAP_SIZE] = Terrain.EMBERS;
+        } else if (theme == 3) { // pantry
+            for (int x = innerLeft; x <= innerRight; x++) {
+                if ((x & 1) == 0) out[x + innerTop * MAP_SIZE] = Terrain.EMPTY_DECO;
+            }
+        } else if (theme == 4) { // key room
+            int cxm = (innerLeft + innerRight) / 2;
+            int cym = (innerTop + innerBottom) / 2;
+            out[cxm + cym * MAP_SIZE] = Terrain.PEDESTAL;
+        } else if (theme == 5) { // armory
+            out[innerLeft + innerTop * MAP_SIZE] = Terrain.STATUE;
+            out[innerRight + innerTop * MAP_SIZE] = Terrain.STATUE;
+        } else if (theme == 6) { // crystal vault
+            int cxm = (innerLeft + innerRight) / 2;
+            int cym = (innerTop + innerBottom) / 2;
+            out[cxm + cym * MAP_SIZE] = Terrain.EMPTY_DECO;
+            if (innerRight - innerLeft >= 3) {
+                out[(cxm - 1) + innerTop * MAP_SIZE] = Terrain.MINE_CRYSTAL;
+                out[(cxm + 1) + innerTop * MAP_SIZE] = Terrain.MINE_CRYSTAL;
+            }
+        } else { // trap workshop
+            for (int y = innerTop; y <= innerBottom; y++) {
+                for (int x = innerLeft; x <= innerRight; x++) {
+                    if (Math.floorMod(hash(x, y, 20970), 100L) < 22) {
+                        out[x + y * MAP_SIZE] = Terrain.SECRET_TRAP;
+                    }
+                }
+            }
         }
     }
 
