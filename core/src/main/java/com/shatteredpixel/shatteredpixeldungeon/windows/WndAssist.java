@@ -77,8 +77,10 @@ public class WndAssist extends Window {
             @Override
             protected void onClick() {
                 if (!SPDSettings.assistTeleport() || Dungeon.hero == null || Dungeon.level == null) return;
-                if (Dungeon.extraChallenge) {
-                    GLog.w("额外挑战为独立单层地图，不能使用楼层传送。");
+                if (Dungeon.extraChallenge || Dungeon.infiniteWorld) {
+                    GLog.w(Dungeon.infiniteWorld
+                            ? "无界地牢没有楼层，不能使用楼层传送。"
+                            : "额外挑战为独立单层地图，不能使用楼层传送。");
                     return;
                 }
 
