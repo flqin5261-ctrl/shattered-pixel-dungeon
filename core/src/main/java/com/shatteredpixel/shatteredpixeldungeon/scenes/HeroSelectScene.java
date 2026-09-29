@@ -164,9 +164,7 @@ public class HeroSelectScene extends PixelScene {
 				Dungeon.daily = Dungeon.dailyReplay = false;
 				Dungeon.extraChallenge = extraChallengeMode;
 				Dungeon.infiniteWorld = infiniteWorldMode;
-				if (infiniteWorldMode) {
-					Dungeon.initInfiniteWorldSeed();
-				} else {
+				if (!infiniteWorldMode) {
 					Dungeon.initSeed();
 				}
 				ActionIndicator.clearAction();
