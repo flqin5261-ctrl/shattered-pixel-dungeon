@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.*;
+import com.shatteredpixel.shatteredpixeldungeon.items.journal.InfiniteWorldNote;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
@@ -190,6 +191,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6LooseLoot();
         generateV6Plants();
         generateV7ThemedRoomContents();
+        generateV9AnomalyNotes();
     }
 
     @Override
@@ -358,6 +360,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV6LooseLootStates();
         snapshotV6PlantStates();
         snapshotV7ThemedRoomStates();
+        snapshotV9AnomalyNotes();
     }
 
     private void rebuildWindow() {
@@ -395,6 +398,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6LooseLoot();
         generateV6Plants();
         generateV7ThemedRoomContents();
+        generateV9AnomalyNotes();
     }
 
     private void applyTerrainOverrides() {
@@ -1409,6 +1413,81 @@ public class InfiniteWorldLevel extends Level {
         Heap heap = heaps.get(cell);
         if (heap == null || heap.type != Heap.Type.HEAP) {
             state().setObjectState(stateKey, 1);
+        }
+    }
+
+    private void generateV9AnomalyNotes() {
+        if (state().generatorVersion < 9) return;
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+                if (anomaly == 0 || !v9IsAnomalyNoteAnchor(cx, cy)) return;
+
+                int cell = ox + CHUNK_SIZE / 2 + (oy + CHUNK_SIZE / 2) * width();
+                long key = v6ObjectKey(cell, 0x6100 + anomaly);
+                if (state().objectState(key) != 0) return;
+
+                // Anomaly chunks deliberately skip normal ambient loot, so the
+                // central note position is reserved and deterministic.
+                if (heaps.get(cell) != null || traps.get(cell) != null
+                        || plants.get(cell) != null || solid[cell] || pit[cell]) {
+                    return;
+                }
+
+                InfiniteWorldNote note = new InfiniteWorldNote();
+                note.page(v9AnomalyNotePage(anomaly));
+
+                Heap heap = new Heap();
+                heap.pos = cell;
+                heap.seen = mapped[cell] || visited[cell];
+                heap.type = Heap.Type.HEAP;
+                heap.drop(note);
+                heaps.put(cell, heap);
+            }
+        });
+    }
+
+    private void snapshotV9AnomalyNotes() {
+        if (state().generatorVersion < 9) return;
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+                if (anomaly == 0 || !v9IsAnomalyNoteAnchor(cx, cy)) return;
+
+                int cell = ox + CHUNK_SIZE / 2 + (oy + CHUNK_SIZE / 2) * width();
+                long key = v6ObjectKey(cell, 0x6100 + anomaly);
+                if (state().objectState(key) != 0) return;
+
+                String expectedPage = v9AnomalyNotePage(anomaly);
+                Heap heap = heaps.get(cell);
+                boolean noteStillPresent = false;
+                if (heap != null) {
+                    for (Item item : heap.items) {
+                        if (item instanceof InfiniteWorldNote
+                                && expectedPage.equals(((InfiniteWorldNote) item).page())) {
+                            noteStillPresent = true;
+                            break;
+                        }
+                    }
+                }
+                if (!noteStillPresent) state().setObjectState(key, 1);
+            }
+        });
+    }
+
+    private boolean v9IsAnomalyNoteAnchor(int cx, int cy) {
+        return Math.floorMod(cx, 5) == 2 && Math.floorMod(cy, 5) == 2;
+    }
+
+    private String v9AnomalyNotePage(int anomaly) {
+        switch (anomaly) {
+            case 1: return "Liminal_Offices";
+            case 2: return "Pool_Halls";
+            default:return "Endless_Hall";
         }
     }
 
