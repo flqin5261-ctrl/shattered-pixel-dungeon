@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.DarkBlock;
 import com.shatteredpixel.shatteredpixeldungeon.effects.EmoIcon;
@@ -221,7 +222,11 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 
 		play( run );
 		
-		motion = new PosTweener( this, worldToCamera( to ), moveInterval );
+		float interval = moveInterval;
+		if (ch == Dungeon.hero && SPDSettings.assistSpeed()) {
+			interval = moveInterval / Math.max(0.01f, SPDSettings.assistSpeedMultiplier());
+		}
+		motion = new PosTweener( this, worldToCamera( to ), interval );
 		motion.listener = this;
 		parent.add( motion );
 
