@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.keys;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -47,7 +48,14 @@ public abstract class Key extends Item {
 	
 	@Override
 	public boolean isSimilar( Item item ) {
-		return super.isSimilar(item) && ((Key)item).depth == depth;
+		if (!super.isSimilar(item)) return false;
+
+		// Infinite World is one continuous map rather than a stack of floors.
+		// Keys of the same type therefore belong to one global pool regardless
+		// of the legacy depth value stored on the item.
+		if (Dungeon.infiniteWorld) return true;
+
+		return ((Key)item).depth == depth;
 	}
 
 	@Override
