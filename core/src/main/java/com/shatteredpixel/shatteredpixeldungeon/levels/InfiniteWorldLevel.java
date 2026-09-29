@@ -73,6 +73,8 @@ public class InfiniteWorldLevel extends Level {
     protected boolean build() {
         setSize(MAP_SIZE, MAP_SIZE);
 
+        state().markChunkExplored(state().centerChunkX, state().centerChunkY);
+
         int[] base = generateBaseWindow(state().centerChunkX, state().centerChunkY);
         System.arraycopy(base, 0, map, 0, map.length);
         applyTerrainOverrides();
@@ -124,6 +126,10 @@ public class InfiniteWorldLevel extends Level {
 
         int x = hero.pos % width();
         int y = hero.pos / width();
+
+        int worldXNow = (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
+        int worldYNow = (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
+        state().markChunkExplored(Math.floorDiv(worldXNow, CHUNK_SIZE), Math.floorDiv(worldYNow, CHUNK_SIZE));
 
         int shiftX = 0;
         int shiftY = 0;
@@ -240,8 +246,9 @@ public class InfiniteWorldLevel extends Level {
 
             // Once a chunk has been generated it stays on the world record. Returning to it
             // never puts the whole chunk back under black fog; actually walked cells remain visited.
+            boolean exploredChunk = st.chunkExplored(cx, cy);
             mapped[cell] = st.chunkGenerated(cx, cy) || st.wasMapped(worldKey);
-            visited[cell] = st.wasVisited(worldKey);
+            visited[cell] = exploredChunk || st.wasVisited(worldKey);
         }
     }
 
