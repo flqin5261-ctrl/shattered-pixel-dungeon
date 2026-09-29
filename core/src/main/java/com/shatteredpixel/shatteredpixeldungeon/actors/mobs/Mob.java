@@ -925,6 +925,40 @@ public abstract class Mob extends Char {
 	}
 	
 	
+	public void despawnFromInfiniteWorld() {
+		// Infinite World deliberately treats distant enemies like Minecraft-style
+		// ephemeral spawns. They disappear without death, XP, kill statistics or
+		// loot, so do not call die() or destroy() here.
+		Actor.remove(this);
+		if (Dungeon.level != null) {
+			Dungeon.level.mobs.remove(this);
+		}
+		if (sprite != null) {
+			sprite.interruptMotion();
+			sprite.killAndErase();
+		}
+	}
+
+	public void rebaseForInfiniteWorld(int newPos) {
+		// Streaming changes local cell coordinates while the mob remains at the
+		// same absolute world position. Reset local navigation state so no cached
+		// path/target from the old 168x168 window survives the rebase.
+		if (sprite != null) {
+			sprite.interruptMotion();
+		}
+		pos = newPos;
+		previousPos = -1;
+		path = null;
+		clearEnemy();
+		target = newPos;
+		if (state != PASSIVE) {
+			state = WANDERING;
+		}
+		if (sprite != null) {
+			sprite.place(newPos);
+		}
+	}
+
 	@Override
 	public void destroy() {
 		
