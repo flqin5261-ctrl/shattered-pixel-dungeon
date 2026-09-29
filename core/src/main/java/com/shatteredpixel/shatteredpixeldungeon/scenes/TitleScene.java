@@ -69,6 +69,7 @@ public class TitleScene extends PixelScene {
 	private Image signs;
 
 	private StyledButton btnPlay;
+	private StyledButton btnExtraChallenge;
 	private StyledButton btnSupport;
 	private StyledButton btnRankings;
 	private StyledButton btnJournal;
@@ -147,6 +148,8 @@ public class TitleScene extends PixelScene {
 		btnPlay = new StyledButton(GREY_TR, Messages.get(this, "enter")){
 			@Override
 			protected void onClick() {
+				HeroSelectScene.extraChallengeMode = false;
+				Dungeon.extraChallenge = false;
 				if (GamesInProgress.checkAll().size() == 0){
 					GamesInProgress.selectedClass = null;
 					GamesInProgress.curSlot = 1;
@@ -170,6 +173,15 @@ public class TitleScene extends PixelScene {
 		};
 		btnPlay.icon(Icons.get(Icons.ENTER));
 		add(btnPlay);
+
+		btnExtraChallenge = new StyledButton(GREY_TR, "额外挑战"){
+			@Override
+			protected void onClick() {
+				openExtraChallenge();
+			}
+		};
+		btnExtraChallenge.icon(Icons.get(Icons.CHALLENGE_COLOR));
+		add(btnExtraChallenge);
 
 		btnSupport = new SupportButton(GREY_TR, Messages.get(this, "support"));
 		add(btnSupport);
@@ -221,9 +233,11 @@ public class TitleScene extends PixelScene {
 		float buttonAreaWidth = landscape() ? PixelScene.MIN_WIDTH_L-6 : PixelScene.MIN_WIDTH_P-2;
 		float btnAreaLeft = insets.left + (w - buttonAreaWidth) / 2f;
 		if (landscape()) {
-			btnPlay.setRect(btnAreaLeft, insets.top + topRegion+GAP, (buttonAreaWidth/2)-1, BTN_HEIGHT);
+			float topBtnW = (buttonAreaWidth - 4) / 3f;
+			btnPlay.setRect(btnAreaLeft, insets.top + topRegion+GAP, topBtnW, BTN_HEIGHT);
 			align(btnPlay);
-			btnSupport.setRect(btnPlay.right()+2, btnPlay.top(), btnPlay.width(), BTN_HEIGHT);
+			btnExtraChallenge.setRect(btnPlay.right()+2, btnPlay.top(), topBtnW, BTN_HEIGHT);
+			btnSupport.setRect(btnExtraChallenge.right()+2, btnPlay.top(), topBtnW, BTN_HEIGHT);
 			btnRankings.setRect(btnPlay.left(), btnPlay.bottom()+ GAP, (float) (Math.floor(buttonAreaWidth/3f)-1), BTN_HEIGHT);
 			btnJournal.setRect(btnRankings.right()+2, btnRankings.top(), btnRankings.width(), BTN_HEIGHT);
 			btnNews.setRect(btnJournal.right()+2, btnJournal.top(), btnRankings.width(), BTN_HEIGHT);
@@ -231,10 +245,12 @@ public class TitleScene extends PixelScene {
 			btnChanges.setRect(btnSettings.right()+2, btnSettings.top(), btnRankings.width(), BTN_HEIGHT);
 			btnAbout.setRect(btnChanges.right()+2, btnSettings.top(), btnRankings.width(), BTN_HEIGHT);
 		} else {
-			btnPlay.setRect(btnAreaLeft, insets.top + topRegion+GAP, buttonAreaWidth, BTN_HEIGHT);
+			float topBtnW = (buttonAreaWidth/2)-1;
+			btnPlay.setRect(btnAreaLeft, insets.top + topRegion+GAP, topBtnW, BTN_HEIGHT);
 			align(btnPlay);
-			btnSupport.setRect(btnPlay.left(), btnPlay.bottom()+ GAP, btnPlay.width(), BTN_HEIGHT);
-			btnRankings.setRect(btnPlay.left(), btnSupport.bottom()+ GAP, (btnPlay.width()/2)-1, BTN_HEIGHT);
+			btnExtraChallenge.setRect(btnPlay.right()+2, btnPlay.top(), topBtnW, BTN_HEIGHT);
+			btnSupport.setRect(btnAreaLeft, btnPlay.bottom()+ GAP, buttonAreaWidth, BTN_HEIGHT);
+			btnRankings.setRect(btnAreaLeft, btnSupport.bottom()+ GAP, topBtnW, BTN_HEIGHT);
 			btnJournal.setRect(btnRankings.right()+2, btnRankings.top(), btnRankings.width(), BTN_HEIGHT);
 			btnNews.setRect(btnRankings.left(), btnRankings.bottom()+ GAP, btnRankings.width(), BTN_HEIGHT);
 			btnChanges.setRect(btnNews.right()+2, btnNews.top(), btnNews.width(), BTN_HEIGHT);
@@ -315,6 +331,7 @@ public class TitleScene extends PixelScene {
 		//signs.am = alpha; handles this itself
 
 		btnPlay.enable(alpha != 0);
+		btnExtraChallenge.enable(alpha != 0);
 		btnSupport.enable(alpha != 0);
 		btnRankings.enable(alpha != 0);
 		btnJournal.enable(alpha != 0);
@@ -324,6 +341,7 @@ public class TitleScene extends PixelScene {
 		btnAbout.enable(alpha != 0);
 
 		btnPlay.alpha(alpha);
+		btnExtraChallenge.alpha(alpha);
 		btnSupport.alpha(alpha);
 		btnRankings.alpha(alpha);
 		btnJournal.alpha(alpha);
@@ -339,6 +357,44 @@ public class TitleScene extends PixelScene {
 			btnExit.icon().alpha(alpha);
 		}
 
+	}
+
+	private void openExtraChallenge() {
+		GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
+
+		if (GamesInProgress.gameExists(GamesInProgress.EXTRA_CHALLENGE_SLOT)) {
+			addToFront(new WndOptions(
+					Icons.get(Icons.CHALLENGE_COLOR),
+					"额外挑战 · 镜庭",
+					"镜庭拥有独立存档，不会出现在普通游戏存档或原版挑战列表中。",
+					"继续",
+					"重新开始",
+					"取消") {
+				@Override
+				protected void onSelect(int index) {
+					if (index == 0) {
+						HeroSelectScene.extraChallengeMode = false;
+						GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
+						InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
+						Game.switchScene(InterlevelScene.class);
+					} else if (index == 1) {
+						Dungeon.deleteGame(GamesInProgress.EXTRA_CHALLENGE_SLOT, true);
+						startNewExtraChallenge();
+					}
+				}
+			});
+		} else {
+			startNewExtraChallenge();
+		}
+	}
+
+	private void startNewExtraChallenge() {
+		Dungeon.extraChallenge = true;
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		HeroSelectScene.extraChallengeMode = true;
+		GamesInProgress.selectedClass = null;
+		GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
+		ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
 	}
 
 	private Fireball placeTorch(float x, float y ) {
