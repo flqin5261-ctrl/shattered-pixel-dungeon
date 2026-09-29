@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - assist-v1
+      - assist-0.1-fix1
   workflow_dispatch:
 
 permissions:
