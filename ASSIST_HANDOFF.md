@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.4.3**
-- 当前 versionCode：**944**
-- 当前最新稳定分支：`assist-0.4.3-stable`
+- 当前最新稳定版本：**0.4.4**
+- 当前 versionCode：**945**
+- 当前最新稳定分支：`assist-0.4.4-stable`
 - 当前发布代码 SHA：`a513fc1a099d272c356c3127f874c3dd861e2799`
-- 当前对应开发分支：`assist-0.4.3-liminal`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 9**
+- 当前对应开发分支：`assist-0.4.4-branch-network`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 10**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -109,9 +109,9 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.4.3-stable` 和最新开发分支。
+4. 检查最新稳定分支 `assist-0.4.4-stable` 和最新开发分支。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
-   - `assist-0.4.4-xxxxx`
+   - `assist-0.4.5-xxxxx`
 6. **不要覆盖历史 stable 分支。**
 7. 每次可安装版本都必须：
    - versionCode 递增
@@ -838,6 +838,7 @@ Infinite World 是：
   - `assist-0.4.2-secrets`
   - `assist-0.4.2-stable`
 - `assist-0.4.3-stable`
+- `assist-0.4.4-stable`
 
 主要变化：
 
@@ -1208,3 +1209,21 @@ V9 已为异常区域建立正式的可收藏记录系统：
    - 需要重新开始世界还是可沿用旧存档
 
 这样以后即使完全换一个聊天窗口，也能从 GitHub 恢复完整上下文。
+
+
+# 22. 0.4.4 / Generator V10 — 多层级无限路线网络
+
+V9 已经保证“世界整体一定无限”，但用户指出如果只有主干无限，普通旁路大量死路，体感仍然像“只能沿高速公路无限走”。
+
+V10 保留 V9 主干，同时加入真正无限的次级支线。
+
+- Primary：每 6 Chunk 的横纵主干继续存在。
+- Secondary horizontal：每 18 Chunk 高度 band 选一条非主干 Chunk 行，整行无限东西延伸。
+- Secondary vertical：每 18 Chunk 宽度 band 选一条非主干 Chunk 列，整列无限南北延伸。
+- 次级路线在每个 Chunk 内使用 shared-edge hash 决定边界入口，因此会自然游走而不是笔直画线。
+- 横向次级路线必然周期性穿过纵向主干；纵向次级路线同理，因此它们不是孤立的无限平行线。
+- 普通短岔路、主题房和小走廊仍允许 dead end。
+
+设计目标：
+
+> **世界里同时存在多条真正可以无限探索的路线，而不是只有一套主干；但仍保留局部死胡同和迷宫感。**
