@@ -363,7 +363,7 @@ public class TitleScene extends PixelScene {
 		GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
 
 		if (GamesInProgress.gameExists(GamesInProgress.EXTRA_CHALLENGE_SLOT)) {
-			addToFront(new WndOptions(
+			ShatteredPixelDungeon.scene().addToFront(new WndOptions(
 					Icons.get(Icons.CHALLENGE_COLOR),
 					"额外挑战 · 镜庭",
 					"镜庭拥有独立存档，不会出现在普通游戏存档或原版挑战列表中。",
