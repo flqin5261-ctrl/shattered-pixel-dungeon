@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndAssist;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndChallenges;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndGame;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournal;
@@ -60,6 +61,7 @@ public class MenuPane extends Component {
 	private Button challengeButton;
 
 	private JournalButton btnJournal;
+	private AssistButton btnAssist;
 	private MenuButton btnMenu;
 
 	private Toolbar.PickedUpItem pickedUp;
@@ -144,6 +146,9 @@ public class MenuPane extends Component {
 		btnJournal = new JournalButton();
 		add( btnJournal );
 
+		btnAssist = new AssistButton();
+		add( btnAssist );
+
 		btnMenu = new MenuButton();
 		add( btnMenu );
 
@@ -182,8 +187,9 @@ public class MenuPane extends Component {
 		btnMenu.setPos( x + WIDTH - btnMenu.width(), y );
 
 		btnJournal.setPos( btnMenu.left() - btnJournal.width() + 2, y );
+		btnAssist.setPos( btnJournal.left() - btnAssist.width() + 2, y );
 
-		depthIcon.x = btnJournal.left() - 7 + (7 - depthIcon.width())/2f - 0.1f;
+		depthIcon.x = btnAssist.left() - 7 + (7 - depthIcon.width())/2f - 0.1f;
 		depthIcon.y = y+8;
 		PixelScene.align(depthIcon);
 
@@ -195,7 +201,7 @@ public class MenuPane extends Component {
 		depthButton.setRect(depthIcon.x, depthIcon.y, depthIcon.width(), depthIcon.height() + depthText.height());
 
 		if (challengeIcon != null){
-			challengeIcon.x = btnJournal.left() - 14 + (7 - challengeIcon.width())/2f - 0.1f;
+			challengeIcon.x = btnAssist.left() - 14 + (7 - challengeIcon.width())/2f - 0.1f;
 			challengeIcon.y = depthIcon.y;
 			PixelScene.align(challengeIcon);
 
@@ -362,6 +368,67 @@ public class MenuPane extends Component {
 		@Override
 		protected String hoverText() {
 			return Messages.titleCase(Messages.get(WndKeyBindings.class, "journal"));
+		}
+	}
+
+
+	private static class AssistButton extends Button {
+
+		private Image bg;
+		private Image image;
+
+		public AssistButton() {
+			super();
+
+			width = bg.width + 4;
+			height = bg.height + 10;
+		}
+
+		@Override
+		protected void createChildren() {
+			super.createChildren();
+
+			bg = new Image( Assets.Interfaces.MENU_BTN, 2, 2, 13, 11 );
+			add(bg);
+
+			image = Icons.get(Icons.PREFS);
+			image.scale.set(PixelScene.align(0.5f));
+			add(image);
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+
+			bg.x = x + 2;
+			bg.y = y + 8;
+
+			image.x = bg.x + (bg.width() - image.width()*image.scale.x)/2f;
+			image.y = bg.y + (bg.height() - image.height()*image.scale.y)/2f;
+			PixelScene.align(image);
+		}
+
+		@Override
+		protected void onPointerDown() {
+			bg.brightness( 1.5f );
+			image.brightness(1.5f);
+			Sample.INSTANCE.play( Assets.Sounds.CLICK );
+		}
+
+		@Override
+		protected void onPointerUp() {
+			bg.resetColor();
+			image.resetColor();
+		}
+
+		@Override
+		protected void onClick() {
+			GameScene.show( new WndAssist() );
+		}
+
+		@Override
+		protected String hoverText() {
+			return "辅助功能";
 		}
 	}
 
