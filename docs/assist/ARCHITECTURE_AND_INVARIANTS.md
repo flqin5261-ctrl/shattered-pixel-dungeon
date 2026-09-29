@@ -183,7 +183,7 @@ Streaming 时需要处理：
 当前：
 
 ```
-WORLD_GEN_VERSION = 8
+WORLD_GEN_VERSION = 9
 ```
 
 旧存档保存自己的 generatorVersion。
@@ -1071,3 +1071,235 @@ Infinite World 最危险的性能点：
 - 新 monster persistence
 - Boss architecture
 - applicationId/signing/build changes
+
+
+# 36. Generator V9：世界级 Infinite Backbone
+
+V9 增加一个与普通 Chunk 生成器分离的“世界级连通保障层”。
+
+普通 generator 仍然负责：
+
+- hub
+- themed room
+- shared edge
+- door
+- biome
+- prop
+- landmark
+
+这些局部结构允许出现死胡同。
+
+随后 V9 最后执行：
+
+`carveV9InfiniteBackbone()`
+
+规则：
+
+```
+cx mod 6 == 0 -> Chunk 中心双格南北贯通
+cy mod 6 == 0 -> Chunk 中心双格东西贯通
+```
+
+原点同时在两类 spine 上。
+
+### 为什么这比“每个 Chunk 四边都强制开口”更合适
+
+用户明确接受局部 dead end。
+
+若强制所有边界永远连通：
+
+- 地图会重新变得规则；
+- Secret/特殊房更难形成；
+- 岔路缺乏真正终点；
+- 异常空间也失去封闭/迷失感。
+
+Infinite Backbone 只保证：
+
+> 从原点所在连通分量中始终存在无限延展路线。
+
+它不保证每一条路都继续。
+
+### 硬约束
+
+V9 及后续 generator 如果增加会重写大量地形的步骤：
+
+- Infinite Backbone 必须在这些步骤之后刻出；
+- 或者新步骤明确不得覆盖 backbone cell。
+
+否则会再次出现“理论无限但实际全被堵死”的问题。
+
+---
+
+# 37. V9 Liminal Macro Region
+
+异常空间不是单 Chunk 特殊房。
+
+它使用 5×5 Chunk 宏区：
+
+```
+macroX = floorDiv(cx, 5)
+macroY = floorDiv(cy, 5)
+```
+
+宏区 hash 决定：
+
+- 是否 anomaly
+- anomaly type
+
+约 8% macro 为 anomaly。
+
+出生附近 abs(cx/cy)<=4 排除，避免开局直接陷入巨大重复空间。
+
+当前类型：
+
+1. Repeating Offices
+2. Pool Halls
+3. Endless Hall
+
+每个 anomaly chunk：
+
+- 跳过正常 themed-room carve；
+- 跳过普通 ambient container/loot/plant；
+- 仍保留 shared edge gateway；
+- 仍保留 Infinite Backbone；
+- 使用 deterministic full-chunk alternate environment overlay。
+
+### 为什么 macro size = 5
+
+单 Chunk 24×24 太小，无法形成真正的“大而重复”体验。
+
+5×5 = 120×120 cell，在正常 7×7 active window 中：
+
+- 玩家可以连续跨很多 streaming-independent Chunk；
+- 同一异常风格会持续很久；
+- 仍然能与现有 7×7 window 共存，不需要扩大 GPU Tilemap。
+
+因此这种“大地图体验”没有重新触碰 0.3.6 已解决的大 VBO/window 尺寸风险。
+
+---
+
+# 38. V9 Anomaly Field Notes
+
+异常空间资料没有另造独立存档系统，而是复用原版 Journal Document。
+
+新增：
+
+```
+Document.INFINITE_WORLD_NOTES
+InfiniteWorldNote extends DocumentPage
+```
+
+Document 页面：
+
+- Liminal_Offices
+- Pool_Halls
+- Endless_Hall
+
+Guide UI 在 Adventurer's Guide 下面增加第二个 section。
+
+### 世界生成
+
+每个 anomaly 5×5 macro：
+
+- 只在 local macro chunk (2,2) 放 1 张 Note；
+- Note 放在 Chunk 中央稳定可通行 cell；
+- anomaly chunk 本身不撒普通大量物资，因此该 cell 不与 ambient loot 争位置。
+
+### 持久化
+
+物理 Note 的世界存在状态：
+
+- InfiniteWorldState.objectStates
+
+指南已解锁状态：
+
+- 原版 Journal/Document persistence
+
+拾取 Note：
+
+1. DocumentPage.findPage
+2. 页面变 FOUND
+3. Note 从 Heap 移除
+4. objectStates 在下一 snapshot 标记 consumed
+5. 回到该 macro 不会重刷
+
+这种双层状态的意义：
+
+- world item 不重复；
+- journal entry 永久保留。
+
+---
+
+# 39. V9 Scarcity Principle
+
+V5～V8 逐步叠加了多个“内容来源”：
+
+- base chest
+- v5 container
+- v6 loose loot
+- v6 key
+- wild plant
+- themed room rewards
+- secret bonus
+
+单独看每层概率都不夸张，但叠加后单位 Chunk 奖励过密。
+
+V9 不删除系统，而是为新 generatorVersion 对每层做低概率 gating。
+
+架构原则改为：
+
+> **地形与可交互物可以高密度，高价值永久物资必须低密度。**
+
+未来再增加：
+
+- monsters
+- boss reward
+- NPC trade
+- new special room
+
+时，要把它们算入整体经济，而不是继续无限叠加奖励层。
+
+---
+
+# 40. V9 Secret Room Availability
+
+V8 只有随机概率 SECRET_DOOR，导致“代码有功能但玩家测试不到”。
+
+V9 加入宏区级 deterministic placement：
+
+- 3×3 Chunk macro
+- hash 决定一个 local chunk
+- 该 Chunk room index 1 强制 Secret Door
+
+这不是把 Secret Room 存在状态保存到 state；它仍然是 generator deterministic output。
+
+Secret Door discover 后：
+
+- Terrain override 保存普通 DOOR 状态
+- 下次 reload 不重新隐藏。
+
+Infinite World 下近距离被动 Search 对 SECRET_DOOR 使用 55% chance。
+
+SECRET_TRAP 保持自己的低发现率。
+
+---
+
+# 41. 后续怪物系统与 V9 Backbone
+
+未来 Mob AI 接入时，Infinite Backbone 不能直接被当成“怪物高速公路”。
+
+第一版 Mob：
+
+- 仍只在 active simulation radius 内寻路；
+- 不允许用 backbone 做跨无限世界全局 PathFinder；
+- Mob world persistence 使用 chunk/world coordinates；
+- dead-end 支路依然是合法 AI 环境。
+
+Boss Arena 也不应永久破坏 Infinite Backbone。
+
+若 Boss 战要临时锁路：
+
+- 用 runtime blocking/door state；
+- 战斗结束恢复；
+- 不把永久 WALL override 写进所有 backbone 通路。
+
