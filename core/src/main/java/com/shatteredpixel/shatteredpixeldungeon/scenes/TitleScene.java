@@ -149,7 +149,9 @@ public class TitleScene extends PixelScene {
 			@Override
 			protected void onClick() {
 				HeroSelectScene.extraChallengeMode = false;
+				HeroSelectScene.infiniteWorldMode = false;
 				Dungeon.extraChallenge = false;
+				Dungeon.infiniteWorld = false;
 				if (GamesInProgress.checkAll().size() == 0){
 					GamesInProgress.selectedClass = null;
 					GamesInProgress.curSlot = 1;
@@ -360,13 +362,32 @@ public class TitleScene extends PixelScene {
 	}
 
 	private void openExtraChallenge() {
+		ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+				Icons.get(Icons.CHALLENGE_COLOR),
+				"额外挑战",
+				"额外挑战拥有独立存档，不会进入原版挑战列表。\n\n0.3 新增“无界地牢”技术原型。",
+				"镜庭",
+				"无界地牢",
+				"取消") {
+			@Override
+			protected void onSelect(int index) {
+				if (index == 0) {
+					openMirrorChallenge();
+				} else if (index == 1) {
+					openInfiniteWorld();
+				}
+			}
+		});
+	}
+
+	private void openMirrorChallenge() {
 		GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
 
 		if (GamesInProgress.gameExists(GamesInProgress.EXTRA_CHALLENGE_SLOT)) {
 			ShatteredPixelDungeon.scene().addToFront(new WndOptions(
 					Icons.get(Icons.CHALLENGE_COLOR),
 					"额外挑战 · 镜庭",
-					"镜庭拥有独立存档，不会出现在普通游戏存档或原版挑战列表中。",
+					"镜庭拥有独立存档。",
 					"继续",
 					"重新开始",
 					"取消") {
@@ -374,26 +395,71 @@ public class TitleScene extends PixelScene {
 				protected void onSelect(int index) {
 					if (index == 0) {
 						HeroSelectScene.extraChallengeMode = false;
+						HeroSelectScene.infiniteWorldMode = false;
 						GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
 						InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
 						Game.switchScene(InterlevelScene.class);
 					} else if (index == 1) {
 						Dungeon.deleteGame(GamesInProgress.EXTRA_CHALLENGE_SLOT, true);
-						startNewExtraChallenge();
+						startNewMirrorChallenge();
 					}
 				}
 			});
 		} else {
-			startNewExtraChallenge();
+			startNewMirrorChallenge();
 		}
 	}
 
-	private void startNewExtraChallenge() {
+	private void startNewMirrorChallenge() {
 		Dungeon.extraChallenge = true;
+		Dungeon.infiniteWorld = false;
 		Dungeon.daily = Dungeon.dailyReplay = false;
 		HeroSelectScene.extraChallengeMode = true;
+		HeroSelectScene.infiniteWorldMode = false;
 		GamesInProgress.selectedClass = null;
 		GamesInProgress.curSlot = GamesInProgress.EXTRA_CHALLENGE_SLOT;
+		ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
+	}
+
+	private void openInfiniteWorld() {
+		GamesInProgress.curSlot = GamesInProgress.INFINITE_WORLD_SLOT;
+
+		if (GamesInProgress.gameExists(GamesInProgress.INFINITE_WORLD_SLOT)) {
+			ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+					Icons.get(Icons.CHALLENGE_COLOR),
+					"额外挑战 · 无界地牢",
+					"世界会随着探索持续生成。当前 0.3 版本暂不生成怪物。",
+					"继续",
+					"重新开始",
+					"取消") {
+				@Override
+				protected void onSelect(int index) {
+					if (index == 0) {
+						HeroSelectScene.extraChallengeMode = false;
+						HeroSelectScene.infiniteWorldMode = false;
+						GamesInProgress.curSlot = GamesInProgress.INFINITE_WORLD_SLOT;
+						InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
+						Game.switchScene(InterlevelScene.class);
+					} else if (index == 1) {
+						Dungeon.deleteGame(GamesInProgress.INFINITE_WORLD_SLOT, true);
+						startNewInfiniteWorld();
+					}
+				}
+			});
+		} else {
+			startNewInfiniteWorld();
+		}
+	}
+
+	private void startNewInfiniteWorld() {
+		Dungeon.extraChallenge = false;
+		Dungeon.infiniteWorld = true;
+		Dungeon.infiniteWorldState = new com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState();
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		HeroSelectScene.extraChallengeMode = false;
+		HeroSelectScene.infiniteWorldMode = true;
+		GamesInProgress.selectedClass = null;
+		GamesInProgress.curSlot = GamesInProgress.INFINITE_WORLD_SLOT;
 		ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
 	}
 
