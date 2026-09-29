@@ -1382,6 +1382,16 @@ public class InfiniteWorldLevel extends Level {
         int westY = edgeVertical(cx, cy);
         int eastY = edgeVertical(cx + 1, cy);
 
+        if (state().generatorVersion >= 9) {
+            int anomaly = v9AnomalyType(cx, cy);
+            if (anomaly != 0) {
+                generateV9AnomalyChunk(out, cx, cy, ox, oy, anomaly,
+                        northX, southX, westY, eastY);
+                carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+                return;
+            }
+        }
+
         int spaceProfile;
         if (state().generatorVersion >= 7) {
             int profileRoll = range(cx, cy, 94, 0, 99);
@@ -1539,6 +1549,123 @@ public class InfiniteWorldLevel extends Level {
         if (cx == 0 && cy == 0) {
             if (state().generatorVersion >= 3) carveOriginPlazaV3(out, ox, oy);
             else carveOriginPlaza(out, ox, oy);
+        }
+
+        if (state().generatorVersion >= 9) {
+            carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Generator v9: guaranteed infinite backbone + rare liminal macro-zones.
+    // ------------------------------------------------------------------------
+
+    private int v9AnomalyType(int cx, int cy) {
+        if (state().generatorVersion < 9) return 0;
+
+        // Keep the starting area conventional so the player learns the normal
+        // world before encountering a large anomalous district.
+        if (Math.abs(cx) <= 4 && Math.abs(cy) <= 4) return 0;
+
+        final int macro = 5;
+        int mx = Math.floorDiv(cx, macro);
+        int my = Math.floorDiv(cy, macro);
+
+        // Entire 5x5 chunk macro-regions share a style, producing spaces that
+        // feel much larger than one chunk. Roughly 8% of macro-regions are anomalous.
+        if (Math.floorMod(hash(mx, my, 23000), 100L) >= 8) return 0;
+
+        return 1 + (int)Math.floorMod(hash(mx, my, 23001), 3L);
+    }
+
+    private void generateV9AnomalyChunk(int[] out, int cx, int cy, int ox, int oy,
+                                        int anomaly, int northX, int southX,
+                                        int westY, int eastY) {
+        carveRect(out, ox, oy, ox + CHUNK_SIZE - 1, oy + CHUNK_SIZE - 1, Terrain.WALL);
+
+        if (anomaly == 1) {
+            // Repetitive liminal offices: mostly empty rooms separated by a rigid
+            // wall lattice, with deterministic gaps that repeat across a 5x5 district.
+            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+
+            for (int x = 5; x < CHUNK_SIZE - 2; x += 6) {
+                for (int y = 1; y < CHUNK_SIZE - 1; y++) {
+                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                }
+                int gapA = 2 + range(cx, cy, 23100 + x, 0, CHUNK_SIZE - 5);
+                int gapB = 2 + range(cx, cy, 23120 + x, 0, CHUNK_SIZE - 5);
+                setFloor(out, ox + x, oy + gapA);
+                setFloor(out, ox + x, oy + gapB);
+            }
+            for (int y = 5; y < CHUNK_SIZE - 2; y += 6) {
+                for (int x = 1; x < CHUNK_SIZE - 1; x++) {
+                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                }
+                int gapA = 2 + range(cx, cy, 23140 + y, 0, CHUNK_SIZE - 5);
+                int gapB = 2 + range(cx, cy, 23160 + y, 0, CHUNK_SIZE - 5);
+                setFloor(out, ox + gapA, oy + y);
+                setFloor(out, ox + gapB, oy + y);
+            }
+
+        } else if (anomaly == 2) {
+            // Pool halls: broad empty floors, repeated pools and narrow dry lanes.
+            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+
+            for (int by = 3; by <= 15; by += 12) {
+                for (int bx = 3; bx <= 15; bx += 12) {
+                    int w = 5 + range(cx + bx, cy + by, 23200, 0, 2);
+                    int h = 5 + range(cx + bx, cy + by, 23201, 0, 2);
+                    carveRect(out, ox + bx, oy + by,
+                            Math.min(ox + CHUNK_SIZE - 3, ox + bx + w),
+                            Math.min(oy + CHUNK_SIZE - 3, oy + by + h),
+                            Terrain.WATER);
+                }
+            }
+
+            // Repeating crosswalks keep the pools readable and traversable.
+            carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+            carveRect(out, ox + 1, oy + 11, ox + CHUNK_SIZE - 2, oy + 12, Terrain.EMPTY);
+
+        } else {
+            // Endless hall: deliberately oversized and sparse, with repeating pillars.
+            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+            for (int y = 4; y < CHUNK_SIZE - 3; y += 5) {
+                for (int x = 4; x < CHUNK_SIZE - 3; x += 5) {
+                    if (((x + y + cx + cy) & 1) == 0) {
+                        out[ox + x + (oy + y) * MAP_SIZE] = Terrain.STATUE;
+                    }
+                }
+            }
+        }
+
+        // Preserve the normal shared edge contract so anomaly chunks always meet
+        // conventional chunks cleanly.
+        int centerX = ox + CHUNK_SIZE / 2;
+        int centerY = oy + CHUNK_SIZE / 2;
+        carveWanderPathV5(out, ox + northX, oy, centerX, centerY, cx, cy, 23300, 1);
+        carveWanderPathV5(out, ox + southX, oy + CHUNK_SIZE - 1, centerX, centerY, cx, cy, 23301, 1);
+        carveWanderPathV5(out, ox, oy + westY, centerX, centerY, cx, cy, 23302, 1);
+        carveWanderPathV5(out, ox + CHUNK_SIZE - 1, oy + eastY, centerX, centerY, cx, cy, 23303, 1);
+
+        carveGateway(out, ox + northX, oy, true);
+        carveGateway(out, ox + southX, oy + CHUNK_SIZE - 1, true);
+        carveGateway(out, ox, oy + westY, false);
+        carveGateway(out, ox + CHUNK_SIZE - 1, oy + eastY, false);
+    }
+
+    private void carveV9InfiniteBackbone(int[] out, int cx, int cy, int ox, int oy) {
+        // A sparse world-scale grid guarantees that the component containing the
+        // origin can extend forever even if ordinary side branches legitimately
+        // dead-end. The grid is only every sixth chunk, so it does not force every
+        // branch or every chunk to expose an exit.
+        boolean verticalSpine = Math.floorMod(cx, 6) == 0;
+        boolean horizontalSpine = Math.floorMod(cy, 6) == 0;
+
+        if (verticalSpine) {
+            carveRect(out, ox + 11, oy, ox + 12, oy + CHUNK_SIZE - 1, Terrain.EMPTY);
+        }
+        if (horizontalSpine) {
+            carveRect(out, ox, oy + 11, ox + CHUNK_SIZE - 1, oy + 12, Terrain.EMPTY);
         }
     }
 
