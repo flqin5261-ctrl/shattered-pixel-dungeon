@@ -13,14 +13,18 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,14 +104,18 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     public void playLevelMusic() {
-        switch (visualTheme()) {
-            case 0: Music.INSTANCE.play(Assets.Music.SEWERS_1, true); break;
-            case 1: Music.INSTANCE.play(Assets.Music.PRISON_1, true); break;
-            case 2: Music.INSTANCE.play(Assets.Music.CAVES_1, true); break;
-            case 4: Music.INSTANCE.play(Assets.Music.HALLS_1, true); break;
-            case 3:
-            default:Music.INSTANCE.play(Assets.Music.CITY_1, true); break;
-        }
+        // Infinite World is a long-running exploration mode; rotate through all
+        // normal regional tracks instead of looping a single song forever.
+        String[] tracks = new String[]{
+                Assets.Music.SEWERS_1, Assets.Music.SEWERS_2, Assets.Music.SEWERS_3,
+                Assets.Music.PRISON_1, Assets.Music.PRISON_2, Assets.Music.PRISON_3,
+                Assets.Music.CAVES_1, Assets.Music.CAVES_2, Assets.Music.CAVES_3,
+                Assets.Music.CITY_1, Assets.Music.CITY_2, Assets.Music.CITY_3,
+                Assets.Music.HALLS_1, Assets.Music.HALLS_2, Assets.Music.HALLS_3
+        };
+        float[] chances = new float[tracks.length];
+        Arrays.fill(chances, 1f);
+        Music.INSTANCE.playTracks(tracks, chances, true);
     }
 
     private InfiniteWorldState state() {
@@ -133,6 +141,7 @@ public class InfiniteWorldLevel extends Level {
         System.arraycopy(baseWindow, 0, map, 0, map.length);
         applyTerrainOverrides();
         restoreExploration();
+        rebuildAccentTiles();
 
         transitions.clear();
         transitions.add(new LevelTransition(this, centerCell(), LevelTransition.Type.REGULAR_ENTRANCE));
@@ -347,6 +356,7 @@ public class InfiniteWorldLevel extends Level {
         customTiles.clear();
         customTerrain.clear();
         customWalls.clear();
+        rebuildAccentTiles();
 
         buildFlagMaps();
         cleanWalls();
@@ -449,9 +459,13 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item chestItem(int cx, int cy) {
-        long h = hash(cx, cy, 7001);
-        if ((h & 1L) == 0) return new PotionOfHealing();
-        return new ScrollOfMagicMapping();
+        int roll = (int)Math.floorMod(hash(cx, cy, 7001), 8L);
+        if (roll <= 2) return new PotionOfHealing();
+        if (roll <= 4) return new ScrollOfTeleportation();
+        if (roll <= 6) return new Bomb();
+        // The pickaxe is intentionally obtainable here because v4 mineral veins
+        // use the game's native mining interaction.
+        return new Pickaxe();
     }
 
     private int[] generateBaseWindow(int centerChunkX, int centerChunkY) {
@@ -570,10 +584,19 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        // Large-area style changes only every ~4 chunks, giving coherent pseudo-biomes.
+        // v4 adds much stronger silhouettes while preserving the shared gateways.
+        // Old worlds retain their exact v3 generator.
+        if (state().generatorVersion >= 4 && (cx != 0 || cy != 0)
+                && Math.floorMod(hash(cx, cy, 390), 100L) < 48) {
+            carveStrangeLandmark(out, cx, cy, ox, oy);
+        }
+
+        // Large-area styles form coherent districts, but v4 has eight distinct
+        // families instead of five.
         int regionX = Math.floorDiv(cx, 4);
         int regionY = Math.floorDiv(cy, 4);
-        int biome = range(regionX, regionY, 401, 0, 4);
+        int biomeMax = state().generatorVersion >= 4 ? 7 : 4;
+        int biome = range(regionX, regionY, 401, 0, biomeMax);
         decorateBiome(out, cx, cy, ox, oy, biome);
 
         // 0-2 doors placed only on narrow-ish floor cells.
@@ -688,35 +711,132 @@ public class InfiniteWorldLevel extends Level {
 
                 switch (biome) {
                     case 0: // overgrown courts
-                        if (roll < 18) out[cell] = Terrain.HIGH_GRASS;
-                        else if (roll < 30) out[cell] = Terrain.GRASS;
+                        if (roll < 16) out[cell] = Terrain.HIGH_GRASS;
+                        else if (roll < 32) out[cell] = Terrain.GRASS;
+                        else if (state().generatorVersion >= 4 && roll < 35) out[cell] = Terrain.EMBERS;
                         break;
                     case 1: // flooded ruins
                         if (state().generatorVersion >= 3) {
-                            // v3 uses smaller, readable puddles instead of broad random flooding.
-                            if (roll < 5 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
-                            else if (roll < 16) out[cell] = Terrain.EMPTY_DECO;
+                            if (roll < 6 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
+                            else if (roll < 18) out[cell] = Terrain.EMPTY_DECO;
                         } else {
                             if (roll < 15 && floorNeighbours(out, ox + x, oy + y) >= 5) out[cell] = Terrain.WATER;
                             else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
                         }
                         break;
-                    case 2: // archives
+                    case 2: // impossible archives
                         if (roll < 8 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.BOOKSHELF;
-                        else if (roll < 18) out[cell] = Terrain.EMPTY_DECO;
+                        else if (roll < 21) out[cell] = Terrain.EMPTY_DECO;
+                        else if (state().generatorVersion >= 4 && roll < 23
+                                && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE;
                         break;
                     case 3: // broken plazas
-                        if (roll < 5 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE;
-                        else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        if (roll < 6 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE;
+                        else if (roll < 25) out[cell] = Terrain.EMPTY_DECO;
+                        else if (state().generatorVersion >= 4 && roll < 28) out[cell] = Terrain.PEDESTAL;
                         break;
-                    default: // mixed old district
+                    case 4: // mixed old district
                         if (roll < 8) out[cell] = Terrain.GRASS;
                         else if (roll < 13 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
-                        else if (roll < 20) out[cell] = Terrain.EMPTY_DECO;
+                        else if (roll < 22) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                    case 5: // ash shrines
+                        if (roll < 18) out[cell] = Terrain.EMBERS;
+                        else if (roll < 22 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE_SP;
+                        else if (roll < 27) out[cell] = Terrain.EMPTY_DECO;
+                        else if (roll < 29) out[cell] = Terrain.PEDESTAL;
+                        break;
+                    case 6: // mineral crypt
+                        if (roll < 5 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.MINE_CRYSTAL;
+                        else if (roll < 17) out[cell] = Terrain.EMPTY_DECO;
+                        break;
+                    case 7: // strange cloister: deliberately contradictory materials
+                    default:
+                        if (roll < 7 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.BOOKSHELF;
+                        else if (roll < 12 && floorNeighbours(out, ox + x, oy + y) >= 7) out[cell] = Terrain.STATUE;
+                        else if (roll < 19) out[cell] = Terrain.HIGH_GRASS;
+                        else if (roll < 23 && floorNeighbours(out, ox + x, oy + y) >= 6) out[cell] = Terrain.WATER;
+                        else if (roll < 31) out[cell] = Terrain.EMPTY_DECO;
                         break;
                 }
             }
         }
+
+        // Gold-bearing wall seams use the native WALL_DECO mining path. They are
+        // biased toward mineral districts but can rarely appear elsewhere.
+        if (state().generatorVersion >= 4) {
+            int veinChance = biome == 6 ? 13 : (biome == 5 ? 5 : 2);
+            for (int y = 2; y < CHUNK_SIZE - 2; y++) {
+                for (int x = 2; x < CHUNK_SIZE - 2; x++) {
+                    int gx = ox + x;
+                    int gy = oy + y;
+                    int cell = gx + gy * MAP_SIZE;
+                    if (out[cell] != Terrain.WALL) continue;
+                    if (!adjacentToFloor(out, gx, gy)) continue;
+                    if (Math.floorMod(hash(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, 980), 100L) < veinChance) {
+                        out[cell] = Terrain.WALL_DECO;
+                    }
+                }
+            }
+        }
+    }
+
+    private void carveStrangeLandmark(int[] out, int cx, int cy, int ox, int oy) {
+        int type = range(cx, cy, 910, 0, 5);
+        int mx = ox + 6 + range(cx, cy, 911, 0, 11);
+        int my = oy + 6 + range(cx, cy, 912, 0, 11);
+
+        switch (type) {
+            case 0: { // oversized oval rotunda
+                int rx = 5 + range(cx, cy, 913, 0, 2);
+                int ry = 3 + range(cx, cy, 914, 0, 3);
+                for (int dy = -ry; dy <= ry; dy++) {
+                    for (int dx = -rx; dx <= rx; dx++) {
+                        float nx = dx / (float)rx;
+                        float ny = dy / (float)ry;
+                        if (nx * nx + ny * ny <= 1.05f) setFloor(out, mx + dx, my + dy);
+                    }
+                }
+                break;
+            }
+            case 1: // unnaturally long hall
+                carveRect(out, ox + 2, my - 1, ox + CHUNK_SIZE - 3, my + 1, Terrain.EMPTY);
+                carveRect(out, mx - 1, my - 4, mx + 1, my + 4, Terrain.EMPTY);
+                break;
+            case 2: // crooked ring with four deliberate wounds
+                for (int dy = -6; dy <= 6; dy++) {
+                    for (int dx = -6; dx <= 6; dx++) {
+                        int d2 = dx * dx + dy * dy;
+                        if (d2 >= 19 && d2 <= 39
+                                && !((Math.abs(dx) <= 1 && Math.abs(dy) >= 5)
+                                || (Math.abs(dy) <= 1 && Math.abs(dx) >= 5))) {
+                            setFloor(out, mx + dx, my + dy);
+                        }
+                    }
+                }
+                setFloor(out, mx, my);
+                break;
+            case 3: // tiny dense cell nested in a larger cross
+                carveRect(out, mx - 5, my - 1, mx + 5, my + 1, Terrain.EMPTY);
+                carveRect(out, mx - 1, my - 5, mx + 1, my + 5, Terrain.EMPTY);
+                carveRect(out, mx - 2, my - 2, mx + 2, my + 2, Terrain.EMPTY);
+                break;
+            case 4: // asymmetric fan
+                for (int dy = -5; dy <= 5; dy++) {
+                    int half = Math.max(1, 5 - Math.abs(dy));
+                    carveRect(out, mx - 1, my + dy, mx + half, my + dy, Terrain.EMPTY);
+                }
+                break;
+            default: // two overlapping chambers, intentionally off-axis
+                carveRect(out, mx - 5, my - 3, mx + 1, my + 3, Terrain.EMPTY);
+                carveRect(out, mx - 1, my - 1, mx + 5, my + 5, Terrain.EMPTY);
+                break;
+        }
+    }
+
+    private boolean adjacentToFloor(int[] out, int x, int y) {
+        return isFloorLike(out, x + 1, y) || isFloorLike(out, x - 1, y)
+                || isFloorLike(out, x, y + 1) || isFloorLike(out, x, y - 1);
     }
 
     private void placeSafeDoor(int[] out, int cx, int cy, int ox, int oy, int salt) {
@@ -1116,6 +1236,87 @@ public class InfiniteWorldLevel extends Level {
     private int range(int x, int y, int salt, int min, int max) {
         int span = max - min + 1;
         return min + (int)Math.floorMod(hash(x, y, salt), (long)span);
+    }
+
+    public int randomTeleportDestination(Char ch, boolean preferUnexploredChunk) {
+        ArrayList<Integer> primary = new ArrayList<>();
+        ArrayList<Integer> secondary = new ArrayList<>();
+        ArrayList<Integer> fallback = new ArrayList<>();
+
+        int fromX = ch.pos % width();
+        int fromY = ch.pos / width();
+
+        // Keep random teleports inside the central 5x5 chunks. This leaves one
+        // loaded chunk of margin around the destination, so teleporting never
+        // immediately trips a streaming boundary.
+        int min = CHUNK_SIZE;
+        int max = MAP_SIZE - CHUNK_SIZE;
+
+        for (int y = min; y < max; y++) {
+            for (int x = min; x < max; x++) {
+                int cell = x + y * width();
+                if ((!passable[cell] && !avoid[cell]) || secret[cell] || Actor.findChar(cell) != null) continue;
+                if (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]) continue;
+
+                int dist = Math.abs(x - fromX) + Math.abs(y - fromY);
+                if (dist < 8) continue;
+
+                int wx = worldXForLocalCell(cell);
+                int wy = worldYForLocalCell(cell);
+                int cx = Math.floorDiv(wx, CHUNK_SIZE);
+                int cy = Math.floorDiv(wy, CHUNK_SIZE);
+                boolean chunkKnown = state().chunkExplored(cx, cy);
+
+                fallback.add(cell);
+                if (preferUnexploredChunk) {
+                    if (!chunkKnown && dist >= CHUNK_SIZE) primary.add(cell);
+                    else if (!visited[cell]) secondary.add(cell);
+                } else {
+                    if (chunkKnown && visited[cell] && !heroFOV[cell]) primary.add(cell);
+                    else if (chunkKnown && visited[cell]) secondary.add(cell);
+                }
+            }
+        }
+
+        if (!primary.isEmpty()) return Random.element(primary);
+        if (!secondary.isEmpty()) return Random.element(secondary);
+        if (!fallback.isEmpty()) return Random.element(fallback);
+        return -1;
+    }
+
+    private void rebuildAccentTiles() {
+        if (state().generatorVersion < 4 || customTiles == null) return;
+
+        String[] textures = new String[]{
+                Assets.Environment.TILES_SEWERS,
+                Assets.Environment.TILES_PRISON,
+                Assets.Environment.TILES_CAVES,
+                Assets.Environment.TILES_CITY,
+                Assets.Environment.TILES_HALLS
+        };
+        int base = visualTheme();
+
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
+                int cx = state().centerChunkX + wx;
+                int cy = state().centerChunkY + wy;
+
+                // About two thirds of chunks carry a foreign-material floor patch.
+                if (Math.floorMod(hash(cx, cy, 16001), 100L) >= 66) continue;
+
+                int alt = range(Math.floorDiv(cx, 2), Math.floorDiv(cy, 2), 16002, 0, 4);
+                if (alt == base) alt = (alt + 1 + range(cx, cy, 16003, 0, 2)) % 5;
+
+                InfiniteWorldAccentTilemap accent =
+                        new InfiniteWorldAccentTilemap(textures[alt], (int)hash(cx, cy, 16004));
+                accent.setRect(
+                        (wx + HALF_WINDOW) * CHUNK_SIZE,
+                        (wy + HALF_WINDOW) * CHUNK_SIZE,
+                        CHUNK_SIZE,
+                        CHUNK_SIZE);
+                customTiles.add(accent);
+            }
+        }
     }
 
     public int stableTileVariance(int localPos) {
