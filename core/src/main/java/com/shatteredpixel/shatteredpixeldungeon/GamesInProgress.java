@@ -177,6 +177,12 @@ public class GamesInProgress {
 	public static void delete( int slot ) {
 		slotStates.put( slot, null );
 	}
+
+	public static void deleteCompletely( int slot ) {
+		FileUtils.deleteDir(gameFolder(slot));
+		slotStates.put(slot, null);
+	}
+
 	
 	public static class Info {
 		public int slot;
