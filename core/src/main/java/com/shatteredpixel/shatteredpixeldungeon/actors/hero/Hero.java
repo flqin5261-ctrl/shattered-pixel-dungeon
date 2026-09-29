@@ -736,7 +736,7 @@ public class Hero extends Char {
 
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
 
-		if (SPDSettings.assistSpeed()) speed *= 2f;
+		if (SPDSettings.assistSpeed()) speed *= SPDSettings.assistSpeedMultiplier();
 		
 		return speed;
 		
