@@ -62,6 +62,10 @@ public class CellSelector extends ScrollArea {
 	}
 	
 	private float mouseZoom;
+
+	private float minimumZoom() {
+		return Dungeon.infiniteWorld ? Math.max(2f, PixelScene.minZoom) : PixelScene.minZoom;
+	}
 	
 	@Override
 	protected void onScroll( ScrollEvent event ) {
@@ -70,7 +74,7 @@ public class CellSelector extends ScrollArea {
 		//scale zoom difference so zooming is consistent
 		diff /= ((camera.zoom+1)/camera.zoom)-1;
 		diff = Math.min(1, diff);
-		mouseZoom = GameMath.gate( PixelScene.minZoom, mouseZoom - diff, PixelScene.maxZoom );
+		mouseZoom = GameMath.gate( minimumZoom(), mouseZoom - diff, PixelScene.maxZoom );
 		
 		zoom( Math.round(mouseZoom) );
 	}
@@ -128,7 +132,7 @@ public class CellSelector extends ScrollArea {
 
 	private float zoom( float value ) {
 
-		value = GameMath.gate( PixelScene.minZoom, value, PixelScene.maxZoom );
+		value = GameMath.gate( minimumZoom(), value, PixelScene.maxZoom );
 		SPDSettings.zoom((int) (value - PixelScene.defaultZoom));
 		camera.zoom( value );
 
@@ -227,7 +231,7 @@ public class CellSelector extends ScrollArea {
 			float curSpan = PointF.distance( curEvent.current, another.current );
 			float zoom = (startZoom * curSpan / startSpan);
 			camera.zoom( GameMath.gate(
-				PixelScene.minZoom,
+				minimumZoom(),
 					zoom - (zoom % 0.1f),
 				PixelScene.maxZoom ) );
 
