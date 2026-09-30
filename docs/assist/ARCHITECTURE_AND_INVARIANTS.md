@@ -1861,3 +1861,17 @@ V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每
 - Any path that clears/rebuilds customTiles (including secret-door accent refresh and Streaming rebuild) must restore the sparse decoration layer before GameScene refreshes custom overlays.
 - Environment props do not justify a generator-version bump while they remain deterministic, non-collision visual overlays.
 
+# 0.5.9 Decoration Density Invariants
+
+The InfiniteWorldDecorationLayer remains a presentation-only system even after density increases.
+
+Hard rules:
+1. Decoration count may increase, but no prop may become collision or an interactive object in this pass.
+2. Props must never modify Level.map, passable, solid, pit, water, pathfinding, terrainOverrides, objectStates used by gameplay, merchant connectivity or mob ecology.
+3. Placement occurs after gameplay heaps/traps/plants/themed contents exist and skips occupied cells.
+4. The 4-cell-wide common chunk-center crossing lanes remain clear.
+5. Furniture/fixtures may prefer wall-adjacent placement, but the preference must have a fallback rather than forcing a blocked or invalid location.
+6. Backrooms districts use regional prop pools; do not collapse future versions back to one global random pool.
+7. The 0.5.8 erroneous crate visual mapping is retired; sprite indices must be verified against the pinned atlas before assigning semantic names.
+8. Magnifier name/description support is mandatory for every decoration kind.
+9. Decoration density is visual tuning only and does not require WORLD_GEN_VERSION >15 while terrain generation remains unchanged.
