@@ -166,6 +166,27 @@ public class CellSelector extends ScrollArea {
 		if (enabled && Dungeon.hero.ready && !GameScene.interfaceBlockingHero()
 				&& listener != null && cell != -1) {
 
+			if (button != PointerEvent.RIGHT
+					&& GameScene.isDefaultCellListener(listener)
+					&& GenesisEcho.ultraTeleport(Dungeon.hero)
+					&& cell >= 0 && cell < Dungeon.level.length()
+					&& Dungeon.level.visited[cell]) {
+				if (pendingGenesisTapCell == cell && pendingGenesisTapDelay > 0f) {
+					pendingGenesisTapCell = -1;
+					pendingGenesisTapDelay = 0f;
+					GenesisEcho.teleportToVisited(Dungeon.hero, cell);
+					GameScene.ready();
+					return;
+				} else {
+					pendingGenesisTapCell = cell;
+					pendingGenesisTapDelay = GENESIS_DOUBLE_TAP_WINDOW;
+					return;
+				}
+			}
+
+			pendingGenesisTapCell = -1;
+			pendingGenesisTapDelay = 0f;
+
 			switch (button){
 				default:
 					listener.onSelect( cell );
