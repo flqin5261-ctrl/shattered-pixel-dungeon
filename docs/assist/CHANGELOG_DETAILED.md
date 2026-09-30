@@ -2452,3 +2452,27 @@ Version: 0.5.13 / versionCode 959 / WORLD_GEN_VERSION 17 unchanged.
 - Certificate bonuses are queried from the equipped item at calculation time, so unequipping removes them immediately.
 - Normal and locked chests may roll one extra supply item; crystal artifact chests are excluded.
 - Artifact post-+10 levels now explicitly affect effective level and gain +2.5% recharge efficiency per overlevel, up to +50% at visible +30.
+
+
+# 0.6.4 — Certificate Status UI
+
+Version:
+- versionName: 0.6.4
+- versionCode: 960
+- dev: assist-0.6.4-certificate-ui
+- target stable: assist-0.6.4-stable
+- WORLD_GEN_VERSION: 17 (unchanged)
+
+Version normalization:
+- 0.5.10 -> 0.6.0
+- 0.5.11 -> 0.6.1
+- 0.5.12 -> 0.6.2
+- 0.5.13 -> 0.6.3
+Historical branch refs are preserved; stable aliases were added.
+
+Certificate UI:
+- Reworked certificate item description into one stat per line.
+- Breakthrough Blessing now uses a distinct amulet-style HUD icon below the HP bar.
+- Tier text 30/40/50/60 is visible on the badge even in compact mobile UI.
+- Clicking the badge shows current bonuses, totem charge, and a complete next-tier preview.
+- Added real accuracy, evasion and experience-gain bonuses at all four tiers.
