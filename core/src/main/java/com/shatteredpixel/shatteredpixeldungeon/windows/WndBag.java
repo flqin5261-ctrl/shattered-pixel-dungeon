@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -39,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventorySlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RightClickMenu;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
@@ -50,6 +52,8 @@ import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.utils.PointF;
+
+import java.util.ArrayList;
 
 public class WndBag extends WndTabbed {
 	
@@ -82,6 +86,10 @@ public class WndBag extends WndTabbed {
 	protected int row;
 	
 	private static Bag lastBag;
+	private static Bag pageBag;
+	private static int pageIndex = 0;
+	private int pageCount = 1;
+	private Bag shownBag;
 
 	public WndBag( Bag bag ) {
 		this(bag, null);
@@ -99,6 +107,11 @@ public class WndBag extends WndTabbed {
 		this.selector = selector;
 		
 		lastBag = bag;
+		shownBag = bag;
+		if (pageBag != bag) {
+			pageBag = bag;
+			pageIndex = 0;
+		}
 
 		slotWidth = PixelScene.landscape() ? SLOT_WIDTH_L : SLOT_WIDTH_P;
 		slotHeight = PixelScene.landscape() ? SLOT_HEIGHT_L : SLOT_HEIGHT_P;
@@ -124,6 +137,11 @@ public class WndBag extends WndTabbed {
 		placeTitle( bag, windowWidth );
 		
 		placeItems( bag );
+
+		if (pageCount > 1) {
+			windowHeight += 15;
+			addPageButtons(windowWidth, windowHeight - 14);
+		}
 
 		resize( windowWidth, windowHeight );
 
@@ -241,6 +259,11 @@ public class WndBag extends WndTabbed {
 	}
 	
 	protected void placeItems( Bag container ) {
+
+		if (container == Dungeon.hero.belongings.backpack && GenesisEcho.active(Dungeon.hero)) {
+			placeInfiniteBackpackPage(container);
+			return;
+		}
 		
 		// Equipped items
 		Belongings stuff = Dungeon.hero.belongings;
