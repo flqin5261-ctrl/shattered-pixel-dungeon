@@ -37,7 +37,7 @@ public class BreakthroughCertificate extends EquipableItem {
     private static final String REGEN_PROGRESS = "regen_progress";
     private static final String IMMUNITY_INDEX = "immunity_index";
 
-    private static final Class<?>[] IMMUNITY_POOL = new Class<?>[]{
+    private static final Class[] IMMUNITY_POOL = new Class[]{
             Burning.class, Poison.class, Paralysis.class, Vertigo.class,
             Blindness.class, Cripple.class, Weakness.class, Vulnerable.class,
             Slow.class, Charm.class, Hex.class
@@ -269,7 +269,7 @@ public class BreakthroughCertificate extends EquipableItem {
         }
     }
 
-    public Class<?> immunityClass() {
+    public Class immunityClass() {
         ensureImmunity();
         return IMMUNITY_POOL[immunityIndex];
     }
@@ -455,8 +455,7 @@ public class BreakthroughCertificate extends EquipableItem {
             ensureImmunity();
             BreakthroughBlessing blessing = Buff.affect(ch, BreakthroughBlessing.class);
             blessing.certificate = this;
-            blessing.immunities.clear();
-            blessing.immunities.add(immunityClass());
+            blessing.setImmunity(immunityClass());
         }
     }
 
@@ -520,6 +519,11 @@ public class BreakthroughCertificate extends EquipableItem {
             type = buffType.POSITIVE;
             announced = true;
             revivePersists = true;
+        }
+
+        private void setImmunity(Class cls) {
+            immunities.clear();
+            if (cls != null) immunities.add(cls);
         }
 
         @Override
