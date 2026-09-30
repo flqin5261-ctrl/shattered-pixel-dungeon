@@ -1715,3 +1715,35 @@ V9-V11=8%/3 types，V12=15%/3 types，旧世界不可升级重算。
 Document.INFINITE_WORLD_NOTES 现有 6 页。
 每一个 anomaly type 必须映射唯一 page key。
 近身补偿只以 Document 页面是否已发现为停止条件，不能因为 anchor note 生成失败而永久失去该页面。
+
+# V14 — Landmark 连通性与动态 Accent 不变量
+
+## Merchant landmark connectivity
+Merchant Outpost 不能再依赖“生成时曾经刻过 corridor”作为可达证明。
+
+硬约束：
+1. 检查时机必须晚于 themed rooms、biome、props、V10 infinite network 等所有可能改写 terrain 的步骤。
+2. Merchant entrance 必须有实际 PASSABLE path 到至少一个 shared-edge gateway。
+3. 若已有 path，不得为统一外观而重复改地形。
+4. 自动补路优先避开其他 themed-room rectangles。
+5. Chunk 外边界只能通过已有四个 gateway 之一离开。
+6. Legacy V11-V13 可以在 active window runtime repair，但必须让 terrainOverrides 持久化结果。
+7. Runtime repair 不得把玩家已经打开/炸掉且仍 passable 的 merchant entrance 强制复原。
+
+这一规则以后同样适用于 Boss landmark / quest landmark。
+
+## Accent overlay runtime synchronization
+InfiniteWorldAccentTilemap 是 visual-only，不得改变 collision。
+因此必须始终满足：
+> 如果 Level.map 已经变成可通行 terrain，custom overlay 不得继续显示旧 solid wall。
+
+当前机制：
+- GameScene.updateMap(cell) -> refresh affected InfiniteWorldAccentTilemap；
+- wall stitch/overhang 依赖邻格，因此 affected 判定含 1-cell halo；
+- refresh 只重建对应小 overlay，不重建整个 GameScene；
+- SECRET_DOOR discovery 是特殊情况：隐藏房原先没有 room overlay，需要重建 accent definitions 并重新挂载 custom floor/wall groups。
+
+禁止回退到：
+- 只更新 base DungeonTerrainTilemap；
+- 等下一次 Streaming 才修正 custom wall；
+- 为每一种可变 Terrain 单独永久 hardcode exclude。
