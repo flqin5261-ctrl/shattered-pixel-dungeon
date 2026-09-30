@@ -438,8 +438,14 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((preview.accuracyMultiplier()-1f)*100f),
                     Math.round((preview.evasionMultiplier()-1f)*100f),
                     Math.round((preview.expMultiplier()-1f)*100f),
+                    Math.round((1f-preview.hungerMultiplier())*100f),
+                    Math.round((preview.goldMultiplier()-1f)*100f),
+                    Math.round((preview.speedMultiplier()-1f)*100f),
                     preview.visionBonus(),
                     Math.round((1f-preview.shopPriceMultiplier())*100f),
+                    Math.round(preview.chestBonusChance()*100f),
+                    Math.round(preview.regenInterval()),
+                    Math.round(preview.reviveChargeRequired()),
                     Math.round(preview.reviveHpFraction()*100f));
         }
     }
