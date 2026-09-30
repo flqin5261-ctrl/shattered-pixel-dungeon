@@ -41,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
@@ -416,11 +417,15 @@ public class Item implements Bundlable {
 	}
 	
 	public Item upgrade() {
-		
+
+		if (!InfiniteWorldProgression.canUpgradeEquipment(this)) {
+			return this;
+		}
+
 		this.level++;
 
 		updateQuickslot();
-		
+
 		return this;
 	}
 	
