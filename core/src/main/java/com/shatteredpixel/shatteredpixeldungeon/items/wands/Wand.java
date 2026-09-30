@@ -144,17 +144,47 @@ public abstract class Wand extends Item {
 		Sample.INSTANCE.play(Assets.Sounds.ZAP);
 
 		int affected = 0;
+		int executed = 0;
 		for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
 			if (mob == null || !mob.isAlive() || mob.alignment == Char.Alignment.ALLY) continue;
 			if (mob.sprite == null || !mob.sprite.isVisible()) continue;
 
-			GenesisEcho.forceSlay(hero, mob);
+			wandProc(mob, chargesPerCast());
+			int dmg = genesisScreenDamage(hero);
+			mob.damage(dmg, this);
 			affected++;
+
+			if (mob.isAlive() && GenesisEcho.tryMiracleExecute(hero, mob)) {
+				executed++;
+			}
 		}
 
-		GLog.p("超极限施法：全屏AOE命中%d个敌人。", affected);
+		if (GenesisEcho.miracleExecutionActive(hero)) {
+			GLog.p("超极限施法：全屏AOE命中%d个敌人，其中%d个触发创世回响秒杀。", affected, executed);
+		} else {
+			GLog.p("超极限施法：全屏AOE命中%d个敌人。", affected);
+		}
 		wandUsed();
 		return true;
+	}
+
+	private int genesisScreenDamage(Hero hero) {
+		int lvl = buffedLvl();
+		int dmg;
+		if (this instanceof DamageWand) {
+			DamageWand damageWand = (DamageWand)this;
+			dmg = Hero.heroDamageIntRange(damageWand.min(lvl), damageWand.max(lvl));
+		} else {
+			// Utility/indirect-damage wands still gain a direct Genesis AOE damage
+			// packet so the tier-7 talent always hurts visible hostiles.
+			dmg = Hero.heroDamageIntRange(3 + lvl, 7 + 3*lvl);
+		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
+		if (certificate != null) {
+			dmg = Math.round(dmg * certificate.effectiveDamageMultiplier(hero));
+		}
+		return Math.max(1, dmg);
 	}
 
 	@Override
