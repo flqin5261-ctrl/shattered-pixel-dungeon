@@ -14,7 +14,11 @@
     "stable_branch": "assist-0.5.1-stable",
     "development_branch": "assist-0.5.1-merchants",
     "release_code_sha": "e14bac5c266d6b0cad3189ace9dc7492967ac74b",
-    "world_generator_version": 11
+    "world_generator_version": 11,
+    "build_run_id": 36652519842,
+    "artifact_id": 11071242855,
+    "artifact_zip_sha256": "ab8a78facc9447d287b5b3627173d6b459dc7e05f1deb13d19ac7a816bb2b003",
+    "apk_sha256": "4baab2a0ce442d9e52cddf0fa4f0750cdc47e926fa8cf5c36cdd5cfa2d1fe177"
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
