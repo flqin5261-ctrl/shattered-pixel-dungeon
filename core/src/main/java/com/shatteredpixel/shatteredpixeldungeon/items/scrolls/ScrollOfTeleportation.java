@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
@@ -96,10 +97,17 @@ public class ScrollOfTeleportation extends Scroll {
 	}
 
 	public static boolean teleportChar( Char ch ) {
-		return teleportChar( ch, ScrollOfTeleportation.class );
+		// Generic teleports are treated as external/forced. The player's own
+		// teleport scroll uses the explicit ScrollOfTeleportation source below.
+		return teleportChar( ch, null );
 	}
 
 	public static boolean teleportChar( Char ch, Class source ) {
+
+		if (GenesisEcho.blocksForcedTeleport(ch, source)) {
+			if (ch == Dungeon.hero) GLog.p("创世回响阻止了强制传送。");
+			return false;
+		}
 
 		//in locked levels, we must do a pathfind check, so just default to non-regular level logic
 		if (!(Dungeon.level instanceof RegularLevel) || Dungeon.level.locked){
@@ -179,7 +187,7 @@ public class ScrollOfTeleportation extends Scroll {
 		}
 		
 		if (candidates.isEmpty()){
-			return teleportChar( hero );
+			return teleportChar( hero, ScrollOfTeleportation.class );
 		} else {
 			int pos = Random.element(candidates);
 			boolean secretDoor = false;
