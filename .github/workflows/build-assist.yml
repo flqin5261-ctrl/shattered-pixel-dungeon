@@ -32,6 +32,7 @@ on:
       - assist-0.5.6-spectator-test
       - assist-0.5.7-backrooms-merchants
       - assist-0.5.8-spectator-props
+      - assist-0.5.9-decoration-pass
   workflow_dispatch:
 
 permissions:
