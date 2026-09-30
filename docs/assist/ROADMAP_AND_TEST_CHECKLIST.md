@@ -1909,3 +1909,14 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Genesis Fortune: test normal, locked and crystal chests; output scatters across the 9x9 Hero-centred area, creates at least 10 extra items, stackables are >=10, and Weapon/Armor/Ring/Wand items are +120.
 - [ ] Fortune burst with few nearby passable cells does not lose items; items may reuse valid cells but must remain obtainable.
 - [ ] Save/load preserves tiers 5/6 allocations, selected tier-7 authority and its visible Buff.
+
+# B29. 0.6.10 scroll UI regression
+
+- [ ] Open Genesis Echo with Miracle World equipped on a portrait phone: the window stays fully inside the screen.
+- [ ] Drag/swipe the Genesis Echo description upward/downward and reach both the first and final lines.
+- [ ] Short Buff descriptions still open normally without unnecessary clipping.
+- [ ] Put enough items in Infinite Space to exceed one screen: no page buttons appear.
+- [ ] Swipe backpack up/down continuously and reach all items plus at least five empty slots at the end.
+- [ ] Equipped weapon/armor/artifact/Miracle World/misc/ring slots remain at the start of the backpack.
+- [ ] Item taps, long presses, selectors and right-click context menus still work while the grid is scrolled.
+- [ ] Bag tabs remain visible and switch bags correctly.
