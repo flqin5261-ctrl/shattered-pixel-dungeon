@@ -1869,3 +1869,5 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Genesis Echo Infinite Space always leaves at least five root-backpack slots free as item count increases.
 - [ ] WndUpgrade shows current permanent immunity before each reroll.
 - [ ] Existing 0.6.6 save upgrades cleanly without losing Genesis kill-growth data.
+
+- [ ] Infinite Space pagination: fill the root backpack beyond one page, navigate all pages, use/select/quickslot items from later pages, and verify the final page keeps five usable empty slots.

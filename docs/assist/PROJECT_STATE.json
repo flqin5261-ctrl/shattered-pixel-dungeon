@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.7-stable",
     "development_branch": "assist-0.6.7-genesis-authority",
-    "release_code_sha": "cfd536e11bf10944a5eb5b51f54e13549acefd27",
+    "release_code_sha": "bf70421c6471945b04ea1ebccd26549db1675faa",
     "world_generator_version": 17
   },
   "build": {
@@ -411,7 +411,8 @@
       "level60_exp_bonus": "none",
       "linked_curse_immunity": "explicit Burning/Poison/Bleeding/Corrosion/Ooze/Weakness/Vulnerable/Degrade/Hex/Doom classes are immune via Char.isImmune, plus Hero.add rejects any other NEGATIVE Buff while linked; already-active blocked effects are cleansed on link/restore",
       "linked_damage_immunity": "Hero.damage returns immediately and Hero.isInvulnerable reports true while 奇迹·世界 is equipped",
-      "infinite_space": "base Backpack returns to upstream 20-slot baseline before bag modifiers; after Genesis Echo awakens capacity is max(normalCapacity, currentItems+5), guaranteeing >=5 free root slots"
+      "infinite_space": "base Backpack returns to upstream 20-slot baseline before bag modifiers; after Genesis Echo awakens capacity is max(normalCapacity, currentItems+5), guaranteeing >=5 free root slots",
+      "infinite_space_ui": "WndBag root backpack is paginated while Genesis Echo is active; equipment stays visible on every page, item/free-slot pages use safe ASCII prev/next controls, and the final page still exposes the guaranteed five empty slots."
     }
   },
   "current_content": {
@@ -730,6 +731,7 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.6.7 Infinite Space UI: with >1 page of root-backpack content, page buttons navigate every stored item and the last page still shows five empty slots.",
     "0.6.7 Genesis base control immunity: Blindness/Daze/Paralysis/Roots/Vertigo/Cripple/Charm/Terror/Amok/Sleep/Slow/Chill/Frost cannot attach while 创世回响 exists.",
     "0.6.7 forced teleport: traps/enemies fail to move the Hero, while the Hero's own Teleportation Scroll still works.",
     "0.6.7 linked curse immunity: equip 奇迹·世界, apply Burning/Poison/Bleeding/Corrosion/Ooze/Weakness/Vulnerable/Degrade/Hex and other NEGATIVE buffs, and confirm they are rejected/cleansed.",
