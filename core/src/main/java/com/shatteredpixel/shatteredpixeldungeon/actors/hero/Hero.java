@@ -279,6 +279,10 @@ public class Hero extends Char {
 			HT = Math.round(HT * certificate.effectiveHealthMultiplier(this));
 		}
 
+		if (hasTalent(Talent.ASCENDANT_VITALITY)) {
+			HT = Math.round(HT * (1f + 0.10f * pointsInTalent(Talent.ASCENDANT_VITALITY)));
+		}
+
 		// Genesis Echo kill growth is exactly +1 max HP per enemy, so apply this
 		// after percentage multipliers rather than letting the permanent point be
 		// amplified by rings or Miracle World.
@@ -307,6 +311,7 @@ public class Hero extends Char {
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null) strBonus += certificate.effectiveStrengthBonus(this);
 		strBonus += GenesisEcho.permanentStrBonus(this);
+		strBonus += 2 * pointsInTalent(Talent.TRANSCENDENT_STRENGTH);
 
 		return STR + strBonus;
 	}
@@ -385,44 +390,70 @@ public class Hero extends Char {
 	}
 
 	public int pointsInTalent( Talent talent ){
-		for (LinkedHashMap<Talent, Integer> tier : talents){
-			for (Talent f : tier.keySet()){
-				if (f == talent) return tier.get(f);
+		for (int i = 0; i < talents.size(); i++){
+			LinkedHashMap<Talent, Integer> tier = talents.get(i);
+			if (tier.containsKey(talent)){
+				if (i < 6 && GenesisEcho.miracleTalentMastery(this)) {
+					return talent.maxPoints();
+				}
+				return tier.get(talent);
 			}
 		}
 		return 0;
 	}
 
 	public void upgradeTalent( Talent talent ){
-		for (LinkedHashMap<Talent, Integer> tier : talents){
-			for (Talent f : tier.keySet()){
-				if (f == talent) tier.put(talent, tier.get(talent)+1);
+		for (int i = 0; i < talents.size(); i++){
+			LinkedHashMap<Talent, Integer> tier = talents.get(i);
+			if (tier.containsKey(talent)){
+				if (i == 6 && talentPointsSpent(7) > 0 && tier.get(talent) == 0) return;
+				tier.put(talent, Math.min(talent.maxPoints(), tier.get(talent)+1));
+				break;
 			}
 		}
 		Talent.onTalentUpgraded(this, talent);
+		GenesisEcho.syncTier7Buff(this);
+	}
+
+	public void resetTier7Talent(){
+		if (talents.size() < 7) return;
+		for (Talent talent : talents.get(6).keySet()) {
+			talents.get(6).put(talent, 0);
+		}
+		GenesisEcho.syncTier7Buff(this);
 	}
 
 	public int talentPointsSpent(int tier){
+		if (tier < 1 || tier > talents.size()) return 0;
 		int total = 0;
-		for (int i : talents.get(tier-1).values()){
-			total += i;
+		if (tier <= 6 && GenesisEcho.miracleTalentMastery(this)) {
+			for (Talent talent : talents.get(tier-1).keySet()) total += talent.maxPoints();
+		} else {
+			for (int i : talents.get(tier-1).values()) total += i;
 		}
 		return total;
 	}
 
 	public int talentPointsAvailable(int tier){
+		if (tier < 1 || tier > Talent.MAX_TALENT_TIERS) return 0;
+		if (!Dungeon.infiniteWorld && tier > 4) return 0;
+		if (tier == 7) {
+			return GenesisEcho.active(this) ? Math.max(0, 1 - talentPointsSpent(7)) : 0;
+		}
+		if (tier <= 6 && GenesisEcho.miracleTalentMastery(this)) return 0;
 		if (lvl < (Talent.tierLevelThresholds[tier] - 1)
 			|| (tier == 3 && subClass == HeroSubClass.NONE && !Dungeon.infiniteWorld)
 			|| (tier == 4 && armorAbility == null)) {
 			return 0;
 		} else if (lvl >= Talent.tierLevelThresholds[tier+1]){
-			return Talent.tierLevelThresholds[tier+1] - Talent.tierLevelThresholds[tier] - talentPointsSpent(tier) + bonusTalentPoints(tier);
+			return Math.max(0, Talent.tierLevelThresholds[tier+1] - Talent.tierLevelThresholds[tier] - talentPointsSpent(tier) + bonusTalentPoints(tier));
 		} else {
-			return 1 + lvl - Talent.tierLevelThresholds[tier] - talentPointsSpent(tier) + bonusTalentPoints(tier);
+			return Math.max(0, 1 + lvl - Talent.tierLevelThresholds[tier] - talentPointsSpent(tier) + bonusTalentPoints(tier));
 		}
 	}
 
 	public int bonusTalentPoints(int tier){
+		if (tier > 4) return 0;
 		if (lvl < (Talent.tierLevelThresholds[tier]-1)
 				|| (tier == 3 && subClass == HeroSubClass.NONE && !Dungeon.infiniteWorld)
 				|| (tier == 4 && armorAbility == null)) {
@@ -516,6 +547,10 @@ public class Hero extends Char {
 	@Override
 	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti) {
 		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti);
+		if (GenesisEcho.miracleLinked(this) && enemy != null && enemy.alignment == Alignment.ENEMY) {
+			GenesisEcho.forceSlay(this, enemy);
+			result = true;
+		}
 		if (!(belongings.attackingWeapon() instanceof MissileWeapon)){
 			if (buff(Talent.PreciseAssaultTracker.class) != null){
 				buff(Talent.PreciseAssaultTracker.class).detach();
@@ -533,6 +568,7 @@ public class Hero extends Char {
 		
 		float accuracy = 1;
 		accuracy *= RingOfAccuracy.accuracyMultiplier( this );
+		accuracy *= 1f + 0.15f * pointsInTalent(Talent.ASCENDANT_FOCUS);
 		
 		//precise assault and liquid agility
 		if (!(wep instanceof MissileWeapon)) {
@@ -623,6 +659,7 @@ public class Hero extends Char {
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null) evasion *= certificate.effectiveEvasionMultiplier(this);
+		evasion *= 1f + 0.15f * pointsInTalent(Talent.ASCENDANT_REFLEX);
 
 		if (belongings.armor() != null) {
 			evasion = belongings.armor().evasionFactor(this, evasion);
@@ -769,6 +806,7 @@ public class Hero extends Char {
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null) speed *= certificate.effectiveSpeedMultiplier(this);
+		speed *= 1f + 0.15f * pointsInTalent(Talent.TRANSCENDENT_SPEED);
 
 		float assistMoveMultiplier = SPDSettings.assistSpeed()
 				? SPDSettings.assistSpeedMultiplier() : 1f;
@@ -866,6 +904,7 @@ public class Hero extends Char {
 		if (time > 0f) {
 			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 			if (certificate != null) certificate.processHeroTime(this, time);
+			processTranscendentRegen(time);
 		}
 		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
 			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
@@ -878,10 +917,18 @@ public class Hero extends Char {
 		if (time > 0f) {
 			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 			if (certificate != null) certificate.processHeroTime(this, time);
+			processTranscendentRegen(time);
 		}
 		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
 			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
 		}
+	}
+
+	private void processTranscendentRegen(float time) {
+		int points = pointsInTalent(Talent.TRANSCENDENT_REGEN);
+		if (points <= 0 || HP <= 0 || HP >= HT) return;
+		int heal = Math.round(HT * 0.0025f * points * time);
+		if (heal > 0) HP = Math.min(HT, HP + heal);
 	}
 
 	public void spendAndNextConstant(float time ) {
@@ -1176,9 +1223,12 @@ public class Hero extends Char {
 
 	private boolean actPickUp( HeroAction.PickUp action ) {
 		int dst = action.dst;
-		if (pos == dst) {
+		boolean remote = GenesisEcho.ultraReach(this)
+				&& Dungeon.level.heaps.get(dst) != null
+				&& Dungeon.level.heaps.get(dst).seen;
+		if (pos == dst || remote) {
 			
-			Heap heap = Dungeon.level.heaps.get( pos );
+			Heap heap = Dungeon.level.heaps.get( dst );
 			if (heap != null) {
 				Item item = heap.peek();
 				if (item.doPickUp( this )) {
@@ -1257,7 +1307,9 @@ public class Hero extends Char {
 	
 	private boolean actOpenChest( HeroAction.OpenChest action ) {
 		int dst = action.dst;
-		if (Dungeon.level.adjacent( pos, dst ) || pos == dst) {
+		Heap remoteHeap = Dungeon.level.heaps.get(dst);
+		boolean remote = GenesisEcho.ultraReach(this) && remoteHeap != null && remoteHeap.seen;
+		if (Dungeon.level.adjacent( pos, dst ) || pos == dst || remote) {
 			path = null;
 			
 			Heap heap = Dungeon.level.heaps.get( dst );
@@ -1522,6 +1574,16 @@ public class Hero extends Char {
 
 		attackTarget = action.target;
 
+		if (GenesisEcho.ultraReach(this)
+				&& attackTarget != null
+				&& attackTarget.alignment == Alignment.ENEMY
+				&& fieldOfView[attackTarget.pos]) {
+			GenesisEcho.forceSlay(this, attackTarget);
+			attackTarget = null;
+			spend(Actor.TICK);
+			return true;
+		}
+
 		if (isCharmedBy(attackTarget)){
 			GLog.w( Messages.get(Charm.class, "cant_attack"));
 			ready();
@@ -1595,6 +1657,7 @@ public class Hero extends Char {
 		}
 
 		damage = Talent.onAttackProc( this, enemy, damage );
+		damage = Math.round(damage * (1f + 0.10f * pointsInTalent(Talent.ASCENDANT_FORCE)));
 
 		if (wep != null) {
 			damage = wep.proc( this, enemy, damage );
@@ -1714,6 +1777,7 @@ public class Hero extends Char {
 
 		//temporarily assign to a float to avoid rounding a bunch
 		float damage = dmg;
+		damage *= Math.max(0.10f, 1f - 0.08f * pointsInTalent(Talent.TRANSCENDENT_GUARD));
 
 		Endure.EndureTracker endure = buff(Endure.EndureTracker.class);
 		if (!(src instanceof Char)){
@@ -2081,8 +2145,8 @@ public class Hero extends Char {
 			curAction = new HeroAction.Mine( cell );
 
 		} else if (heap != null
-				//moving to an item doesn't auto-pickup when enemies are near...
-				&& (visibleEnemies.size() == 0 || cell == pos ||
+				// Genesis Reach can collect/open any visible heap without walking.
+				&& (GenesisEcho.ultraReach(this) || visibleEnemies.size() == 0 || cell == pos ||
 				//...but only for standard heaps. Chests and similar open as normal.
 				(heap.type != Type.HEAP && heap.type != Type.FOR_SALE))) {
 
@@ -2655,7 +2719,8 @@ public class Hero extends Char {
 				GLog.n(Messages.get(this, "key_distracted"));
 				spend(2*Key.TIME_TO_UNLOCK);
 				Buff.affect(this, Hunger.class).affectHunger(-4);
-			} else if (Dungeon.level.distance(pos, heap.pos) <= 1){
+			} else if (Dungeon.level.distance(pos, heap.pos) <= 1
+					|| (GenesisEcho.ultraReach(this) && heap.seen)){
 				boolean hasKey = true;
 				if (heap.type == Type.SKELETON || heap.type == Type.REMAINS) {
 					Sample.INSTANCE.play( Assets.Sounds.BONES );
