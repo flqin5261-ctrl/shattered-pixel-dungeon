@@ -10,12 +10,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.BreakthroughToken;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
+import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
@@ -227,11 +229,20 @@ public final class InfiniteWorldProgression {
         // Compress the old ten-wave difficulty span into five waves. The first
         // wave stays slightly forgiving, while wave 5 still reaches roughly the
         // old finale's stat multipliers.
-        float health = 0.82f + 0.17f * (w - 1);       // 0.82 .. 1.50
-        float damage = 0.84f + 0.13f * (w - 1);       // 0.84 .. 1.36
-        float accuracy = 0.92f + 0.0625f * (w - 1);   // 0.92 .. 1.17
-        float defense = 0.92f + 0.0625f * (w - 1);    // 0.92 .. 1.17
-        int levelBonus = Math.round((w - 1) * 2.0f);  // 0,2,4,6,8
+        float health = 0.82f + 0.17f * (w - 1);
+        float damage = 0.84f + 0.13f * (w - 1);
+        float accuracy = 0.92f + 0.0625f * (w - 1);
+        float defense = 0.92f + 0.0625f * (w - 1);
+        int levelBonus = Math.round((w - 1) * 2.0f);
+        if (w == 5) {
+            // User feedback: the old compressed finale was a little too sharp.
+            // Keep it above wave 4, but remove the large last-step spike.
+            health = 1.40f;
+            damage = 1.28f;
+            accuracy = 1.13f;
+            defense = 1.13f;
+            levelBonus = 7;
+        }
         applyDynamicScaling(mob, hero, health, damage, accuracy, defense, 1f, levelBonus);
         // Trial rewards are temporary because the Hero snapshot is restored afterwards.
         mob.EXP = 0;
@@ -289,6 +300,10 @@ public final class InfiniteWorldProgression {
         Bundle snapshot = new Bundle();
         hero.storeInBundle(snapshot);
         st.breakthroughHeroSnapshot = snapshot;
+
+        Bundle quickslotSnapshot = new Bundle();
+        Dungeon.quickslot.storeLayoutAsPlaceholders(quickslotSnapshot);
+        st.breakthroughQuickslotSnapshot = quickslotSnapshot;
         st.breakthroughTrialGold = Dungeon.gold;
         st.breakthroughTrialEnergy = Dungeon.energy;
         st.breakthroughReturnDepth = Dungeon.depth;
@@ -331,14 +346,26 @@ public final class InfiniteWorldProgression {
         Dungeon.gold = st.breakthroughTrialGold;
         Dungeon.energy = st.breakthroughTrialEnergy;
 
+        // Restore the pre-trial quickslot layout against the newly restored Hero
+        // inventory. This removes stale references to trial-only items while
+        // preserving slots that existed before entering the challenge.
+        Dungeon.quickslot.reset();
+        if (st.breakthroughQuickslotSnapshot != null) {
+            Dungeon.quickslot.restorePlaceholders(st.breakthroughQuickslotSnapshot);
+            Dungeon.quickslot.rebindFromBelongings(restored.belongings);
+        }
+        QuickSlotButton.refresh();
+
         st.breakthroughTrialActive = false;
         st.breakthroughWave = 0;
         st.breakthroughCountdown = -1f;
         st.breakthroughHeroSnapshot = null;
+        st.breakthroughQuickslotSnapshot = null;
 
         if (success) {
             st.breakthroughCompleted = true;
-            GLog.p("突破试炼完成！等级上限提升至60级，装备强化上限提升至+120，神器上限提升至+30。");
+            grantBreakthroughCertificate(restored);
+            GLog.p("突破试炼完成！你获得了突破之证-lv30。等级上限提升至60级，装备强化上限提升至+120，神器上限提升至+30。");
         } else {
             st.breakthroughCompleted = false;
             issueBreakthroughToken(restored);
@@ -351,6 +378,19 @@ public final class InfiniteWorldProgression {
         InterlevelScene.returnBranch = st.breakthroughReturnBranch;
         InterlevelScene.returnPos = st.breakthroughReturnPos;
         Game.switchScene(InterlevelScene.class);
+    }
+
+    public static void grantBreakthroughCertificate(Hero hero) {
+        if (hero == null || !breakthroughCompleted()) return;
+        BreakthroughCertificate cert = hero.belongings.getItem(BreakthroughCertificate.class);
+        if (cert == null) cert = new BreakthroughCertificate();
+        cert.forceEquip(hero);
+    }
+
+    public static void syncBreakthroughCertificate(Hero hero) {
+        if (hero == null || !breakthroughCompleted()) return;
+        BreakthroughCertificate cert = hero.belongings.getItem(BreakthroughCertificate.class);
+        if (cert != null) cert.syncToHeroLevel(hero);
     }
 
     private static int clamp(int value, int min, int max) {
