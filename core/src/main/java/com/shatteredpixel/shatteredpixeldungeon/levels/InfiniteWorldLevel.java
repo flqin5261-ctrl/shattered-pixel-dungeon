@@ -23,6 +23,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.InfiniteWorldNote;
@@ -109,6 +110,7 @@ public class InfiniteWorldLevel extends Level {
     private static final int MERCHANT_SPACING_CHUNKS = 7;
     private static final int MERCHANT_SPACING_CHUNKS_V12 = 5;
     private static final int MERCHANT_SPACING_CHUNKS_V13 = 4;
+    private static final int MERCHANT_SPACING_CHUNKS_V15 = 3;
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
 
@@ -581,7 +583,11 @@ public class InfiniteWorldLevel extends Level {
                 Math.floorDiv(st.heroWorldX, CHUNK_SIZE),
                 Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
 
-        ensureV12AnomalyNoteNearby(hero);
+        if (state().generatorVersion >= 15) {
+            ensureV15BackroomsInfo(hero);
+        } else {
+            ensureV12AnomalyNoteNearby(hero);
+        }
         ensureV13MerchantDiscovery(hero);
         pruneInfiniteWorldMobs();
     }
@@ -641,6 +647,23 @@ public class InfiniteWorldLevel extends Level {
         if (st.artifactChestState == 0
                 && st.heroActionValue >= GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE) {
             spawnGuaranteedArtifactChest();
+        }
+    }
+
+
+    private void ensureV15BackroomsInfo(Hero hero) {
+        if (hero == null || state().generatorVersion < 15) return;
+
+        int cx = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int cy = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        int anomaly = v9AnomalyType(cx, cy);
+        if (anomaly == 0) return;
+
+        String page = v9AnomalyNotePage(anomaly);
+        if (Document.INFINITE_WORLD_NOTES.findPage(page)) {
+            GLog.i(Messages.get(this, "backrooms_info_unlocked",
+                    Document.INFINITE_WORLD_NOTES.pageTitle(page)));
+            GameScene.flashForDocument(Document.INFINITE_WORLD_NOTES, page);
         }
     }
 
@@ -2603,7 +2626,7 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void generateV9AnomalyNotes() {
-        if (state().generatorVersion < 9) return;
+        if (state().generatorVersion < 9 || state().generatorVersion >= 15) return;
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
@@ -2640,7 +2663,7 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private void snapshotV9AnomalyNotes() {
-        if (state().generatorVersion < 9) return;
+        if (state().generatorVersion < 9 || state().generatorVersion >= 15) return;
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
@@ -2674,6 +2697,25 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private String v9AnomalyNotePage(int anomaly) {
+        if (state().generatorVersion >= 15) {
+            switch (anomaly) {
+                case 1:  return "Level_0";
+                case 2:  return "Level_1";
+                case 3:  return "Level_2";
+                case 4:  return "Level_3";
+                case 5:  return "Level_4";
+                case 6:  return "Level_5";
+                case 7:  return "Level_6";
+                case 8:  return "Level_7";
+                case 9:  return "Level_8";
+                case 10: return "Level_9";
+                case 11: return "Level_10";
+                case 12: return "Level_11";
+                case 13: return "Level_37";
+                default: return "Level_94";
+            }
+        }
+
         switch (anomaly) {
             case 1: return "Liminal_Offices";
             case 2: return "Pool_Halls";
@@ -2948,22 +2990,25 @@ public class InfiniteWorldLevel extends Level {
     private int v9AnomalyType(int cx, int cy) {
         if (state().generatorVersion < 9) return 0;
 
-        // Keep the starting area conventional so the player learns the normal
-        // world before encountering a large anomalous district.
-        if (Math.abs(cx) <= 4 && Math.abs(cy) <= 4) return 0;
+        // V15 treats Backrooms-inspired districts as a normal part of exploration,
+        // so they can start much closer to the origin. Older worlds retain their
+        // original opening buffer for deterministic save compatibility.
+        int startBuffer = state().generatorVersion >= 15 ? 2 : 4;
+        if (Math.abs(cx) <= startBuffer && Math.abs(cy) <= startBuffer) return 0;
 
-        final int macro = 5;
+        final int macro = state().generatorVersion >= 15 ? 4 : 5;
         int mx = Math.floorDiv(cx, macro);
         int my = Math.floorDiv(cy, macro);
 
-        // V13 deliberately makes liminal districts a major exploration feature:
-        // about 28% of macro-regions are anomalous and the style pool expands from
-        // three to six. V9-V11 remain 8%; V12 remains 15% for save compatibility.
-        int anomalyChance = state().generatorVersion >= 13 ? 28
-                : (state().generatorVersion >= 12 ? 15 : 8);
+        // V15 increases both frequency and variety: 42% of 4x4 macro-regions use
+        // one of fourteen Backrooms-inspired environments. Older generators stay exact.
+        int anomalyChance = state().generatorVersion >= 15 ? 42
+                : (state().generatorVersion >= 13 ? 28
+                : (state().generatorVersion >= 12 ? 15 : 8));
         if (Math.floorMod(hash(mx, my, 23000), 100L) >= anomalyChance) return 0;
 
-        int anomalyTypes = state().generatorVersion >= 13 ? 6 : 3;
+        int anomalyTypes = state().generatorVersion >= 15 ? 14
+                : (state().generatorVersion >= 13 ? 6 : 3);
         return 1 + (int)Math.floorMod(hash(mx, my, 23001), (long)anomalyTypes);
     }
 
