@@ -1344,3 +1344,15 @@ SECRET_DOOR 被发现时，由于隐藏房原本根本没有 room-specific overl
 
 视觉层也必须遵守：
 > 任何能在 runtime 改变 Terrain 的系统，都不能依赖只在 Streaming 时生成一次的静态 overlay 保持正确。
+
+
+# 0.5.11 CI transient Gradle download reset
+
+During 0.5.11 development, GitHub Actions run 36690474499 failed before compilation because the Gradle wrapper download from services.gradle.org returned `java.net.SocketException: Connection reset by peer`.
+
+This was not a source-code/compiler failure:
+- checkout/JDK/Android SDK/verified CC0 asset steps had passed;
+- the failure occurred while fetching `gradle-9.5.0-bin.zip`;
+- an earlier 0.5.11 source state had already compiled successfully.
+
+Rule for future triage: inspect the failing step/log before reverting code. A wrapper/network reset should be retried or superseded by a later push; do not treat it as evidence that gameplay code is invalid.
