@@ -97,9 +97,9 @@ public class ScrollOfTeleportation extends Scroll {
 	}
 
 	public static boolean teleportChar( Char ch ) {
-		// Generic teleports are treated as external/forced. The player's own
-		// teleport scroll uses the explicit ScrollOfTeleportation source below.
-		return teleportChar( ch, null );
+		// Generic teleports are treated as external/forced. Use GenesisEcho.class
+		// as a non-null sentinel so downstream immunity checks remain safe.
+		return teleportChar( ch, GenesisEcho.class );
 	}
 
 	public static boolean teleportChar( Char ch, Class source ) {
