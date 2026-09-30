@@ -1915,3 +1915,47 @@ Streaming 时商人和普通近距离 Mob 一样重算 local position。
 - result：success
 - artifact ZIP SHA-256：`3636d91475c1fd5cc27e4d37fa277d6dad8a4fd9b246cf5a13358e1a53a4f202`
 - APK SHA-256：`286294c86515604e706223005bbd0d0d62a5f954cb5a34bb3594099e4f452764`
+
+# 0.5.2 / Generator V12 — 可发现性调优与唯一神器箱
+
+版本：
+- versionName: 0.5.2
+- versionCode: 948
+- dev: assist-0.5.2-discovery
+- stable: assist-0.5.2-stable
+- WORLD_GEN_VERSION: 12
+
+本版来自 0.5.1 实机反馈：商人过难遇到、Liminal 异境过稀且可能经过整个异境仍看不到便笺，以及水晶箱缺少真正稀有的长期探索奖励。
+
+## 商人密度
+- V12 商人格点间距由 7 Chunk 缩短到 5 Chunk。
+- 出生排除区由 4 Chunk 缩短到 3 Chunk。
+- 继续禁止商店生成在 Liminal anomaly、Primary spine、Secondary infinite route 上。
+- V11 老世界继续使用旧 7-Chunk 规则，不改变旧世界确定性生成。
+- 因 5-Chunk 间距小于 7×7 active window 的坐标跨度，V12 不再维持“窗口内绝对最多 1 个商人”的旧假设；理论上可同时加载最多 4 个格点，实际还会受道路/异境排除影响。
+- 库存、购买持久化、逃跑永久关闭、怪物 8 格刷新安全区均保持原逻辑。
+
+## Liminal 异境与便笺
+- V12 的 5×5 Chunk anomaly macro 命中率由约 8% 提高到约 15%。
+- V9～V11 老世界仍保留 8%，避免旧世界地形改变。
+- 原来的 deterministic anchor note 继续保留。
+- V12 新增“首次未收录异境近身便笺保证”：Hero 进入某种尚未收录的异常空间时，会在附近可达位置生成并直接标记可见的 InfiniteWorldNote。
+- 对应 Document 页面一旦收录，该类型不再依靠近身保证重复刷纸条。
+- 目的不是增加普通 loot，而是保证玩家真的能完成“遇到异境 → 看到纸条 → 收录讲解”的探索闭环。
+
+## 全局唯一神器水晶箱
+- V12 新增持久化 heroActionValue，只累计 Hero 的正向 spend/spendConstant 行动时间。
+- 阈值为 400 action-value。
+- 达到阈值且本局尚未生成保证箱时，在 Hero 附近 2～5 格寻找可达位置，必要时放宽到 1～7 格。
+- 生成 Heap.Type.CRYSTAL_CHEST，并强制 seen，同时写入 visited/mapped，保证玩家能发现。
+- 生成时同时给予 1 把 CrystalKey，避免唯一奖励因钥匙供应造成 soft-lock。
+- 箱内固定为 1 件 Artifact；优先从 Generator 当前剩余神器牌组中确定性选择，并调用 removeArtifact 消耗唯一性。
+- 全局保存：artifactChestWorldX/Y、artifactChestArtifactIndex、artifactChestState。
+- 生命周期：0 未生成 / 1 未开水晶箱 / 2 已开但神器仍在 / 3 神器已取走。
+- Streaming 和 Save/Load 均按绝对世界坐标恢复，不允许生成第二个保证神器箱。
+- 若箱已打开但神器未取，回来应恢复普通 Heap；神器取走后永久结束。
+
+## 架构保护
+- 未改变 Hero.onMotionComplete() 后才允许 Streaming 的硬约束。
+- 未改变 Tilemap VBO / Water / Fog 修复。
+- 未改变 Mob.despawnFromInfiniteWorld() 的无奖励距离清除规则。
