@@ -33,6 +33,7 @@ on:
       - assist-0.5.7-backrooms-merchants
       - assist-0.5.8-spectator-props
       - assist-0.5.9-environment-rich
+      - assist-0.5.10-solid-scenery
   workflow_dispatch:
 
 permissions:
