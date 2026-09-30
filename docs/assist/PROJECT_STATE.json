@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.7-stable",
     "development_branch": "assist-0.6.7-genesis-authority",
-    "release_code_sha": "bf70421c6471945b04ea1ebccd26549db1675faa",
+    "release_code_sha": "93bb082b133e1557a3dfb48983f3f16bad4c5cf1",
     "world_generator_version": 17
   },
   "build": {
@@ -385,7 +385,7 @@
       "immunity_reroll": "ScrollOfUpgrade rerolls the Seal's own persisted random immunity without changing tier; WndUpgrade directly shows the current immunity for fast rerolls.",
       "shop_ui": "buy window shows a grey struck-through original price and a green Seal discounted price",
       "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly",
-      "backpack": "no Seal/Miracle World backpack expansion in 0.6.7",
+      "backpack": "no fixed backpack expansion at any Seal/Miracle tier; 创世回响 supplies Infinite Space instead",
       "overflow_rule": "removed because Seal no longer changes capacity",
       "non_disposable": "破界之印 / 奇迹·世界 has no drop/throw action and hard-blocks drop/cast; full normal backpack unequip first spills another item so the Seal itself cannot fall to the ground."
     },
@@ -397,15 +397,15 @@
         "no 天降横财 periodic random-item system"
       ],
       "permanent_effects": [
-        "instant-death immunity enforced at Hero.die, distinguishing direct instant death from ordinary lethal damage",
+        "instant-death immunity enforced in Hero.die while Genesis Echo is active",
         "forced-teleport immunity; the Hero's own ScrollOfTeleportation remains voluntary",
-        "real control immunity through Char.isImmune: Blindness, Daze, Paralysis, Roots, Vertigo, Cripple, Charm, Terror, Amok, Drowsy/Sleep, Slow, Chill, Frost",
-        "Infinite Space: root Backpack capacity dynamically grows to keep at least 5 empty slots at all times",
+        "real permanent control immunity: Blindness, Daze, Paralysis, Roots, Vertigo, Cripple, Charm, Terror, Amok, Drowsy/Sleep, Slow, Chill, Frost",
+        "Infinite Space: root Backpack capacity dynamically grows so at least 5 empty slots always remain, with paginated WndBag access",
         "all shop purchases cost 0",
         "each purchase has an uncapped geometric roll for extra identical copies",
         "each enemy kill permanently adds exactly +1 max HP and +1 strength"
       ],
-      "miracle_link": "while 奇迹·世界 is equipped, Genesis Echo copies a second full passive-stat layer and additionally activates curse immunity plus complete damage immunity",
+      "miracle_link": "only while 奇迹·世界 is actually equipped: Genesis Echo copies a second full passive-stat layer, rejects all NEGATIVE buffs plus explicit DOT/degrade curse classes, and makes Hero.damage return immediately for complete standard-pipeline damage immunity",
       "monster_scaling": "奇迹·世界, 创世回响, copied layer, and permanent kill-growth HP/STR remain excluded from dynamic mob scaling",
       "level59_to_60_xp": 3600,
       "level60_exp_bonus": "none",
