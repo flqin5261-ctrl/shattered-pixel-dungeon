@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindofMisc;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
@@ -49,6 +50,10 @@ public class Artifact extends KindofMisc {
 	protected int exp = 0;
 	//levelCap is the artifact's maximum level
 	protected int levelCap = 0;
+	// Infinite World post-breakthrough overlevel. Native artifact internals still
+	// use their original caps; this extension supplies extra effective power and
+	// visible levels 11..30 without rewriting every artifact subclass.
+	protected int assistVisibleOverlevel = 0;
 
 	//the current artifact charge
 	protected int charge = 0;
@@ -121,7 +126,8 @@ public class Artifact extends KindofMisc {
 
 	@Override
 	public int visiblyUpgraded() {
-		return levelKnown ? Math.round((level()*10)/(float)levelCap): 0;
+		if (!levelKnown || levelCap <= 0) return 0;
+		return Math.round((level()*10)/(float)levelCap) + assistVisibleOverlevel;
 	}
 
 	@Override
@@ -131,7 +137,12 @@ public class Artifact extends KindofMisc {
 
 	@Override
 	public int buffedLvl() {
-		//level isn't affected by buffs/debuffs
+		// Native artifact level plus Infinite World overlevel converted back into
+		// the artifact's internal scale. This lets generic ArtifactBuff users gain
+		// real power from visible levels above +10.
+		if (Dungeon.infiniteWorld && levelCap > 0 && assistVisibleOverlevel > 0) {
+			return level() + Math.round((assistVisibleOverlevel * levelCap) / 10f);
+		}
 		return level();
 	}
 
@@ -140,22 +151,28 @@ public class Artifact extends KindofMisc {
 		upgrade(Math.round((transferLvl*levelCap)/10f));
 	}
 
-	// Assist edition: artifacts use different internal level caps, but always display 0..10.
-	// This raises the visible artifact level without exceeding that artifact's own cap.
+	// Assist edition: pre-breakthrough artifacts cap at +10; after the level-30
+	// trial the visible cap becomes +30. Levels above +10 are kept as a separate
+	// overlevel so native artifact-specific progression is not corrupted.
 	public int assistBoostVisibleLevel(int amount) {
 		if (levelCap <= 0 || amount <= 0) return visiblyUpgraded();
 
-		int currentVisible = Math.round((level()*10)/(float)levelCap);
-		int targetVisible = Math.min(10, currentVisible + amount);
-		int targetInternal = Math.min(levelCap, Math.round((targetVisible*levelCap)/10f));
+		int currentVisible = visiblyUpgraded();
+		int targetVisible = Math.min(InfiniteWorldProgression.artifactUpgradeCap(),
+				currentVisible + amount);
+		int naturalTarget = Math.min(10, targetVisible);
+		int targetInternal = Math.min(levelCap, Math.round((naturalTarget*levelCap)/10f));
 
 		int guard = 0;
-		while (level() < targetInternal && guard++ < 32) {
+		while (level() < targetInternal && guard++ < 64) {
 			int before = level();
 			upgrade();
 			if (level() <= before) break;
 		}
-		return Math.round((level()*10)/(float)levelCap);
+
+		assistVisibleOverlevel = Math.max(0, targetVisible - 10);
+		updateQuickslot();
+		return visiblyUpgraded();
 	}
 
 	public void resetForTrinity(int visibleLevel){
@@ -283,7 +300,7 @@ public class Artifact extends KindofMisc {
 		}
 
 		public int itemLevel() {
-			return level();
+			return Artifact.this.buffedLvl();
 		}
 
 		public boolean isCursed() {
@@ -299,6 +316,7 @@ public class Artifact extends KindofMisc {
 	private static final String EXP = "exp";
 	private static final String CHARGE = "charge";
 	private static final String PARTIALCHARGE = "partialcharge";
+	private static final String ASSIST_OVERLEVEL = "assist_overlevel";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -306,6 +324,7 @@ public class Artifact extends KindofMisc {
 		bundle.put( EXP , exp );
 		bundle.put( CHARGE , charge );
 		bundle.put( PARTIALCHARGE , partialCharge );
+		bundle.put( ASSIST_OVERLEVEL, assistVisibleOverlevel );
 	}
 
 	@Override
@@ -315,5 +334,7 @@ public class Artifact extends KindofMisc {
 		if (chargeCap > 0)  charge = Math.min( chargeCap, bundle.getInt( CHARGE ));
 		else                charge = bundle.getInt( CHARGE );
 		partialCharge = bundle.getFloat( PARTIALCHARGE );
+		assistVisibleOverlevel = bundle.contains(ASSIST_OVERLEVEL)
+				? bundle.getInt(ASSIST_OVERLEVEL) : 0;
 	}
 }
