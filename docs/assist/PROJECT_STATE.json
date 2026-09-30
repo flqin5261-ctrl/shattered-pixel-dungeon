@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.4",
-    "version_code": 950,
+    "version_name": "0.5.5",
+    "version_code": 951,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.4-stable",
-    "development_branch": "assist-0.5.4-item-grant",
-    "release_code_sha": "be91d3565933ab3789fa49a685ce8f96de624967",
-    "world_generator_version": 13
+    "stable_branch": "assist-0.5.5-stable",
+    "development_branch": "assist-0.5.5-merchant-connectivity",
+    "release_code_sha": "dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1",
+    "world_generator_version": 14
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -112,7 +112,12 @@
       "note": "V13 keeps merchants off anomaly/primary/secondary route chunks, but increases lattice density and makes loaded outposts visible on the map. When an unannounced outpost is within 2 chunks, a localized message tells the player a merchant is nearby.",
       "legacy_v12_spacing_chunks": 5,
       "loaded_outpost_map_reveal": true,
-      "nearby_hint_radius_chunks": 2
+      "nearby_hint_radius_chunks": 2,
+      "access_connectivity_guarantee": true,
+      "access_guarantee_version": 14,
+      "legacy_v11_v13_runtime_repair": true,
+      "discovery_maps_verified_access_path": true,
+      "access_rule": "Shop entrance must have a passable route to at least one shared chunk-edge gateway after all themed rooms and infinite-road passes are complete."
     },
     "merchants": {
       "enabled": true,
@@ -157,6 +162,13 @@
       "persistent_world_coordinates": true,
       "lifecycle_states": "0 not spawned / 1 closed / 2 opened heap / 3 artifact taken",
       "survives_streaming_and_save_load": true
+    },
+    "dynamic_accent_overlay_refresh": {
+      "enabled": true,
+      "cell_scoped_refresh": true,
+      "refresh_halo_cells": 1,
+      "secret_room_full_overlay_rebuild_on_discovery": true,
+      "purpose": "Prevent static mixed-theme wall/floor overlays from visually covering terrain that has become passable after explosions or secret-door discovery."
     }
   },
   "current_content": {
@@ -309,6 +321,14 @@
         "energy_crystal": "increments Dungeon.energy directly",
         "dewdrop": "adds dew to Waterskin up to capacity; requires Waterskin"
       }
+    },
+    "v14_merchant_connectivity": {
+      "enabled": true,
+      "fresh_world_base_generation": true,
+      "legacy_v11_v13_runtime_repair": true,
+      "avoids_other_themed_room_rectangles_when_digging": true,
+      "fallback_route_if_no_clean_path": true,
+      "maps_verified_walkable_route_on_merchant_discovery": true
     }
   },
   "hard_invariants": [
@@ -326,6 +346,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.5 V14 merchant access: every revealed merchant room must have an actually walkable route to a shared chunk gateway; no merchant landmark may be isolated behind unrelated themed-room shells.",
+    "0.5.5 legacy repair: existing V11-V13 saves must repair disconnected active merchant chunks at load/stream time and persist the terrain repair as overrides.",
+    "0.5.5 overlay refresh: bombing/changing a wall under InfiniteWorldAccentTilemap must immediately remove stale wall visuals; hero must never be visually hidden inside a logically passable old wall.",
+    "0.5.5 secret-room discovery: revealing SECRET_DOOR must rebuild room-specific accents immediately rather than waiting for the next streaming refresh.",
     "0.5.3 V13 merchant discovery: a loaded Merchant Outpost should be revealed on the map; entering within 2 chunks should emit one localized nearby-merchant hint per outpost.",
     "0.5.3 V13 merchant density: 4-chunk lattice plus route/anomaly exclusions should make merchants easy to encounter without making every normal chunk a shop.",
     "0.5.3 V13 liminal density: approximately 28% of 5x5 macro-regions are anomalous and the six anomaly types should all remain traversable through V10 infinite routes.",
@@ -351,6 +375,8 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device reproduce the historical merchant-isolated-room scenario and verify V14/legacy repair provides a visible, walkable route without bombs.",
+    "Stress-test bomb destruction and secret-room reveal across mixed-theme overlays; logical terrain and visible terrain must remain synchronized.",
     "Real-device verify Assist item grant menu navigation, item naming, quantity entry, backpack-full drop fallback and current-depth keys.",
     "Real-device verify V13 merchant outposts are now actually noticeable through map reveal and the 2-chunk hint.",
     "Tune the 4-chunk merchant lattice only if V13 becomes visibly overpopulated; do not remove the discovery hint before evaluating it.",
