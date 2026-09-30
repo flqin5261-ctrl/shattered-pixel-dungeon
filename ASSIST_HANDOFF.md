@@ -85,11 +85,11 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.3**
-- 当前 versionCode：**949**
-- 当前最新稳定分支：`assist-0.5.3-stable`
-- 当前发布代码 SHA：`d653fedf8d6b0f183053324b3882056038a7ec1d`
-- 当前对应开发分支：`assist-0.5.3-merchants-liminal`
+- 当前最新稳定版本：**0.5.4**
+- 当前 versionCode：**950**
+- 当前最新稳定分支：`assist-0.5.4-stable`
+- 当前发布代码 SHA：`e621bebabd389619ee04a22a4d9cf2428d5381f0`
+- 当前对应开发分支：`assist-0.5.4-item-grant`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 13**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -1447,3 +1447,19 @@ V12 老世界仍按 15% / 三种，V9-V11 仍按 8% / 三种。
 - 24/144/3 hysteresis；
 - VBO/Water/Fog 修复；
 - Mob 无奖励距离 despawn。
+
+# 27. 0.5.4 — 指定物品 / 指定数量作弊
+
+Assist 菜单新增“获取指定物品”。
+
+- 物品来源直接使用原版 Catalog，不维护第二套名单。
+- 分类分为装备/神器/饰物与消耗品/材料/钥匙两大组。
+- 具体物品列表每页最多 8 个。
+- 数量范围 1～999。
+- stackable：一次生成指定数量。
+- non-stackable：生成指定份数。
+- 背包满则掉 Hero 脚下。
+- Key 特殊处理：使用当前 Dungeon.depth，加入 Notes/KeyRecord 并刷新钥匙显示，而不是错误塞入背包。
+- 生成物品自动 identify。
+
+本版 WORLD_GEN_VERSION 继续为 13；没有改变 Infinite World 地形公式，0.5.3 V13 世界可以直接继续。
