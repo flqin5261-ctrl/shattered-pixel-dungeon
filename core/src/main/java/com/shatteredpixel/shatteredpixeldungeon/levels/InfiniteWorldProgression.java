@@ -1,0 +1,298 @@
+/*
+ * Shattered Pixel Dungeon - Assist Edition
+ * Infinite World long-run progression and dynamic enemy scaling.
+ */
+package com.shatteredpixel.shatteredpixeldungeon.levels;
+
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.BreakthroughToken;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Game;
+import com.watabou.utils.Bundle;
+
+public final class InfiniteWorldProgression {
+
+    public static final int PRE_BREAKTHROUGH_LEVEL_CAP = 30;
+    public static final int POST_BREAKTHROUGH_LEVEL_CAP = 60;
+    public static final int PRE_BREAKTHROUGH_EQUIPMENT_CAP = 50;
+    public static final int POST_BREAKTHROUGH_EQUIPMENT_CAP = 120;
+    public static final int PRE_BREAKTHROUGH_ARTIFACT_CAP = 10;
+    public static final int POST_BREAKTHROUGH_ARTIFACT_CAP = 30;
+    public static final int BREAKTHROUGH_BRANCH = 99;
+
+    private InfiniteWorldProgression() {}
+
+    public static InfiniteWorldState state() {
+        if (Dungeon.infiniteWorldState == null) {
+            Dungeon.infiniteWorldState = new InfiniteWorldState();
+        }
+        return Dungeon.infiniteWorldState;
+    }
+
+    public static boolean breakthroughCompleted() {
+        return Dungeon.infiniteWorld && state().breakthroughCompleted;
+    }
+
+    public static int heroLevelCap(Hero hero) {
+        if (!Dungeon.infiniteWorld) return Hero.MAX_LEVEL;
+        return breakthroughCompleted()
+                ? POST_BREAKTHROUGH_LEVEL_CAP
+                : PRE_BREAKTHROUGH_LEVEL_CAP;
+    }
+
+    public static int equipmentUpgradeCap() {
+        if (!Dungeon.infiniteWorld) return Integer.MAX_VALUE;
+        return breakthroughCompleted()
+                ? POST_BREAKTHROUGH_EQUIPMENT_CAP
+                : PRE_BREAKTHROUGH_EQUIPMENT_CAP;
+    }
+
+    public static int artifactUpgradeCap() {
+        if (!Dungeon.infiniteWorld) return 10;
+        return breakthroughCompleted()
+                ? POST_BREAKTHROUGH_ARTIFACT_CAP
+                : PRE_BREAKTHROUGH_ARTIFACT_CAP;
+    }
+
+    public static boolean canUpgradeEquipment(Item item) {
+        if (!Dungeon.infiniteWorld || item == null) return true;
+        if (item instanceof Artifact) return true;
+        if (item instanceof Weapon || item instanceof Armor
+                || item instanceof Ring || item instanceof Wand) {
+            return item.trueLevel() < equipmentUpgradeCap();
+        }
+        return true;
+    }
+
+    public static void onHeroAtBreakthroughGate(Hero hero) {
+        if (!Dungeon.infiniteWorld || hero == null || hero.lvl < PRE_BREAKTHROUGH_LEVEL_CAP
+                || breakthroughCompleted() || state().breakthroughTrialActive) {
+            return;
+        }
+        issueBreakthroughToken(hero);
+    }
+
+    public static void issueBreakthroughToken(Hero hero) {
+        if (hero == null || breakthroughCompleted()) return;
+        if (hero.belongings.getItem(BreakthroughToken.class) != null) return;
+
+        BreakthroughToken token = new BreakthroughToken();
+        if (!token.collect(hero.belongings.backpack)) {
+            Dungeon.level.drop(token, hero.pos).sprite.drop();
+        }
+        GLog.p("你已达到30级。挑战信物已经出现；只有完成十波突破试炼，等级上限才会提高到60级。");
+    }
+
+    public static void testLevelUp(Hero hero) {
+        if (hero == null) return;
+        if (!Dungeon.infiniteWorld) {
+            hero.earnExp(hero.maxExp(), InfiniteWorldProgression.class);
+            return;
+        }
+
+        if (hero.lvl >= PRE_BREAKTHROUGH_LEVEL_CAP && !breakthroughCompleted()) {
+            issueBreakthroughToken(hero);
+            GLog.i("当前处于30级突破门槛；请使用挑战信物测试突破试炼。");
+            return;
+        }
+
+        if (hero.lvl >= POST_BREAKTHROUGH_LEVEL_CAP) {
+            GLog.i("角色已经达到无界模式60级上限。");
+            return;
+        }
+
+        hero.earnExp(hero.maxExp(), InfiniteWorldProgression.class);
+    }
+
+    public static int gearScore(Hero hero) {
+        if (hero == null) return 0;
+
+        int weapon = 0;
+        int armor = 0;
+        int wand = 0;
+        int ring1 = 0;
+        int ring2 = 0;
+        int artifactVisible = 0;
+        int artifactCount = 0;
+
+        for (Item item : hero.belongings) {
+            if (item == null) continue;
+            int lvl = Math.max(0, Math.min(POST_BREAKTHROUGH_EQUIPMENT_CAP, item.trueLevel()));
+            if (item instanceof Weapon) {
+                weapon = Math.max(weapon, lvl);
+            } else if (item instanceof Armor) {
+                armor = Math.max(armor, lvl);
+            } else if (item instanceof Wand) {
+                wand = Math.max(wand, lvl);
+            } else if (item instanceof Ring) {
+                if (lvl >= ring1) {
+                    ring2 = ring1;
+                    ring1 = lvl;
+                } else if (lvl > ring2) {
+                    ring2 = lvl;
+                }
+            } else if (item instanceof Artifact) {
+                artifactCount++;
+                artifactVisible = Math.max(artifactVisible,
+                        Math.min(POST_BREAKTHROUGH_ARTIFACT_CAP,
+                                Math.max(0, ((Artifact)item).buffedVisiblyUpgraded())));
+            }
+        }
+
+        float score = 0.30f * weapon
+                + 0.30f * armor
+                + 0.18f * wand
+                + 0.12f * (ring1 + ring2)
+                + 0.30f * artifactVisible
+                + 1.5f * artifactCount;
+
+        return Math.max(0, Math.round(score));
+    }
+
+    public static int dynamicMonsterLevel(Hero hero) {
+        if (hero == null) return 1;
+        int gear = Math.min(80, gearScore(hero));
+        int artifacts = 0;
+        for (Item item : hero.belongings) if (item instanceof Artifact) artifacts++;
+        int level = Math.round(hero.lvl * 0.78f + gear * 0.22f + Math.min(3, artifacts));
+        return clamp(level, 1, POST_BREAKTHROUGH_LEVEL_CAP);
+    }
+
+    public static void applyDynamicScaling(Mob mob, Hero hero) {
+        applyDynamicScaling(mob, hero, 1f, 1f, 1f, 1f, 1f, 0);
+    }
+
+    public static void applyTrialScaling(Mob mob, Hero hero, int wave) {
+        int w = clamp(wave, 1, 10);
+        float health = 0.78f + 0.08f * (w - 1);     // 0.78 .. 1.50
+        float damage = 0.82f + 0.06f * (w - 1);     // 0.82 .. 1.36
+        float accuracy = 0.90f + 0.03f * (w - 1);   // 0.90 .. 1.17
+        float defense = 0.90f + 0.03f * (w - 1);    // 0.90 .. 1.17
+        applyDynamicScaling(mob, hero, health, damage, accuracy, defense, 1f, w - 1);
+        // Trial rewards are temporary because the Hero snapshot is restored afterwards.
+        mob.EXP = 0;
+        mob.maxLvl = 0;
+    }
+
+    private static void applyDynamicScaling(Mob mob, Hero hero,
+                                            float healthWave, float damageWave,
+                                            float accuracyWave, float defenseWave,
+                                            float lootWave, int levelBonus) {
+        if (mob == null || hero == null) return;
+
+        int gear = gearScore(hero);
+        int dynamicLevel = clamp(dynamicMonsterLevel(hero) + levelBonus, 1,
+                POST_BREAKTHROUGH_LEVEL_CAP);
+
+        float healthScale = clamp(0.95f + 0.028f * (hero.lvl - 1) + 0.010f * gear,
+                0.95f, 4.25f) * healthWave;
+        float damageScale = clamp(0.95f + 0.018f * (hero.lvl - 1) + 0.0065f * gear,
+                0.95f, 2.80f) * damageWave;
+        float accuracyScale = clamp(1.00f + 0.006f * (hero.lvl - 1) + 0.0025f * gear,
+                1.00f, 1.65f) * accuracyWave;
+        float defenseScale = clamp(1.00f + 0.005f * (hero.lvl - 1) + 0.0022f * gear,
+                1.00f, 1.60f) * defenseWave;
+        float lootScale = clamp(1.00f + 0.005f * hero.lvl + 0.003f * gear,
+                1.00f, 1.90f) * lootWave;
+
+        mob.applyAssistDynamicScaling(dynamicLevel, healthScale, damageScale,
+                accuracyScale, defenseScale, lootScale);
+    }
+
+    public static boolean beginBreakthroughTrial(Hero hero, BreakthroughToken token) {
+        if (!Dungeon.infiniteWorld || hero == null || token == null) return false;
+        InfiniteWorldState st = state();
+
+        if (st.breakthroughCompleted) {
+            GLog.i("突破试炼已经完成。");
+            return false;
+        }
+        if (hero.lvl < PRE_BREAKTHROUGH_LEVEL_CAP) {
+            GLog.w("只有达到30级后才能使用挑战信物。");
+            return false;
+        }
+        if (st.breakthroughTrialActive) return false;
+
+        token.detach(hero.belongings.backpack);
+
+        Bundle snapshot = new Bundle();
+        hero.storeInBundle(snapshot);
+        st.breakthroughHeroSnapshot = snapshot;
+        st.breakthroughTrialGold = Dungeon.gold;
+        st.breakthroughTrialEnergy = Dungeon.energy;
+        st.breakthroughReturnDepth = Dungeon.depth;
+        st.breakthroughReturnBranch = Dungeon.branch;
+        st.breakthroughReturnPos = hero.pos;
+        st.breakthroughWave = 0;
+        st.breakthroughCountdown = -1f;
+        st.breakthroughTrialActive = true;
+
+        GLog.p("挑战信物化为一道门。十波敌人将在试炼场中依次出现；每波固定10只。");
+        Level.beforeTransition();
+        InterlevelScene.mode = InterlevelScene.Mode.RETURN;
+        InterlevelScene.returnDepth = Dungeon.depth;
+        InterlevelScene.returnBranch = BREAKTHROUGH_BRANCH;
+        InterlevelScene.returnPos = -1;
+        Game.switchScene(InterlevelScene.class);
+        return true;
+    }
+
+    public static void finishBreakthroughTrial(boolean success) {
+        if (!Dungeon.infiniteWorld || Dungeon.infiniteWorldState == null) return;
+        InfiniteWorldState st = Dungeon.infiniteWorldState;
+        if (!st.breakthroughTrialActive) return;
+
+        Hero restored = new Hero();
+        if (st.breakthroughHeroSnapshot != null && !st.breakthroughHeroSnapshot.isNull()) {
+            restored.restoreFromBundle(st.breakthroughHeroSnapshot);
+        } else if (Dungeon.hero != null) {
+            // Extremely defensive fallback. A normal run always has the snapshot.
+            Bundle fallback = new Bundle();
+            Dungeon.hero.storeInBundle(fallback);
+            restored.restoreFromBundle(fallback);
+        }
+
+        Dungeon.hero = restored;
+        Dungeon.gold = st.breakthroughTrialGold;
+        Dungeon.energy = st.breakthroughTrialEnergy;
+
+        st.breakthroughTrialActive = false;
+        st.breakthroughWave = 0;
+        st.breakthroughCountdown = -1f;
+        st.breakthroughHeroSnapshot = null;
+
+        if (success) {
+            st.breakthroughCompleted = true;
+            GLog.p("突破试炼完成！等级上限提升至60级，装备强化上限提升至+120，神器上限提升至+30。");
+        } else {
+            st.breakthroughCompleted = false;
+            issueBreakthroughToken(restored);
+            GLog.w("突破试炼失败。挑战期间的损耗已恢复，新的挑战信物已经发放。");
+        }
+
+        Level.beforeTransition();
+        InterlevelScene.mode = InterlevelScene.Mode.RETURN;
+        InterlevelScene.returnDepth = st.breakthroughReturnDepth;
+        InterlevelScene.returnBranch = st.breakthroughReturnBranch;
+        InterlevelScene.returnPos = st.breakthroughReturnPos;
+        Game.switchScene(InterlevelScene.class);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+}
