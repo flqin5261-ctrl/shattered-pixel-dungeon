@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfChallenge;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
@@ -92,7 +93,9 @@ public class Hunger extends Buff implements Hero.Doom {
 				}
 				hungerDelay /= SaltCube.hungerGainMultiplier();
 
-				float newLevel = level + (1f/hungerDelay);
+				BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
+				float certificateHunger = certificate == null ? 1f : certificate.hungerMultiplier();
+				float newLevel = level + (1f/hungerDelay) * certificateHunger;
 				if (newLevel >= STARVING) {
 
 					GLog.n( Messages.get(this, "onstarving") );
