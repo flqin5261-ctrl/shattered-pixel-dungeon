@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Shopkeeper;
@@ -46,6 +47,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CurrencyIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.ColorBlock;
 
 public class WndTradeItem extends WndInfoItem {
@@ -149,7 +151,8 @@ public class WndTradeItem extends WndInfoItem {
 		final int price = Shopkeeper.sellPrice( item );
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
-		if (certificate != null && price < basePrice) {
+		boolean genesisFree = GenesisEcho.freeShop(Dungeon.hero);
+		if (genesisFree || (certificate != null && price < basePrice)) {
 			RenderedTextBlock original = PixelScene.renderTextBlock(
 					Messages.get(this, "original_price", basePrice), 6);
 			original.hardlight(0x888888);
@@ -161,9 +164,14 @@ public class WndTradeItem extends WndInfoItem {
 			strike.y = original.top() + original.height()/2f;
 			add(strike);
 
-			RenderedTextBlock discount = PixelScene.renderTextBlock(
-					Messages.get(this, "seal_price", price,
-							Math.round((1f-certificate.shopPriceMultiplier())*100f)), 6);
+			RenderedTextBlock discount;
+			if (genesisFree) {
+				discount = PixelScene.renderTextBlock(Messages.get(this, "genesis_free"), 6);
+			} else {
+				discount = PixelScene.renderTextBlock(
+						Messages.get(this, "seal_price", price,
+								Math.round((1f-certificate.effectiveShopPriceMultiplier(Dungeon.hero))*100f)), 6);
+			}
 			discount.hardlight(CharSprite.POSITIVE);
 			discount.setPos(0, original.bottom() + 1);
 			add(discount);
@@ -319,6 +327,9 @@ public class WndTradeItem extends WndInfoItem {
 		
 		Item item = heap.pickUp();
 		if (item == null) return;
+
+		Item bonusTemplate = GenesisEcho.active(Dungeon.hero) ? item.duplicate() : null;
+		int bonusCopies = GenesisEcho.bonusPurchaseCopies(Dungeon.hero);
 		
 		int price = Shopkeeper.sellPrice( item );
 		if (SPDSettings.assistNoConsume()) {
@@ -330,6 +341,17 @@ public class WndTradeItem extends WndInfoItem {
 		
 		if (!item.doPickUp( Dungeon.hero )) {
 			Dungeon.level.drop( item, heap.pos ).sprite.drop();
+		}
+
+		if (bonusTemplate != null && bonusCopies > 0) {
+			for (int i = 0; i < bonusCopies; i++) {
+				Item extra = bonusTemplate.duplicate();
+				if (extra == null) break;
+				if (!extra.doPickUp(Dungeon.hero)) {
+					Dungeon.level.drop(extra, Dungeon.hero.pos).sprite.drop();
+				}
+			}
+			GLog.p(Messages.get(WndTradeItem.class, "genesis_bonus", bonusCopies));
 		}
 	}
 }
