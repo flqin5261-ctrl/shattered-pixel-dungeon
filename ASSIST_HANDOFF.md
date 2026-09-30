@@ -85,11 +85,11 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.8**
-- 当前 versionCode：**954**
-- 当前最新稳定分支：`assist-0.5.8-stable`
+- 当前最新稳定版本：**0.5.9**
+- 当前 versionCode：**955**
+- 当前最新稳定分支：`assist-0.5.9-stable`
 - 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.8-spectator-props`
+- 当前对应开发分支：`assist-0.5.9-decoration-pass`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -1612,3 +1612,43 @@ Infinite World Bag 定价 value×2（最低20）；普通货物保持原版 valu
 - 0.5.8 不修改怪物强度、等级、血量、攻击、防御、生成池或精英概率。
 - 用户明确要求先完成 spectator + environment visual pass，再单独讨论 monster strength mechanics。
 
+# 32. 0.5.9 — Environment Decoration Pass
+
+用户反馈 0.5.8 的 5 类纯贴图装饰数量太少，希望先继续丰富“不可交互、无碰撞”的装饰层，再讨论怪物强度。
+
+本版：
+- WORLD_GEN_VERSION 仍为 15；
+- 不改地形生成公式；
+- 不改怪物；
+- 不改商人；
+- 不改 spectator flight/FOV。
+
+InfiniteWorldDecorationLayer 从 5 类扩展到 23 类：
+- 杂草、野花、三种树、蘑菇、碎石地、路牌、岩石、树桩、木桶；
+- 碎石堆、普通/奥术火盆、石质基座、石棺、水晶摆件；
+- 桌子、木凳、储物架、盔甲陈列、短栅栏、花瓶。
+
+密度：
+- 普通 V15 Chunk：4-7；
+- 大多数 Backrooms Chunk：8-12；
+- Level 37 Poolrooms：5-8。
+
+区域池：
+- 办公/旅馆优先家具；
+- 工业/服务区优先桶、碎石、火盆、栅栏、装置；
+- 洞穴优先蘑菇/石头/水晶；
+- 郊区/农田/Level94 优先自然物和路牌；
+- 城市优先路牌、桶、栅栏、碎石；
+- Poolrooms 保持更干净。
+
+放置规则：
+- 家具/设施优先贴墙；
+- 保留中心十字通道；
+- 跳过 heaps/traps/plants/角色/水/坑/secret；
+- 纯 CustomTilemap visual overlay；
+- 无 interaction / collision / pathfinding / map[] 影响；
+- 放大镜必须能识别每一种装饰。
+
+0.5.8 中“空木箱”实际贴图更像石棺，因此 0.5.9 删除这个错误语义，按真实外观作为石棺使用。
+
+后续：用户确认环境装饰密度后，再单独讨论 Infinite World 怪物强度/等级成长机制。
