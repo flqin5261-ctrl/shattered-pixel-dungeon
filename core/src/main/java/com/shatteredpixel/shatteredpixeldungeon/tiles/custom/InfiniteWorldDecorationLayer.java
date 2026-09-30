@@ -95,7 +95,15 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
         }
     }
 
-    public static boolean isBlockingKind(int kind) {
+    /**
+     * Generator V16 kept a few tiny ground-detail props pass-through. Generator
+     * V17 makes every visible environment prop physical, as requested. Keeping
+     * the version parameter prevents old V16 saves from gaining new blockers.
+     */
+    public static boolean isBlockingKind(int kind, int generatorVersion) {
+        if (kind <= 0) return false;
+        if (generatorVersion >= 17) return true;
+
         switch (kind) {
             case MUSHROOMS:
             case FERN:
@@ -104,8 +112,13 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
                 return false;
 
             default:
-                return kind > 0;
+                return true;
         }
+    }
+
+    // Legacy helper retained for any older call sites: V16 semantics.
+    public static boolean isBlockingKind(int kind) {
+        return isBlockingKind(kind, 16);
     }
 
     public static boolean isClusterFriendly(int kind) {
