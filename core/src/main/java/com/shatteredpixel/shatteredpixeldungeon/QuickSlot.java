@@ -127,6 +127,34 @@ public class QuickSlot {
 	 * we can reconstruct them perfectly.
 	 */
 
+	public void storeLayoutAsPlaceholders(Bundle bundle){
+		ArrayList<Item> placeholders = new ArrayList<>(SIZE);
+		boolean[] placements = new boolean[SIZE];
+
+		for (int i = 0; i < SIZE; i++) {
+			Item current = getItem(i);
+			if (current == null) continue;
+			Item placeholder = current.quantity() == 0 ? current : current.virtual();
+			if (placeholder != null) {
+				placeholders.add(placeholder);
+				placements[i] = true;
+			}
+		}
+		bundle.put( PLACEHOLDERS, placeholders );
+		bundle.put( PLACEMENTS, placements );
+	}
+
+	public void rebindFromBelongings(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings belongings){
+		if (belongings != null) {
+			for (Item item : belongings) {
+				if (item != null) replacePlaceholder(item);
+			}
+		}
+		for (int i = 0; i < SIZE; i++) {
+			if (isPlaceholder(i)) clearSlot(i);
+		}
+	}
+
 	public void storePlaceholders(Bundle bundle){
 		ArrayList<Item> placeholders = new ArrayList<>(SIZE);
 		boolean[] placements = new boolean[SIZE];
