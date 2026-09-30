@@ -2398,6 +2398,10 @@ public class InfiniteWorldLevel extends Level {
                 ? range(cx, cy, 20900 + index, 0, 9)
                 : range(cx, cy, 20900 + index, 0, 7);
 
+        if (state().generatorVersion >= 11 && index == 0 && isV11MerchantChunk(cx, cy)) {
+            theme = MERCHANT_ROOM_THEME;
+        }
+
         int doorTerrain = Terrain.DOOR;
         int secret = 0;
 
@@ -2440,7 +2444,7 @@ public class InfiniteWorldLevel extends Level {
 
             // A key room must never require a key. A crystal vault may be hidden
             // but is not itself iron-locked; its chest still needs a crystal key.
-            if (theme == 4) {
+            if (theme == 4 || theme == MERCHANT_ROOM_THEME) {
                 doorTerrain = Terrain.DOOR;
                 secret = 0;
             } else if (theme == 6 && doorTerrain == Terrain.LOCKED_DOOR) {
@@ -2525,6 +2529,13 @@ public class InfiniteWorldLevel extends Level {
             for (int y = innerTop; y <= innerBottom; y++) {
                 for (int x = innerLeft; x <= innerRight; x++) {
                     out[x + y * MAP_SIZE] = ((x + y) & 1) == 0 ? Terrain.EMPTY_DECO : Terrain.GRASS;
+                }
+            }
+        } else if (theme == MERCHANT_ROOM_THEME) { // travelling merchant outpost
+            for (int y = innerTop; y <= innerBottom; y++) {
+                for (int x = innerLeft; x <= innerRight; x++) {
+                    out[x + y * MAP_SIZE] = ((x + y) & 1) == 0
+                            ? Terrain.EMPTY_SP : Terrain.EMPTY_DECO;
                 }
             }
         } else { // mixed treasury / secret cache
