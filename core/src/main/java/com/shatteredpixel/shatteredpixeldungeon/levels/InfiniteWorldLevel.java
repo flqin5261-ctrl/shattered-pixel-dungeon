@@ -1524,6 +1524,11 @@ public class InfiniteWorldLevel extends Level {
                     int[] spec = v7RoomSpec(cx, cy, roomIndex);
                     int theme = spec[8];
 
+                    if (theme == MERCHANT_ROOM_THEME) {
+                        generateV11MerchantStock(cx, cy, ox, oy);
+                        continue;
+                    }
+
                     // Every locked room has its own visible iron key outside the
                     // door. This guarantees the player sees keys and can always
                     // open every locked room in an endless world.
@@ -1818,6 +1823,11 @@ public class InfiniteWorldLevel extends Level {
                 for (int roomIndex = 0; roomIndex < roomCount; roomIndex++) {
                     int[] spec = v7RoomSpec(cx, cy, roomIndex);
                     int theme = spec[8];
+
+                    if (theme == MERCHANT_ROOM_THEME) {
+                        snapshotV11MerchantStock(cx, cy, ox, oy);
+                        continue;
+                    }
 
                     if (spec[9] == Terrain.LOCKED_DOOR) {
                         int cell = ox + spec[6] + (oy + spec[7]) * width();
