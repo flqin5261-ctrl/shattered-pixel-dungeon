@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.11",
-    "version_code": 957,
+    "version_name": "0.5.12",
+    "version_code": 958,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.11-stable",
-    "development_branch": "assist-0.5.11-progression",
-    "release_code_sha": "d8aed9ef80c1e4774454988115ea7d111ddf0366",
+    "stable_branch": "assist-0.5.12-stable",
+    "development_branch": "assist-0.5.12-short-trial",
+    "release_code_sha": "037319ab5cc13365fd793225f42d096cbb60993e",
     "world_generator_version": 17
   },
   "build": {
@@ -241,13 +241,14 @@
       "post_breakthrough_artifact_cap": 30,
       "token": "BreakthroughToken is automatically issued at level 30 until the trial succeeds",
       "arena_branch": 99,
-      "waves": 10,
-      "enemies_per_wave": 10,
+      "waves": 5,
+      "enemies_per_wave": 5,
       "between_wave_action_value": 30,
-      "wave_scaling": "wave 1 is intentionally softer; enemy pools and multipliers rise each wave; wave 10 mixes five late-game threats with five mid-game threats",
+      "wave_scaling": "five compressed waves: wave 1 is softer, each wave has a larger step, and wave 5 reaches roughly the old wave-10 finale multipliers",
       "failure": "non-lethal; pre-trial Hero/inventory/gold/energy snapshot is restored and a new token is issued",
       "success": "returns to the prior Infinite World position and unlocks level 60 / +120 equipment / +30 artifact progression",
-      "aid": "arena contains scattered healing, food and utility scroll/potion supplies"
+      "aid": "arena contains scattered healing, food and utility scroll/potion supplies",
+      "slime_rule": "Slime can appear only in wave 1 slot 5, at 25% probability; therefore at most one Slime can appear in an entire trial, and waves 2-5 contain none."
     },
     "infinite_world_intro": {
       "custom": true,
@@ -543,7 +544,7 @@
       "equipment_caps": "+50 before breakthrough, +120 after",
       "artifact_caps": "+10 before breakthrough, +30 after",
       "artifact_post_cap_growth": "after the native +10-equivalent cap, the equipped artifact earns one extra visible level per roughly 1.5 Hero levels of XP until +30; Assist boost can also test the cap",
-      "breakthrough_trial": "10 waves x 10 mobs, 30 action-value intermission",
+      "breakthrough_trial": "5 waves x 5 mobs, 30 action-value intermission; wave 5 reaches roughly the old finale strength",
       "trial_failure_restores_losses": true,
       "dynamic_mob_scaling": true,
       "cheat_test_button": "Infinite World Assist menu has both +1 Hero level and one-click current-stage-cap buttons; both respect the level-30 gate.",
@@ -565,6 +566,9 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.12 short breakthrough trial: exactly 5 waves and 5 enemies per wave.",
+    "0.5.12 slime rule: at most one Slime can appear in the entire breakthrough trial, only in wave 1, with 25% chance; waves 2-5 never spawn Slime.",
+    "0.5.12 compressed difficulty: wave 5 should still feel like a real breakthrough fight despite the shorter 25-enemy total.",
     "0.5.11 breakthrough token: even with a full backpack, the token stays in the backpack via one temporary over-cap slot and is never duplicated on the ground.",
     "0.5.11 QA controls: +1 level and one-click current-stage-cap buttons both exist; the fast button reaches 30 before breakthrough and 60 after success without bypassing the trial.",
     "0.5.11 start: a fresh Infinite World begins with exactly 300 gold and displays the custom Infinite World story instead of the original sewer introduction.",
@@ -631,6 +635,8 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device run the new 5x5 breakthrough trial and tune only if wave 5 is either trivial or excessively lethal.",
+    "Confirm Slime frequency is no longer annoying: most runs should contain zero Slimes, and no run can contain more than one.",
     "Real-device test fresh Infinite World start gold and custom story.",
     "Use the Assist +1 Hero level button to reach level 30, run the full breakthrough trial, intentionally fail once, then succeed once and verify restoration/unlocks.",
     "Compare dynamic mobs at low gear, level-30 +5/+10 gear, artificial +50 pre-breakthrough gear, and post-breakthrough +80/+120 gear; tune only from real combat feedback.",

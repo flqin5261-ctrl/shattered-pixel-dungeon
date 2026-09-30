@@ -2421,3 +2421,21 @@ Version:
 
 ## CI note
 - One intermediate 0.5.11 Action failed while downloading the Gradle distribution with `Connection reset by peer`. This was a transient runner network failure, not a compiler failure; earlier/later runs are the authority for code validity.
+
+
+# 0.5.12 — Shorter Breakthrough Trial
+
+Version:
+- versionName: 0.5.12
+- versionCode: 958
+- dev: assist-0.5.12-short-trial
+- target stable: assist-0.5.12-stable
+- WORLD_GEN_VERSION: 17 (unchanged)
+
+Changes:
+- Breakthrough trial reduced from 10 waves to 5.
+- Enemies per wave reduced from 10 to 5.
+- Inter-wave delay remains 30 action-value with the existing countdown messages.
+- Difficulty span is compressed rather than truncated: wave 5 reaches approximately the old wave-10 finale multipliers.
+- Slime is no longer part of normal wave pools. It can appear only as wave-1 slot 5 with 25% probability, so a trial can contain at most one Slime and usually none.
+- Wave 5 retains a mixed late-game finale without filling the arena with five simultaneous ranged threats.

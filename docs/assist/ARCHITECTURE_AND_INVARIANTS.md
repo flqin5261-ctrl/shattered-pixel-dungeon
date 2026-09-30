@@ -1949,3 +1949,14 @@ Road and readability guarantees have priority over target prop count.
 - A cleared wave starts a 30 action-value countdown.
 - Trial Hero death is intercepted before Ankh/game-over handling. The temporary old Hero object is kept technically alive until the current damage call stack returns so `Char.attack()` cannot subsequently call `Dungeon.fail()`.
 - Success and failure restore the pre-trial snapshot. Failure reissues the token; success unlocks the post-30 caps.
+
+
+# 0.5.12 breakthrough pacing invariant
+
+- Breakthrough trial is 5 waves, 5 enemies per wave.
+- The 30 action-value intermission and countdown semantics are unchanged.
+- Difficulty is compressed across five waves; do not simply reuse the first five steps of the old ten-wave curve.
+- Wave 5 must remain the finale and target approximately the old wave-10 stat span.
+- Slime must never appear after wave 1.
+- Wave 1 may contain at most one Slime, with only a 25% chance in its final spawn slot.
+- Trial failure/success snapshot restore, branch-99 clean regeneration, level-cap unlocks and non-lethal failure semantics remain unchanged.

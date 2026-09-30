@@ -11,11 +11,11 @@
 
 当前开发候选：
 
-- 版本：0.5.11
-- versionCode：957
+- 版本：0.5.12
+- versionCode：958
 - Generator：V17
-- target stable：`assist-0.5.11-stable`
-- dev：`assist-0.5.11-progression`
+- target stable：`assist-0.5.12-stable`
+- dev：`assist-0.5.12-short-trial`
 
 当前核心已经具备：
 
@@ -1770,3 +1770,16 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Guaranteed artifact chest remains 1000 action-value, Hero-centered 3x3, with CrystalKey.
 - [ ] Spectator x8/20-cell FOV and Mob freeze still work.
 - [ ] Water/VBO/Fog and post-motion-only Streaming remain unchanged.
+
+
+# B21. 0.5.12 short breakthrough trial
+
+- [ ] Trial has exactly 5 waves.
+- [ ] Every wave spawns exactly 5 enemies.
+- [ ] Clearing waves 1-4 starts the same 30 action-value countdown.
+- [ ] Wave 5 clear completes the trial immediately.
+- [ ] Wave 1 feels easier than wave 3; wave 5 remains meaningfully difficult.
+- [ ] Across repeated trial starts, Slime never appears in waves 2-5.
+- [ ] Any single trial contains at most one Slime.
+- [ ] Wave-1 Slime appears only occasionally (~25% of runs), so most runs have none.
+- [ ] Failure restoration, token reissue, clean retry arena and success unlocks are unchanged.

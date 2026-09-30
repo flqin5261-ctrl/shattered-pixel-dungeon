@@ -1754,3 +1754,32 @@ WndAssist 在 Infinite World 中新增两种等级 QA：
 BreakthroughToken 是 progression-critical 物品：即使普通背包已满，也会使用一个临时超容量槽强制放入背包，不再掉到 Infinite World 地面，避免 Streaming/重复检查造成信物复制。
 
 0.5.11 不能破坏：V17 实体装饰、1000 action-value 3×3 唯一神器箱、spectator x8/20 FOV、Mob distance despawn、VBO/Water/Fog/Streaming invariants。
+
+
+# 35. 0.5.12 — 突破试炼缩短为 5×5
+
+用户反馈 0.5.11 的十波、每波十只过于拖沓，且史莱姆在试炼中体感偏难。
+
+本版只调整突破试炼节奏，不改 Infinite World Streaming、地形、商人、神器箱、普通生态怪强度公式或 30/60 级成长门槛。
+
+## 35.1 波次
+- TOTAL_WAVES：10 -> 5。
+- MOBS_PER_WAVE：10 -> 5。
+- 每波清空后仍等待 30 action-value，并保留 20/10/5/4/3/2/1 倒计时提示。
+- 总敌人数由最多 100 降到 25。
+
+## 35.2 难度压缩
+5 波不是把原十波的前五波直接截断，而是把原来的终局跨度压缩进五波：
+- Wave 1：偏友好；
+- Wave 2：进入中前期怪；
+- Wave 3：开始出现 Brute / Spinner / Warlock 等；
+- Wave 4：稳定混入高阶威胁；
+- Wave 5：Warlock + Monk + Golem 为固定核心，再混入 Brute/Spinner 与 Succubus/Scorpio。
+
+Wave 5 的 HP / damage / accuracy / defense 倍率仍接近原 0.5.11 Wave 10，因此试炼明显更短，但突破感保留。
+
+## 35.3 Slime
+- Slime 仅允许在 Wave 1 的第 5 个槽位出现。
+- 该槽位只有 25% 概率选择 Slime，否则为 Rat。
+- 所以一次完整试炼最多 1 只 Slime，多数试炼为 0 只。
+- Wave 2~5 完全不生成 Slime。
