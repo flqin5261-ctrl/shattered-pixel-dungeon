@@ -1700,8 +1700,15 @@ public class InfiniteWorldLevel extends Level {
         int outsideX = ox + spec[6];
         int outsideY = oy + spec[7];
 
-        terrain[doorX + doorY * MAP_SIZE] = Terrain.DOOR;
-        setFloor(terrain, outsideX, outsideY);
+        int doorCell = doorX + doorY * MAP_SIZE;
+        int outsideCell = outsideX + outsideY * MAP_SIZE;
+
+        if ((Terrain.flags[terrain[doorCell]] & Terrain.PASSABLE) == 0) {
+            terrain[doorCell] = Terrain.DOOR;
+        }
+        if ((Terrain.flags[terrain[outsideCell]] & Terrain.PASSABLE) == 0) {
+            setFloor(terrain, outsideX, outsideY);
+        }
 
         if (!merchantWalkPath(terrain, cx, cy, ox, oy).isEmpty()) return;
 
@@ -1716,9 +1723,14 @@ public class InfiniteWorldLevel extends Level {
             setFloor(terrain, x, y);
         }
 
-        // A later dig path must never erase the actual shop entrance.
-        terrain[doorX + doorY * MAP_SIZE] = Terrain.DOOR;
-        setFloor(terrain, outsideX, outsideY);
+        // A later dig path must never leave the actual shop entrance blocked,
+        // but preserve a player-opened/destroyed entrance if it is already passable.
+        if ((Terrain.flags[terrain[doorCell]] & Terrain.PASSABLE) == 0) {
+            terrain[doorCell] = Terrain.DOOR;
+        }
+        if ((Terrain.flags[terrain[outsideCell]] & Terrain.PASSABLE) == 0) {
+            setFloor(terrain, outsideX, outsideY);
+        }
     }
 
     private ArrayList<Integer> merchantWalkPath(int[] terrain, int cx, int cy, int ox, int oy) {
