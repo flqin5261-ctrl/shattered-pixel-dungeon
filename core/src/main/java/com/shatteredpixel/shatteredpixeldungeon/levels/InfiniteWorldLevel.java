@@ -1309,6 +1309,14 @@ public class InfiniteWorldLevel extends Level {
         if (state().generatorVersion < 11) return false;
         if (v9AnomalyType(cx, cy) != 0) return false;
 
+        // Do not place a shop room directly on the guaranteed infinite road
+        // network. V10 carves those roads after room generation, which would
+        // otherwise cut through the shop shell.
+        if (Math.floorMod(cx, 6) == 0 || Math.floorMod(cy, 6) == 0
+                || v10SecondaryHorizontalRow(cy) || v10SecondaryVerticalColumn(cx)) {
+            return false;
+        }
+
         // Keep the immediate starting region free of commerce so the opening still
         // feels like exploration rather than spawning next to a shop.
         if (Math.max(Math.abs(cx), Math.abs(cy)) <= 4) return false;
