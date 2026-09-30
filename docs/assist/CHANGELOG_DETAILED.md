@@ -1784,3 +1784,52 @@ Infinite World 新增固定世界坐标的流浪商人据点，不把商人当�
 - result：success
 - ZIP SHA-256：`ab8a78facc9447d287b5b3627173d6b459dc7e05f1deb13d19ac7a816bb2b003`
 - APK SHA-256：`4baab2a0ce442d9e52cddf0fa4f0750cdc47e926fa8cf5c36cdd5cfa2d1fe177`
+
+
+# 23. 0.5.1 — 流浪商人与商店房
+
+版本：
+
+- 0.5.1
+- versionCode 947
+- dev：`assist-0.5.1-merchants`
+- stable：`assist-0.5.1-stable`
+- Generator V11
+- release code SHA：`d9e0d06829d61674d4bb96a52f649cfea45fe90c`
+
+本版本加入 Infinite World 第一版商人系统。
+
+核心设计：
+
+- 复用原版 `Shopkeeper + Heap.Type.FOR_SALE + WndTradeItem` 交易机制。
+- 商人不随机站在路边，而是生成在独立的小型商店房里。
+- 商店按稀疏 9-Chunk 网格确定，7×7 active window 内最多一个商人，避免多个 Shopkeeper 同时存在导致出售/回购选择错误。
+- 出生附近排除商店。
+- 商店不生成在 V10 Primary/Secondary 无限路线本体上，避免道路最终 carve 穿过店墙。
+- 商店附近 8 格内不生成普通生态怪。
+- 商人不属于 ENEMY，因此不会进入 0.5.0 的 40 格敌怪 despawn 逻辑。
+- Streaming 时商人会跟随 local window 正确 rebase；离开 active window 后不作为远程 NPC 常驻内存，重新进入其固定 world chunk 时恢复。
+- 商人被打跑会写入 InfiniteWorldState，回到该商店不会重新刷新。
+- 默认库存 6 件：
+  - 治疗药剂
+  - 小份口粮
+  - 随机药剂
+  - 非 Mapping 安全卷轴
+  - 一件随世界距离提升 tier 的装备/法杖/戒指
+  - Bomb/Torch/Blink Stone/Pickaxe/Remove Curse 之一
+- FOR_SALE 库存按 objectStates 保存；买走后切区块、退出重进都不会补货。
+- 商店仍允许使用原版卖物、回购和金币交易机制。
+
+由于新增固定商店房属于世界生成内容，Generator 从 V10 升到 V11。
+
+因此：
+- 旧 V10 世界不会自动长出商店。
+- 要测试 0.5.1 商人，需要在“无界地牢”里重新开始一次 V11 世界。
+
+Build：
+
+- workflow run：36652803838
+- artifact：11071337926
+- artifact digest：`sha256:3636d91475c1fd5cc27e4d37fa277d6dad8a4fd9b246cf5a13358e1a53a4f202`
+- APK SHA-256：`8508db9fce64d1368315c80946414bad1646df05d555df0af05e116359cd6329`
+- result：success
