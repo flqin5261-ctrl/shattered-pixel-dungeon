@@ -1414,3 +1414,42 @@ V10 的验收标准不是“所有路都无限”，而是：
 - [ ] 神器/特殊任务物品的作弊生成不会导致菜单崩溃；重复唯一物品属于玩家主动作弊行为，不修改正常世界掉落规则。
 - [ ] 0.5.3 V13 Infinite World 存档可直接继续，不需要重新开始。
 - [ ] Infinite World 商人、六类异境、唯一神器箱和 Streaming 无回归。
+
+# B14. 0.5.5 / Generator V14 商店连通与 Overlay 专项回归
+
+## B14.1 Merchant connectivity
+- [ ] 新 V14 世界中每一个被提示/地图揭示的商店均可正常步行抵达。
+- [ ] 不使用炸弹、Blink、穿墙类效果，也能从公共网络进入商店。
+- [ ] 商店门外实际存在 PASSABLE route 到至少一个 shared-edge gateway。
+- [ ] 自动补路不会无意义穿过其他普通/秘密主题房。
+- [ ] 不产生额外非法 Chunk 边界洞口。
+- [ ] Merchant room door 仍为普通可进入入口。
+- [ ] 商店到 gateway 的真实路线会随商店提示一起出现在地图上。
+- [ ] SECRET_DOOR 不会因为 merchant route reveal 被提前显示成普通路。
+
+## B14.2 Legacy V13 repair
+- [ ] 用现有 V13 存档进入曾经断路的 Merchant Chunk 时能自动修复通路。
+- [ ] 修复后 Streaming 离开再回来，通路仍存在。
+- [ ] Save/Load 后通路仍存在。
+- [ ] 已经炸开/打开的 merchant entrance 不会被强制还原成关闭门。
+
+## B14.3 Bomb / wall overlay
+- [ ] 在带 mixed-theme overlay 的普通房炸墙。
+- [ ] 爆炸后逻辑可走位置立即显示为真实地板/开口。
+- [ ] Hero 经过该位置时不会被一张旧墙图完全遮住。
+- [ ] 相邻 wall stitching / overhang 正常刷新。
+- [ ] 连续炸多个格子不出现残墙、黑块或旧 tileset 残影。
+
+## B14.4 Secret Room
+- [ ] SECRET_DOOR 未发现前仍表现为普通墙，不泄露独立房间材质。
+- [ ] 被动/主动 Search 发现后，门立即显示正确。
+- [ ] Secret Room 独立 accent 同一窗口内立即出现，不等 Streaming。
+- [ ] 炸开 Secret Room 墙后 custom overlay 同步更新。
+
+## B14.5 核心回归
+- [ ] Streaming 仍只在 Hero.onMotionComplete 后触发。
+- [ ] 168×168 VBO batching/flush 不回归。
+- [ ] Pool Halls 无假水/黑图。
+- [ ] V13 六类 Liminal 仍正常。
+- [ ] 400 action-value 唯一神器箱仍整局只有一个。
+- [ ] 0.5.4 指定物品作弊仍正常。
