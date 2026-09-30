@@ -1398,3 +1398,15 @@ ScrollPane.setRect() 会同步调用 ScrollPane.layout()。layout() 内部通过
 - 0.6.12 将 WndBag.java 和 WndInfoBuff.java 精确恢复为 0.6.9-stable 对应 blob，旧存档重新可以正常打开背包和 Buff，确认根因属于 UI 滚动改造而非存档损坏。
 - 0.6.13 重新实现滚动时统一改为 new -> add -> setRect，保证 setRect/layout 执行时已经能够继承 Window camera。
 - 后续任何新 ScrollPane 都必须遵守相同生命周期顺序。
+
+# 0.6.13 滚动内容整体偏到右下角
+
+## 症状
+窗口能够正常打开且不闪退，但背包物品网格、创世回响正文都没有从左上方正常开始，而是整体落在窗口中下部/右侧，并伴随大片空白和右侧裁切。
+
+## 根因
+ScrollPane 已经先 add 到 Window，避免了0.6.10/0.6.11的空父相机崩溃；但 setRect() 仍早于 Window.resize()。
+ScrollPane.layout() 在 setRect() 时根据当前父窗口坐标设置 content.camera。随后 Window.resize() 会重算并居中窗口位置，却不会自动让这个已经布局过的子内容相机重新同步最终窗口坐标，因此出现固定偏移。
+
+## 修复
+0.6.14 中 WndInfoBuff 和 WndBag 都先完成 Window.resize()，最后再执行 ScrollPane.setRect()。这一生命周期顺序与原版 WndDocument 等正常滚动窗口一致。
