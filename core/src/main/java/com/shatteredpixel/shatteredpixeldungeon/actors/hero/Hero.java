@@ -2253,6 +2253,10 @@ public class Hero extends Char {
 		// the pre-trial Hero snapshot and returns to Infinite World without consuming
 		// ankhs or ending the run.
 		if (Dungeon.infiniteWorld && Dungeon.level instanceof BreakthroughTrialLevel) {
+			// Keep this old Hero object technically alive until the attack/damage
+			// call stack unwinds, otherwise Char.attack() would still submit a
+			// normal game-over after finishTrial() has restored the real Hero.
+			HP = Math.max(1, HP);
 			((BreakthroughTrialLevel)Dungeon.level).finishTrial(false);
 			return;
 		}
