@@ -724,7 +724,13 @@ public class InterlevelScene extends PixelScene {
 		Level level;
 		Dungeon.depth = returnDepth;
 		Dungeon.branch = returnBranch;
-		if (Dungeon.levelHasBeenGenerated(Dungeon.depth, Dungeon.branch)) {
+		if (Dungeon.infiniteWorld
+				&& Dungeon.branch == com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression.BREAKTHROUGH_BRANCH) {
+			// Every token use starts a clean arena. A save made while already inside
+			// the trial still restores normally through CONTINUE; only a new entry
+			// intentionally overwrites the old branch-99 level file.
+			level = Dungeon.newLevel();
+		} else if (Dungeon.levelHasBeenGenerated(Dungeon.depth, Dungeon.branch)) {
 			level = Dungeon.loadLevel( GamesInProgress.curSlot );
 		} else {
 			level = Dungeon.newLevel();
