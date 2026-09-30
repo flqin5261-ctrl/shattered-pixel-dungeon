@@ -387,6 +387,17 @@ public final class InfiniteWorldProgression {
         cert.forceEquip(hero);
     }
 
+    public static void ensureBreakthroughCertificate(Hero hero) {
+        if (hero == null || !breakthroughCompleted()) return;
+        BreakthroughCertificate cert = hero.belongings.getItem(BreakthroughCertificate.class);
+        if (cert == null) {
+            cert = new BreakthroughCertificate();
+            cert.forceEquip(hero);
+        } else {
+            cert.syncToHeroLevel(hero);
+        }
+    }
+
     public static void syncBreakthroughCertificate(Hero hero) {
         if (hero == null || !breakthroughCompleted()) return;
         BreakthroughCertificate cert = hero.belongings.getItem(BreakthroughCertificate.class);
