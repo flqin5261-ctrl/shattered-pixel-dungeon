@@ -1838,3 +1838,52 @@ WndInfoBuff 现在按行显示当前全部实际加成，同时显示完整下�
 
 三项都接入真实 Hero 计算路径；取下证书立即失效。
 没有再加固定伤害减免或永久免疫，因为当前已有最大生命、被动回血和可充能复活，继续叠防御会明显压低后期风险。
+
+
+# 38. 0.6.5 — 破界之印强化与快速突破
+
+## 38.1 QA 快速通关
+WndAssist 新增“测试：快速通关突破”。
+- 未进入试炼时：若 Hero < 30，先安全提升到 30；清理挑战信物；直接设置 breakthroughCompleted；发放并装备破界之印；解锁 60 级成长。
+- 已在 branch 99 试炼场中：调用正常 finishBreakthroughTrial(true)，所以 Hero/背包/金币/能量/快捷栏仍按正式成功流程回滚到入场前。
+- 已突破：只检查破界之印是否存在，不重复创建。
+
+## 38.2 破界之印数值
+LV30/LV40/LV50/LV60：
+- STR +2/+4/+6/+8。
+- Evasion +10/+16/+24/+32%。
+- EXP +15/+25/+40/+60%。
+- Movement +8/+12/+18/+25%。
+- All non-hunger damage reduction 8/12/16/20%。
+- Common negative-effect resistance 15/25/35/50%。
+- Natural wand recharge +20/+35/+55/+80%。
+- Positive Potion/Scroll buff duration +20/+35/+55/+80%。
+- Secret trap/door passive search radius +1/+2/+3/+4 tiles。
+- Secret trap/door passive detection chance +20/+30/+45/+60 percentage points。
+- Undying Totem full charge 200/160/120/80 action-value，revive HP 35/45/55/70%。
+
+既有 HP、damage、accuracy、gold、hunger、vision、shop discount、chest bonus、regen 等继续保留。
+
+## 38.3 永久免疫
+破界之印第一次生成时从以下常见负面效果随机 1 项永久免疫：
+Burning / Poison / Paralysis / Vertigo / Blindness / Cripple / Weakness / Vulnerability / Slow / Charm / Hex。
+
+该选择保存在 Seal 本体 Bundle 中，只有装备 Seal 时通过 BreakthroughBlessing.immunities 生效。
+将 ScrollOfUpgrade 用在 Seal 上会：
+- 正常消耗升级卷轴；
+- 随机切换到与当前不同的一项免疫；
+- 不改变 Seal tier，不增加 Item level；
+- 如果正在装备，立即重建 Blessing 使新免疫即时生效。
+
+## 38.4 商店价格 UI
+Shopkeeper 增加 baseSellPrice(item)，sellPrice(item) 只负责在 base price 上应用 Seal discount。
+WndTradeItem 在 Seal 折扣生效时显示：
+- 灰色 original price；
+- 一条横线覆盖 original price；
+- 绿色 Seal discounted price + 折扣百分比；
+- Buy 按钮与实际扣款继续使用 discounted price。
+
+## 38.5 药剂/卷轴与法杖
+Potion.drink / Scroll.execute 在同步效果应用期间开启 Seal consumable context。
+Buff.append/affect/prolong 对 Hero 的正面持续 buff 应用 Seal duration multiplier；常见负面效果不被延长。
+Wand.WandCharger 自然恢复 charge 时再乘 Seal wandChargeMultiplier。
