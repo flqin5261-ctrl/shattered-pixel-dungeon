@@ -852,7 +852,7 @@ public abstract class Wand extends Item {
 				float sealCharge = 1f;
 				if (target instanceof Hero) {
 					BreakthroughCertificate certificate = BreakthroughCertificate.equipped((Hero) target);
-					if (certificate != null) sealCharge = certificate.wandChargeMultiplier();
+					if (certificate != null) sealCharge = certificate.effectiveWandChargeMultiplier((Hero) target);
 				}
 				partialCharge += (1f/turnsToCharge) * RingOfEnergy.wandChargeMultiplier(target) * sealCharge;
 			}
