@@ -51,7 +51,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     }
 
     public boolean isEmpty() {
-        return kinds.size() == 0;
+        return kinds.size == 0;
     }
 
     public void put(int cell, int kind, Level level) {
