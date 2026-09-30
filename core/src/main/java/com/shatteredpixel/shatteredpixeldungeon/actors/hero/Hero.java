@@ -412,7 +412,7 @@ public class Hero extends Char {
 
 	public int talentPointsAvailable(int tier){
 		if (lvl < (Talent.tierLevelThresholds[tier] - 1)
-			|| (tier == 3 && subClass == HeroSubClass.NONE)
+			|| (tier == 3 && subClass == HeroSubClass.NONE && !Dungeon.infiniteWorld)
 			|| (tier == 4 && armorAbility == null)) {
 			return 0;
 		} else if (lvl >= Talent.tierLevelThresholds[tier+1]){
@@ -424,7 +424,7 @@ public class Hero extends Char {
 
 	public int bonusTalentPoints(int tier){
 		if (lvl < (Talent.tierLevelThresholds[tier]-1)
-				|| (tier == 3 && subClass == HeroSubClass.NONE)
+				|| (tier == 3 && subClass == HeroSubClass.NONE && !Dungeon.infiniteWorld)
 				|| (tier == 4 && armorAbility == null)) {
 			return 0;
 		} else if (buff(PotionOfDivineInspiration.DivineInspirationTracker.class) != null
@@ -2239,6 +2239,10 @@ public class Hero extends Char {
 			Item.updateQuickslot();
 			
 			Badges.validateLevelReached();
+
+			if (Dungeon.infiniteWorld) {
+				InfiniteWorldProgression.ensureTalentMilestones(this);
+			}
 
 			if (Dungeon.infiniteWorld
 					&& lvl == InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP
