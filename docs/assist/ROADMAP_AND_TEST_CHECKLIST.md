@@ -1345,3 +1345,56 @@ V10 的验收标准不是“所有路都无限”，而是：
 - [ ] Streaming 仍只在运动动画完成后触发，无原地走路卡死。
 - [ ] Fog / Water / VBO 无回归。
 - [ ] 普通怪 >40 cell 距离清除仍无掉落、EXP、击杀统计。
+
+# B12. 0.5.3 / Generator V13 专项回归
+
+要测试 V13 新分布必须重新开始创建 V13 世界。
+
+## B12.1 商人实际可发现性
+- [ ] 正常探索一段距离后能明显比 V12 更容易遇到商店。
+- [ ] 只要 Merchant Outpost 进入 active window，地图上能看到被揭示的商店房区域。
+- [ ] 商店进入 Hero 2 Chunk 左右时出现一次“附近有商人据点”提示。
+- [ ] 同一个据点提示不会每走一步重复刷。
+- [ ] 远离后回来仍不会重复提示同一个据点。
+- [ ] 多个商店各自可以提示一次。
+- [ ] 商店仍不生成在 anomaly / primary / secondary route Chunk。
+- [ ] 购买、出售、回购、库存 consumed 状态仍正常。
+- [ ] flee 后永久关闭。
+- [ ] 8 格普通怪刷新安全区保持。
+
+## B12.2 异境密度
+- [ ] 新 V13 世界中 anomaly 明显比 V12 的 15% 常见。
+- [ ] 仍有足够普通地牢区域，不应几乎整个世界连续 anomaly。
+- [ ] 一个 5×5 macro 内主题连续一致。
+- [ ] macro 边界与普通区域连接正常。
+
+## B12.3 六类异境
+分别找到并检查：
+- [ ] Repeating Offices
+- [ ] Pool Halls
+- [ ] Endless Hall
+- [ ] Yellow Maze
+- [ ] Service Tunnels
+- [ ] Dark Storage
+
+新三类重点：
+- [ ] Yellow Maze 隔墙密集但可通行。
+- [ ] Service Tunnels 网格通道不产生大面积孤岛。
+- [ ] Dark Storage 重复储藏块之间有连续过道。
+- [ ] V10 Primary/Secondary 路线仍能贯穿所有 anomaly。
+- [ ] Streaming 后结构不突然换型。
+
+## B12.4 六篇 Field Notes
+- [ ] 六种 anomaly 第一次遇到未收录类型时，附近出现对应便笺。
+- [ ] Yellow_Maze 页面正常显示中英文标题/正文。
+- [ ] Service_Tunnels 页面正常显示。
+- [ ] Dark_Storage 页面正常显示。
+- [ ] 收录后不在同类型 anomaly 重复近身刷便笺。
+- [ ] Save/Load 后收录状态保留。
+
+## B12.5 历史核心回归
+- [ ] 唯一神器水晶箱仍整局只有一个。
+- [ ] Hero movement / Streaming 无原地走路卡死。
+- [ ] Pool Halls 无假水、黑图、贴图延迟。
+- [ ] Fog / VBO 无回归。
+- [ ] 普通怪超距 despawn 仍无奖励。
