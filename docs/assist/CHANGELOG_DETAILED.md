@@ -2230,3 +2230,54 @@ V15 暂不实现特殊 noclip 入口、独立层级切换或专用转层道具�
 - VBO/Water/Fog 修复。
 - 唯一神器水晶箱。
 - 怪物生态和无奖励超距 despawn。
+
+# 0.5.8 — Spectator Flight QA + CC0 Environment Props
+
+- versionName: 0.5.8
+- versionCode: 954
+- WORLD_GEN_VERSION remains 15.
+- dev: assist-0.5.8-spectator-props
+- stable: assist-0.5.8-stable
+
+## Spectator QA movement
+- Infinite World spectator minimum movement multiplier increased from x4 to x8.
+- Hero logical speed and CharSprite PosTweener speed use the same minimum x8 multiplier.
+- Spectator movement suppresses the run animation: Hero keeps the idle pose while gliding cell-to-cell.
+- Native CharSprite.State.LEVITATING supplies the floating effect.
+- Disabling spectator mode removes LEVITATING, restores idle state and still runs settleHeroAfterSpectator().
+- Streaming timing is unchanged: shifts still happen only after Hero.onMotionComplete().
+
+## Spectator QA vision
+- While spectator mode is active, Hero FOV uses ShadowCaster.MAX_DISTANCE = 20.
+- Normal Infinite World and normal dungeon vision remain unchanged.
+- Existing wall-source FOV exception for a Hero currently inside a wall remains intact.
+
+## V15 CC0 environment decoration
+New sparse non-gameplay props:
+- bush
+- mushrooms
+- weathered sign
+- discarded barrel
+- empty crate
+
+Art sources:
+- Kenney Tiny Town 1.1, CC0 1.0.
+- Kenney Tiny Dungeon 1.0, CC0 1.0.
+- Both are native 16x16 pixel packs, matching DungeonTilemap.SIZE.
+- Build downloads are pinned to upstream commit e22e06e317be6c933b779ad7b055b6a6aeafa5e8 and verified against exact Git blob IDs before Gradle runs.
+
+Integration:
+- Props are CustomTilemap overlays and never alter map[], passability, doors or water.
+- Placement occurs after heaps/traps/plants/themed-room content so occupied cells are skipped.
+- V15 Backrooms districts receive two props per active chunk when valid cells exist.
+- Ordinary V15 terrain receives one prop in roughly 62% of chunks.
+- Common center crossing lanes are kept clear.
+- WndInfoCell/magnifier uses each prop's actual sprite plus localized name/description.
+- Props are saved sparsely through Bundle state; empty atlas cells are not serialized.
+- External asset provenance is recorded in docs/assist/THIRD_PARTY_ASSETS.md.
+
+## Not changed
+- Monster strength/stats/ecology are untouched in 0.5.8.
+- V15 Backrooms generation and merchant progression remain unchanged.
+- Water/VBO/Fog/Streaming invariants remain unchanged.
+
