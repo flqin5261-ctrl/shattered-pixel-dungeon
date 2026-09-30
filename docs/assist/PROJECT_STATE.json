@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.6.7",
-    "version_code": 963,
+    "version_name": "0.6.8",
+    "version_code": 964,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.6.7-stable",
-    "development_branch": "assist-0.6.7-genesis-authority",
-    "release_code_sha": "93bb082b133e1557a3dfb48983f3f16bad4c5cf1",
+    "stable_branch": "assist-0.6.8-stable",
+    "development_branch": "assist-0.6.8-talent-progression",
+    "release_code_sha": "218e629ec060e46004c887d5e0314df0cf59fa44",
     "world_generator_version": 17
   },
   "build": {
@@ -413,6 +413,16 @@
       "linked_damage_immunity": "Hero.damage returns immediately and Hero.isInvulnerable reports true while 奇迹·世界 is equipped",
       "infinite_space": "base Backpack returns to upstream 20-slot baseline before bag modifiers; after Genesis Echo awakens capacity is max(normalCapacity, currentItems+5), guaranteeing >=5 free root slots",
       "infinite_space_ui": "WndBag root backpack is paginated while Genesis Echo is active; equipment stays visible on every page, item/free-slot pages use safe ASCII prev/next controls, and the final page still exposes the guaranteed five empty slots."
+    },
+    "talent_progression": {
+      "enabled": true,
+      "tier3_base_class_unlock_level": 12,
+      "tier3_selector": "TengusMask is automatically granted once at level 12 when subclass is NONE; player chooses the subclass normally and subclass tier-3 talents are initialized.",
+      "tier4_selector": "KingsCrown is automatically granted once at level 20 when armorAbility is null; player chooses the armor ability normally and tier-4 talents are initialized.",
+      "legacy_repair": "Existing high-level Infinite World saves receive missing selector items on world entry/refresh.",
+      "full_backpack_rule": "Milestone selector items are inserted even if normal backpack capacity is full.",
+      "normal_dungeon_compatibility": "Upstream Boss/item gates remain unchanged outside Infinite World.",
+      "player_facing_text": "Infinite World prompts describe level/milestone selection rather than second/fourth Boss drops."
     }
   },
   "current_content": {
