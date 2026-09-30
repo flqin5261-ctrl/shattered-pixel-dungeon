@@ -1796,3 +1796,8 @@ Wave 5 的 HP / damage / accuracy / defense 倍率仍接近原 0.5.11 Wave 10，
 - 证书自带可反复充能的不死图腾。致命伤时若已充满，则先于 Ankh 触发；恢复一定比例HP并短暂无敌，然后充能归零重新积累。
 - Artifact +10以上不是只改显示：effective level 已进入 Artifact.level()/buffedLvl() 的真实效果计算；此外 +11..+30 每级额外提供2.5%充能效率，+30合计+50%。
 - CRYSTAL_CHEST 不参与突破之证宝箱额外掉落，避免破坏唯一保证神器箱生命周期。
+
+
+## 36.1 最终补充
+- 突破之证“攻击伤害”不仅作用于 Hero.damageRoll，DamageWand 的伤害骰也使用同一倍率。
+- BreakthroughCertificate tier 会以温和权重加入 Infinite World dynamic mob power profile；只影响之后新生成的怪，不重算眼前已有敌人。
