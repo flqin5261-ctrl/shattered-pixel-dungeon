@@ -11,11 +11,11 @@
 
 当前开发候选：
 
-- 版本：0.5.10
-- versionCode：956
+- 版本：0.5.11
+- versionCode：957
 - Generator：V17
-- target stable：`assist-0.5.10-stable`
-- dev：`assist-0.5.10-solid-scenery`
+- target stable：`assist-0.5.11-stable`
+- dev：`assist-0.5.11-progression`
 
 当前核心已经具备：
 
@@ -1708,3 +1708,65 @@ To test physical scenery, create a new V16 Infinite World. Existing V15 saves ar
 - [ ] Streaming 仍只在 Hero.onMotionComplete() 后执行。
 - [ ] Water/VBO/Fog、absolute world coordinate、merchant persistence、spectator x8/20-cell FOV 均无回归。
 - [ ] 本版没有修改怪物强度、血量、攻击、防御、生成池或精英概率。
+
+
+# B20. 0.5.11 long-run progression regression
+
+## B20.1 Fresh start / intro
+- [ ] Fresh Infinite World starts with exactly 300 gold.
+- [ ] Normal modes retain their original starting gold.
+- [ ] First Infinite World entry shows the dedicated boundless-world introduction, not the sewer text.
+- [ ] Normal dungeon still shows the original regional introductions.
+
+## B20.2 Dynamic monster strength
+Test at several snapshots: low gear, level 30 with +5/+10, artificial +50, and post-breakthrough +80/+120.
+- [ ] Magnifier/info shows a dynamic threat level for new Infinite World mobs.
+- [ ] Newly spawned mobs become noticeably tougher with Hero level and gear.
+- [ ] High weapon/wand upgrades strongly increase enemy HP but do not by themselves maximally increase enemy damage.
+- [ ] High armor/ring defensive growth strongly increases enemy damage response.
+- [ ] Accuracy/defense rise without making ordinary attacks permanently miss.
+- [ ] Later threat tiers introduce late-game enemy families but never Bosses.
+- [ ] Existing visible mobs do not change stats when the Hero swaps equipment.
+- [ ] Dynamic loot chance rises but never exceeds certainty.
+- [ ] Dynamic EXP keeps level 30-60 progression practical.
+- [ ] Distance despawn still gives no loot, XP or kill statistics.
+
+## B20.3 Level and upgrade gates
+- [ ] Hero can reach level 30 but cannot become 31 before breakthrough.
+- [ ] Reaching level 30 automatically produces one BreakthroughToken.
+- [ ] Repeated gate checks never duplicate tokens.
+- [ ] Weapon/Armor/Ring/Wand upgrades stop at +50 pre-breakthrough.
+- [ ] Artifact visible level stops at +10 pre-breakthrough.
+- [ ] After success, Hero can progress to level 60 and stops there.
+- [ ] After success, standard equipment stops at +120.
+- [ ] After success, equipped capped artifacts continue long-run XP growth toward +30.
+- [ ] Assist equipment/artifact boosts obey the same caps.
+
+## B20.4 Breakthrough trial
+- [ ] Using token at level 30 opens a fresh 49x49 arena.
+- [ ] Arena contains scattered healing/food/utility consumables.
+- [ ] Each wave creates exactly 10 enemies.
+- [ ] Wave 1 is manageable and waves 5/8/10 are progressively harder.
+- [ ] Clearing a wave starts exactly a 30 action-value intermission.
+- [ ] Messages appear for next-wave countdown at 20, 10, 5, 4, 3, 2, 1.
+- [ ] Wave 10 clear completes the trial and returns to the original Infinite World position.
+- [ ] A second attempt after failure gets a clean arena, not the consumed prior arena.
+
+## B20.5 Failure restoration
+Before entering, note HP, inventory item counts, equipment, gold, energy, and position.
+- [ ] Intentionally die in the arena.
+- [ ] No ranking/game-over is submitted and no Ankh is consumed.
+- [ ] Hero returns alive to the original position.
+- [ ] HP/equipment/backpack/consumables match the pre-trial snapshot.
+- [ ] Gold and energy match the pre-trial snapshot.
+- [ ] A replacement BreakthroughToken exists.
+- [ ] Repeat failure more than once without corrupting the run.
+
+## B20.6 QA controls/core regression
+- [ ] Infinite WndAssist contains the +1 Hero level test button.
+- [ ] The button reaches 30 quickly but cannot bypass the breakthrough.
+- [ ] After breakthrough, the button can test levels 31-60.
+- [ ] V17 all-solid scenery still works.
+- [ ] Guaranteed artifact chest remains 1000 action-value, Hero-centered 3x3, with CrystalKey.
+- [ ] Spectator x8/20-cell FOV and Mob freeze still work.
+- [ ] Water/VBO/Fog and post-motion-only Streaming remain unchanged.
