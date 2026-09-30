@@ -278,7 +278,10 @@ public class InterlevelScene extends PixelScene {
 
 		if (mode == Mode.DESCEND && lastRegion <= 5 && !DeviceCompat.isDebug()){
 			if (Dungeon.hero == null || (loadingDepth > Statistics.deepestFloor && loadingDepth % 5 == 1)){
-					storyMessage = PixelScene.renderTextBlock(Document.INTROS.pageBody(region), 6);
+					storyMessage = PixelScene.renderTextBlock(
+							Dungeon.infiniteWorld
+									? Messages.get(InterlevelScene.class, "infinite_intro")
+									: Document.INTROS.pageBody(region), 6);
 					storyMessage.maxWidth( PixelScene.landscape() ? 180 : 125);
 					storyMessage.setPos(insets.left+(w-storyMessage.width())/2f, insets.top+(h-storyMessage.height())/2f);
 
@@ -295,7 +298,7 @@ public class InterlevelScene extends PixelScene {
 							timeLeft = fadeTime;
 
 							btnContinue.enable(false);
-							Document.INTROS.readPage(region);
+							if (!Dungeon.infiniteWorld) Document.INTROS.readPage(region);
 						}
 					};
 					btnContinue.icon(Icons.STAIRS.get());
@@ -327,7 +330,7 @@ public class InterlevelScene extends PixelScene {
 									phase = Phase.FADE_OUT;
 									timeLeft = fadeTime;
 									btnContinue.enable(false);
-									Document.INTROS.readPage(region);
+									if (!Dungeon.infiniteWorld) Document.INTROS.readPage(region);
 								}
 								return true;
 							}
