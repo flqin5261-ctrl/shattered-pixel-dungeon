@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.2",
-    "version_code": 948,
+    "version_name": "0.5.3",
+    "version_code": 949,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.2-stable",
-    "development_branch": "assist-0.5.2-discovery",
-    "release_code_sha": "bf27f1be1ad0ba23f9fa3eb5b65ff08c8e275fda",
-    "world_generator_version": 12
+    "stable_branch": "assist-0.5.3-stable",
+    "development_branch": "assist-0.5.3-merchants-liminal",
+    "release_code_sha": "d653fedf8d6b0f183053324b3882056038a7ec1d",
+    "world_generator_version": 13
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -53,15 +53,20 @@
     "liminal_macro_regions": {
       "enabled": true,
       "macro_size_chunks": 5,
-      "approximate_region_chance_percent": 15,
+      "approximate_region_chance_percent": 28,
       "start_area_exclusion_chunks": 4,
       "types": [
         "repeating_offices",
         "pool_halls",
-        "endless_hall"
+        "endless_hall",
+        "yellow_maze",
+        "service_tunnels",
+        "dark_storage"
       ],
       "legacy_v9_v11_chance_percent": 8,
-      "v12_first_unread_note_near_hero": true
+      "v12_first_unread_note_near_hero": true,
+      "legacy_v12_chance_percent": 15,
+      "v13_first_unread_note_near_hero": true
     },
     "multi_level_infinite_network": {
       "enabled": true,
@@ -92,9 +97,9 @@
     "merchants_enabled": true,
     "merchant_system": {
       "model": "deterministic persistent merchant outposts",
-      "spacing_chunks": 5,
+      "spacing_chunks": 4,
       "max_active_merchants": 4,
-      "start_area_exclusion_chunks": 3,
+      "start_area_exclusion_chunks": 2,
       "avoids_liminal_anomalies": true,
       "avoids_primary_and_secondary_infinite_roads": true,
       "stock_slots": 6,
@@ -104,13 +109,16 @@
       "merchant_is_not_subject_to_enemy_distance_despawn": true,
       "enemy_spawn_sanctuary_radius_cells": 8,
       "legacy_v11_spacing_chunks": 7,
-      "note": "V12 intentionally relaxes the old one-merchant-per-window lattice so merchants are substantially easier to encounter; route/anomaly exclusions and stock persistence remain unchanged."
+      "note": "V13 keeps merchants off anomaly/primary/secondary route chunks, but increases lattice density and makes loaded outposts visible on the map. When an unannounced outpost is within 2 chunks, a localized message tells the player a merchant is nearby.",
+      "legacy_v12_spacing_chunks": 5,
+      "loaded_outpost_map_reveal": true,
+      "nearby_hint_radius_chunks": 2
     },
     "merchants": {
       "enabled": true,
       "boss_related": false,
       "generation": "deterministic merchant outposts",
-      "spacing_chunks": 5,
+      "spacing_chunks": 4,
       "max_active_in_7x7_window": 4,
       "stock_slots": 6,
       "stock_persists_after_purchase": true,
@@ -118,10 +126,13 @@
       "immune_to_enemy_distance_despawn": true,
       "local_enemy_spawn_exclusion_radius": 8,
       "requires_new_world_for_v11": false,
-      "requires_new_world_for_v12": true
+      "requires_new_world_for_v12": false,
+      "requires_new_world_for_v13": true,
+      "loaded_outpost_map_reveal": true,
+      "nearby_hint_radius_chunks": 2
     },
     "merchant_outposts": {
-      "spacing_chunks": 5,
+      "spacing_chunks": 4,
       "max_active_shopkeepers": 4,
       "stock_slots": 6,
       "persistent_stock": true,
@@ -129,7 +140,9 @@
       "excluded_from_enemy_despawn": true,
       "enemy_spawn_exclusion_radius_cells": 8,
       "avoids_primary_and_secondary_infinite_routes": true,
-      "legacy_v11_spacing_chunks": 7
+      "legacy_v11_spacing_chunks": 7,
+      "legacy_v12_spacing_chunks": 5,
+      "loaded_outpost_map_reveal": true
     },
     "guaranteed_artifact_chest": {
       "enabled": true,
@@ -199,7 +212,10 @@
     "infinite_world_notes": [
       "Liminal_Offices",
       "Pool_Halls",
-      "Endless_Hall"
+      "Endless_Hall",
+      "Yellow_Maze",
+      "Service_Tunnels",
+      "Dark_Storage"
     ],
     "v9_balance": {
       "ambient_loot": "reduced sharply",
@@ -261,6 +277,20 @@
       "liminal_macro_chance_percent": 15,
       "anomaly_note_rule": "When entering an anomaly whose field-note page has not been collected, a visible InfiniteWorldNote is guaranteed near the hero; legacy anchor notes remain as deterministic world content.",
       "artifact_chest_rule": "At 400 positive hero action-value, exactly one guaranteed crystal artifact chest is created near the hero and persisted by world coordinates/state."
+    },
+    "v13_discovery_balance": {
+      "merchant_spacing_chunks": 4,
+      "merchant_start_exclusion_chunks": 2,
+      "merchant_loaded_outpost_map_reveal": true,
+      "merchant_nearby_hint_radius_chunks": 2,
+      "liminal_macro_chance_percent": 28,
+      "liminal_types": 6,
+      "new_liminal_types": [
+        "Yellow_Maze",
+        "Service_Tunnels",
+        "Dark_Storage"
+      ],
+      "note_rule": "All six anomaly types use the existing near-hero unread-note guarantee plus deterministic anchor notes."
     }
   },
   "hard_invariants": [
@@ -278,8 +308,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
-    "0.5.2 V12 merchants: verify the denser 5-chunk lattice is clearly discoverable without making shops feel continuous; a 7x7 window can now contain more than one outpost.",
-    "0.5.2 V12 anomaly notes: entering each unread liminal type should place a visible note within a few cells; after collection, that page must not keep respawning.",
+    "0.5.3 V13 merchant discovery: a loaded Merchant Outpost should be revealed on the map; entering within 2 chunks should emit one localized nearby-merchant hint per outpost.",
+    "0.5.3 V13 merchant density: 4-chunk lattice plus route/anomaly exclusions should make merchants easy to encounter without making every normal chunk a shop.",
+    "0.5.3 V13 liminal density: approximately 28% of 5x5 macro-regions are anomalous and the six anomaly types should all remain traversable through V10 infinite routes.",
+    "0.5.3 V13 new anomaly notes: Yellow Maze, Service Tunnels and Dark Storage must each generate/guarantee their own collectible guide page.",
     "0.5.2 V12 unique artifact chest: after 400 positive hero action-value, exactly one visible nearby CRYSTAL_CHEST should appear, grant a CrystalKey, contain one artifact, and never duplicate through streaming/save-load/revisits.",
     "0.5.2 V12 artifact chest lifecycle: opening without taking the artifact must restore an ordinary heap after streaming/save-load; taking the artifact must permanently end the unique chest.",
     "0.5.1 merchant stock: verify purchased items do not respawn after streaming or save/load.",
@@ -301,8 +333,10 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
-    "Real-device test V12 merchant density and decide whether 5-chunk spacing is comfortable or too common.",
-    "Verify V12 liminal 15% macro frequency and the near-hero unread field-note guarantee for all three anomaly types.",
+    "Real-device verify V13 merchant outposts are now actually noticeable through map reveal and the 2-chunk hint.",
+    "Tune the 4-chunk merchant lattice only if V13 becomes visibly overpopulated; do not remove the discovery hint before evaluating it.",
+    "Real-device test the 28% six-type liminal mix for variety, navigation and rendering stability.",
+    "Verify all six Infinite World field-note pages can be collected and do not repeatedly respawn after collection.",
     "Verify the 400-action unique artifact chest across spawn, open, pickup, streaming, save/load and revisit; the run must never create a second guaranteed artifact chest.",
     "Keep merchant/anomaly/artifact guarantees secondary to exploration rather than turning them into repeated reward farms.",
     "Verify merchant/stock persistence through streaming, save/load and revisits.",
