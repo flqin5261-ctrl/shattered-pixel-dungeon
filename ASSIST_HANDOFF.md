@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.1-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.2-stable`。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.1**
-- 当前 versionCode：**947**
-- 当前最新稳定分支：`assist-0.5.1-stable`
-- 当前发布代码 SHA：`e14bac5c266d6b0cad3189ace9dc7492967ac74b`
-- 当前对应开发分支：`assist-0.5.1-merchants`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 11**
+- 当前最新稳定版本：**0.5.2**
+- 当前 versionCode：**948**
+- 当前最新稳定分支：`assist-0.5.2-stable`
+- 当前发布代码 SHA：`bf27f1be1ad0ba23f9fa3eb5b65ff08c8e275fda`
+- 当前对应开发分支：`assist-0.5.2-discovery`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 12**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -109,7 +109,7 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.5.1-stable` 和最新开发分支。
+4. 检查最新稳定分支 `assist-0.5.2-stable` 和最新开发分支。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
    - `assist-0.5.2-xxxxx`
 6. **不要覆盖历史 stable 分支。**
@@ -1373,3 +1373,38 @@ Generator V11 新增稀有、固定世界坐标的商人据点。
 - 商人不受普通怪物距离 despawn
 - 普通怪不会在商人约 8 格内自然刷新
 - 商店不会生成在 V10 primary/secondary infinite route 上
+
+# 25. 0.5.2 / Generator V12 — 可发现性与唯一神器箱
+
+本版依据 0.5.1 实机反馈调整“能不能真实遇到内容”，不是重做商人或异境系统。
+
+## 25.1 商人
+- V12 Merchant lattice：5 Chunk（V11 老世界仍为 7）。
+- 出生排除范围：约 3 Chunk。
+- 仍避开 Liminal anomaly、Primary spine、Secondary infinite route。
+- 因密度提高，旧的“7×7 active window 绝对最多 1 个商人”不再是 V12 不变量；理论上同窗最多可覆盖 4 个 lattice 点，实际受排除规则限制。
+- 交易、6 槽库存、购买持久化、逃跑永久关闭、8 格怪物刷新安全区均保留。
+
+## 25.2 Liminal 与 Field Notes
+- V12 anomaly macro 概率约 15%；V9～V11 继续 8%。
+- 原固定 Anchor Note 不删除。
+- 首次进入一种尚未收录的异常空间时，会在 Hero 附近放置可见 InfiniteWorldNote，保证玩家能发现并收录说明。
+- 对应 Guide 页面收录后，近身补偿停止。
+
+## 25.3 唯一神器箱
+- Hero 正向 action-value 累计到 400 后触发。
+- 整局只允许一个保证神器箱。
+- 在 Hero 附近 2～5 格生成，必要时放宽到 7 格。
+- 类型为 CRYSTAL_CHEST，强制 seen / visited / mapped，并给予 1 把 CrystalKey。
+- 内容为 1 件 Artifact，优先从剩余神器牌组中选择并消耗唯一性。
+- InfiniteWorldState 保存 action-value、世界坐标、神器 index 和 0/1/2/3 生命周期。
+- Streaming / Save-Load 只能恢复同一个箱，不能重新抽奖或生成第二个箱。
+
+## 25.4 测试要求
+V12 地形概率发生变化，因此要完整体验商人/异境密度必须重新开始一个 V12 世界。
+主要实机观察：
+- 商店现在是否仍过少，还是已经过密；
+- anomaly 15% 的体感；
+- 三种异境纸条是否都能稳定看到；
+- 400 action-value 保证神器箱是否唯一、可见、可开；
+- 开箱未拾取与拾取后的 Streaming / Save-Load 状态。
