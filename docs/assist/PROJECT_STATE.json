@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.6.5",
-    "version_code": 961,
+    "version_name": "0.6.6",
+    "version_code": 962,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.6.5-stable",
-    "development_branch": "assist-0.6.5-breakthrough-polish",
-    "release_code_sha": "ac918f05171075c184cdc1ffe4cd799e8dff4b77",
+    "stable_branch": "assist-0.6.6-stable",
+    "development_branch": "assist-0.6.6-genesis-echo",
+    "release_code_sha": "a96e785dcb49e518b8f9efe0aa088e8dd4589825",
     "world_generator_version": 17
   },
   "build": {
@@ -336,7 +336,7 @@
       "chest_rule": "extra supply roll applies only to normal and locked chests; unique crystal artifact chests are never modified",
       "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability",
       "attack_scope": "certificate damage multiplier applies to normal Hero weapon/unarmed damage and DamageWand rolls",
-      "dynamic_enemy_response": "certificate tier contributes moderate progression power to future mob snapshots so the permanent blessing does not make post-breakthrough ecology static",
+      "dynamic_enemy_response": "lv30/40/50 Seal contributes moderate power to future mob snapshots; lv60 Miracle Echo contributes 0 and Genesis Echo/copy/permanent kill growth are excluded",
       "status_ui": {
         "placement": "existing hero BuffIndicator directly under the top-left HP bar",
         "icon": "AMULET icon with certificate tier text 30/40/50/60; tier text is forced visible in compact mobile UI",
@@ -349,10 +349,10 @@
         "experience": "+5/+8/+12/+15%",
         "balance_note": "no flat damage reduction or permanent immunity was added; HP/regen/revive already provide strong defensive scaling"
       },
-      "display_name": "破界之印-LV30/LV40/LV50/LV60",
+      "display_name": "破界之印-LV30 / LV40 / LV50; at Hero lv60 it ascends to 奇迹·回响",
       "strength": "+2/+4/+6/+8",
       "evasion": "+10/+16/+24/+32%",
-      "experience": "+15/+25/+40/+60%",
+      "experience": "+15/+25/+40%; removed entirely at lv60",
       "movement": "+8/+12/+18/+25%",
       "damage_reduction": "8/12/16/20% non-hunger damage reduction",
       "status_resistance": "15/25/35/50% additional resistance to common negative statuses",
@@ -363,7 +363,29 @@
       "permanent_immunity": "one random immunity from Burning/Poison/Paralysis/Vertigo/Blindness/Cripple/Weakness/Vulnerability/Slow/Charm/Hex; persisted while equipped",
       "immunity_reroll": "using ScrollOfUpgrade on the Seal consumes the scroll and rerolls to a different immunity without changing Seal tier",
       "shop_ui": "buy window shows a grey struck-through original price and a green Seal discounted price",
-      "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly"
+      "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly",
+      "backpack": "base backpack 25 slots; Seal adds +5/+8/+12/+16 at lv30/40/50/60; lv60 Genesis resonance copies the +16 layer while Miracle Echo is equipped",
+      "overflow_rule": "when Seal/Miracle Echo is unequipped and capacity shrinks, ordinary items are spilled first to the Hero cell; no overflow item is deleted"
+    },
+    "genesis_echo": {
+      "unlock": "automatically and permanently awakens when Hero reaches lv60 and the Seal becomes 奇迹·回响; legacy lv60 saves receive it through certificate sync",
+      "persistent_buff": "创世回响, visible under the HP bar with an infinity badge; revivePersists and remains after Miracle Echo is unequipped",
+      "omitted_for_now": [
+        "no 500-action-value choose-any-item system",
+        "no 天降横财 periodic random-item system"
+      ],
+      "permanent_effects": [
+        "instant-death immunity",
+        "forced-teleport immunity while ordinary generic/external teleport is used; the Hero's own Teleportation Scroll remains voluntary",
+        "control immunity: Paralysis, Roots, Vertigo, Charm, Terror, Amok, Drowsy, Sleep, Slow, Chill, Frost",
+        "all shop purchases cost 0",
+        "each purchase has an uncapped geometric roll for extra identical copies",
+        "each enemy kill permanently adds exactly +1 max HP and +1 strength"
+      ],
+      "miracle_link": "while 奇迹·回响 is equipped, Genesis Echo copies a second complete layer of its passive stats; removing the item removes only the copied layer",
+      "monster_scaling": "Miracle Echo, Genesis Echo, copied layer, and kill-growth HP/STR are explicitly excluded from dynamic mob power snapshots",
+      "level59_to_60_xp": 3600,
+      "level60_exp_bonus": "none"
     }
   },
   "current_content": {
@@ -682,6 +704,16 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.6.6 level 59->60 requires 3600 XP in Infinite World; lv50 +40% XP still helps before reaching 60, but Miracle Echo has no XP bonus after 60.",
+    "0.6.6 lv60 name changes from 破界之印-LV50 to 奇迹·回响 and permanently grants 创世回响.",
+    "0.6.6 Genesis Echo remains after Miracle Echo is unequipped; only the copied Miracle layer disappears.",
+    "0.6.6 Genesis Echo blocks instant-death sources and generic forced teleport, while the Hero's own Teleportation Scroll remains usable.",
+    "0.6.6 Genesis Echo is immune to the listed crowd-control classes.",
+    "0.6.6 shops cost 0 with Genesis Echo; bonus purchase copies use an uncapped geometric roll and overflow drops safely if inventory is full.",
+    "0.6.6 every actual enemy death (not Infinite World distance despawn) grants exactly +1 permanent max HP and +1 permanent strength.",
+    "0.6.6 base backpack capacity is 25; Seal adds +5/+8/+12/+16, and linked Genesis Echo copies the lv60 +16 capacity layer.",
+    "0.6.6 unequipping the Seal/Miracle Echo safely spills excess backpack items to the Hero location instead of deleting them.",
+    "0.6.6 dynamic monster scaling does not include Miracle Echo, Genesis Echo, the copied layer, or permanent kill-growth stats.",
     "0.6.5 WndAssist: one-click breakthrough completion works both before entering the arena and while already inside it.",
     "0.6.5 Seal reroll: ScrollOfUpgrade can select the Seal, consumes the scroll, changes the immunity to a different supported negative effect, and does not change Seal tier.",
     "0.6.5 shop UI: buying with the Seal equipped shows crossed-out original price plus green discounted price while purchase uses the discounted amount.",
@@ -770,6 +802,11 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device test reaching lv60 with QA controls and verify Miracle Echo + Genesis Echo appearance and descriptions.",
+    "Test Miracle Echo equip/unequip with a deliberately overfilled backpack and verify every excess item survives on the ground.",
+    "Test several shops at lv60: free price display, purchase, random extra copies, and full-backpack overflow.",
+    "Kill several ordinary mobs at lv60 and verify max HP/STR each rise exactly by one per enemy and persist after save/load.",
+    "Test control and forced-teleport immunity without breaking the Hero's voluntary Teleportation Scroll.",
     "Real-device verify all Seal LV30/LV40/LV50/LV60 stat lines and HUD text match actual calculations.",
     "Test ScrollOfUpgrade immunity reroll repeatedly and verify save/load preserves the selected immunity.",
     "Test shop crossed-out original price layout on narrow Android screens.",

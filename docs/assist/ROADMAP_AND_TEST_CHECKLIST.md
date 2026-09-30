@@ -1831,3 +1831,23 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] ScrollOfUpgrade rerolls to a different immunity and does not raise Seal tier.
 - [ ] Unequipping Seal immediately removes immunity, DR, resistance, sensing and all other Seal effects.
 - [ ] Shop buy UI shows struck-through original price and green discounted price on Android portrait layout.
+
+
+# B25. 0.6.6 Miracle / Genesis regression
+
+- [ ] Hero 59->60 requires 3600 XP.
+- [ ] At 60, item title is 奇迹·回响 and EXP bonus line is absent.
+- [ ] 创世回响 appears under HP and persists after Miracle Echo is unequipped.
+- [ ] Re-equipping Miracle Echo restores the copied stat layer.
+- [ ] Genesis Echo detail lists the copied Miracle layer line by line.
+- [ ] Instant-death test does not consume Ankh or Undying Totem.
+- [ ] Trap/enemy forced teleport is blocked; Hero Teleportation Scroll still works.
+- [ ] Paralysis/Roots/Vertigo/Charm/Terror/Amok/Drowsy/Sleep/Slow/Chill/Frost do not control the Hero.
+- [ ] Shop price is 0 with Genesis Echo.
+- [ ] Repeated free purchases sometimes grant extra identical copies; no fixed extra-copy cap exists.
+- [ ] Each actual enemy kill gives exactly +1 max HP and +1 STR; distance despawn gives neither.
+- [ ] Save/load preserves Genesis Echo unlock and permanent kill bonuses.
+- [ ] Base backpack capacity is 25.
+- [ ] Seal slots are +5/+8/+12/+16; linked lv60 adds another copied +16.
+- [ ] Unequip an overfilled Miracle Echo and verify every overflow item appears at the Hero rather than vanishing.
+- [ ] Dynamic mobs do not scale from Miracle Echo, Genesis Echo, copied layer, or permanent kill growth.

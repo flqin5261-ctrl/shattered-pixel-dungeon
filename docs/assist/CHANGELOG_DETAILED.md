@@ -2495,3 +2495,25 @@ Changes:
 - Added one persisted random permanent debuff immunity while equipped.
 - Scroll of Upgrade can reroll the Seal immunity to another supported effect without changing Seal tier.
 - Shop buy window now shows struck-through original price plus discounted Seal price.
+
+
+# 0.6.6 — Miracle Echo / Genesis Echo
+
+Version:
+- versionName: 0.6.6
+- versionCode: 962
+- dev: assist-0.6.6-genesis-echo
+- target stable: assist-0.6.6-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Changes:
+- Hero lv59->60 Infinite World XP requirement raised to 3600.
+- lv60 Seal becomes 奇迹·回响 / Miracle Echo.
+- Removed the lv60 experience-gain bonus.
+- Added permanent 创世回响 / Genesis Echo buff at lv60.
+- Genesis Echo: instant-death immunity, forced-teleport immunity, broad crowd-control immunity, free shops, uncapped random extra purchase copies, +1 permanent max HP and +1 permanent STR per enemy kill.
+- While Miracle Echo is equipped, Genesis Echo copies a second full layer of Miracle Echo passive bonuses.
+- Miracle/Genesis bonuses and kill-growth stats do not feed dynamic monster scaling.
+- No 500-action item-choice feature and no 天降横财 in this release.
+- Base Backpack raised to 25; Seal gives +5/+8/+12/+16 capacity, with the lv60 +16 layer copied by linked Genesis Echo.
+- Capacity loss spills excess items to the Hero instead of deleting them.

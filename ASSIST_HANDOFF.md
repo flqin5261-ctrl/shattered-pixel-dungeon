@@ -1887,3 +1887,36 @@ WndTradeItem 在 Seal 折扣生效时显示：
 Potion.drink / Scroll.execute 在同步效果应用期间开启 Seal consumable context。
 Buff.append/affect/prolong 对 Hero 的正面持续 buff 应用 Seal duration multiplier；常见负面效果不被延长。
 Wand.WandCharger 自然恢复 charge 时再乘 Seal wandChargeMultiplier。
+
+
+# 39. 0.6.6 — 奇迹·回响与创世回响
+
+## 39.1 LV60 最终升格
+- Hero 59 -> 60 在 Infinite World 中需要 3600 XP。
+- LV30/40/50 仍保留 +15/+25/+40% EXP；到 LV60 后 EXP 加成完全移除。
+- 破界之印在 Hero LV60 时不再显示“破界之印-LV60”，正式改名为“奇迹·回响”。
+- Miracle Echo / Genesis Echo / Genesis copied layer / Genesis kill-growth stats 都不进入 dynamic mob power profile。
+
+## 39.2 创世回响
+奇迹·回响升格时永久获得可见 Buff“创世回响”。
+- revivePersists；取下奇迹·回响不会移除创世回响。
+- 免疫即死类直接死亡来源。
+- 免疫普通外部/强制 teleport；Hero 自己使用 Teleportation Scroll 仍然允许。
+- 免控：Paralysis / Roots / Vertigo / Charm / Terror / Amok / Drowsy / Sleep / Slow / Chill / Frost。
+- 商店购买价 = 0。
+- 每次购买后独立进行无固定上限的 geometric extra-copy roll。
+- 每个真实敌人死亡永久 +1 max HP、+1 STR；Infinite World distance despawn 不触发。
+- 本版明确不实现“每500行动值自选物品”，也不实现“天降横财”。
+
+## 39.3 奇迹共鸣复制层
+奇迹·回响处于装备状态时，创世回响额外复制一整套奇迹·回响被动属性。
+- 百分比 multiplier 以两层实际叠加；
+- flat bonus（STR、vision、search radius、backpack slots）复制一次；
+- item 被取下后复制层即时消失，但创世回响永久能力继续存在。
+- Genesis Echo 详情页逐行列出被复制的一整套属性。
+
+## 39.4 背包
+- base Backpack: 20 -> 25。
+- Seal capacity bonus: LV30 +5 / LV40 +8 / LV50 +12 / Miracle Echo +16。
+- Miracle Echo + Genesis linked 时，再复制 +16，所以 LV60 装备时共有 +32 Seal-derived slots。
+- unequip 后重新计算容量；若超载，优先把普通非 unique、非 Bag 物品移到 Hero 所在格，再处理其他非 Seal 物品；绝不直接删除。

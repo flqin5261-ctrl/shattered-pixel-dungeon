@@ -1984,3 +1984,17 @@ Road and readability guarantees have priority over target prop count.
 - Consumable-duration boost uses a bounded synchronous context around Potion.drink / Scroll.doRead; it must never lengthen supported negative effects.
 - Secret sensing augments normal Hero.search and therefore still requires searchable/visible geometry; do not turn it into global map reveal.
 - Shopkeeper.baseSellPrice is the authoritative undiscounted value; purchase logic still uses Shopkeeper.sellPrice.
+
+
+# 0.6.6 Miracle / Genesis invariants
+
+- Internal class BreakthroughCertificate remains unchanged for save compatibility; only the lv60 user-facing name becomes 奇迹·回响.
+- GenesisEcho is a separate persistent Buff and must never be detached when Miracle Echo is merely unequipped.
+- GenesisEcho permanent effects do not require Miracle Echo to remain equipped.
+- The copied Miracle layer requires both GenesisEcho active and the lv60 certificate actually equipped.
+- No Miracle/Genesis/copy/kill-growth contribution may be added to InfiniteWorldProgression.powerProfile().
+- Infinite World distance despawn must never call GenesisEcho.onEnemySlain().
+- Permanent kill HP is applied after percentage HP multipliers so one enemy is exactly +1 max HP.
+- Generic forced teleport is blocked; explicit player Teleportation Scroll fallback passes ScrollOfTeleportation.class so voluntary teleport remains legal.
+- Backpack capacity shrink must spill items, never silently delete them.
+- 0.6.6 does not implement the deferred 500-action item selector or 天降横财.
