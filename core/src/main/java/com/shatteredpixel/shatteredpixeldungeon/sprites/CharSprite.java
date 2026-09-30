@@ -220,11 +220,24 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public void move( int from, int to ) {
 		turnTo( from , to );
 
-		play( run );
+		boolean infiniteSpectator = ch == Dungeon.hero
+				&& com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel.assistSpectatorActive();
+
+		if (infiniteSpectator) {
+			// Spectator QA reads as free-flight: no run-cycle, just an idle pose
+			// gliding between cells with the native levitation particle effect.
+			play( idle );
+			add( State.LEVITATING );
+		} else {
+			play( run );
+		}
 		
 		float interval = moveInterval;
-		if (ch == Dungeon.hero && SPDSettings.assistSpeed()) {
-			interval = moveInterval / Math.max(0.01f, SPDSettings.assistSpeedMultiplier());
+		if (ch == Dungeon.hero) {
+			float visualMultiplier = SPDSettings.assistSpeed()
+					? SPDSettings.assistSpeedMultiplier() : 1f;
+			if (infiniteSpectator) visualMultiplier = Math.max(8f, visualMultiplier);
+			interval = moveInterval / Math.max(0.01f, visualMultiplier);
 		}
 		motion = new PosTweener( this, worldToCamera( to ), interval );
 		motion.listener = this;
