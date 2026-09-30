@@ -31,7 +31,6 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -82,13 +81,6 @@ public class ScrollOfUpgrade extends InventoryScroll {
 		upgrade( curUser );
 
 		Degrade.detach( curUser, Degrade.class );
-
-		if (item instanceof BreakthroughCertificate) {
-			((BreakthroughCertificate)item).rerollImmunity(curUser);
-			Statistics.upgradesUsed++;
-			Catalog.countUse(item.getClass());
-			return item;
-		}
 
 		//logic for telling the user when item properties change from upgrades
 		//...yes this is rather messy
