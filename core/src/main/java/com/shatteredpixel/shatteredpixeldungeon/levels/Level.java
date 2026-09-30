@@ -1383,6 +1383,13 @@ public abstract class Level implements Bundlable {
 			if (c instanceof Hero){
 				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
 				viewDist *= EyeOfNewt.visionRangeMultiplier();
+
+				// Infinite World spectator mode is a map QA tool, not normal
+				// gameplay. Use the shadow caster's full supported radius so the
+				// tester can inspect far more terrain per movement step.
+				if (InfiniteWorldLevel.assistSpectatorActive()) {
+					viewDist = ShadowCaster.MAX_DISTANCE;
+				}
 			}
 			
 			ShadowCaster.castShadow( cx, cy, width(), fieldOfView, blocking, Math.round(viewDist) );
