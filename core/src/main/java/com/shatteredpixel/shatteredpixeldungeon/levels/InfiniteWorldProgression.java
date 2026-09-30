@@ -423,7 +423,7 @@ public final class InfiniteWorldProgression {
         if (success) {
             st.breakthroughCompleted = true;
             grantBreakthroughCertificate(restored);
-            GLog.p("突破试炼完成！你获得了突破之证-lv30。等级上限提升至60级，装备强化上限提升至+120，神器上限提升至+30。");
+            GLog.p("突破试炼完成！你获得了破界之印-LV30。等级上限提升至60级，装备强化上限提升至+120，神器上限提升至+30。");
         } else {
             st.breakthroughCompleted = false;
             issueBreakthroughToken(restored);
