@@ -1960,3 +1960,14 @@ Road and readability guarantees have priority over target prop count.
 - Slime must never appear after wave 1.
 - Wave 1 may contain at most one Slime, with only a 25% chance in its final spawn slot.
 - Trial failure/success snapshot restore, branch-99 clean regeneration, level-cap unlocks and non-lethal failure semantics remain unchanged.
+
+
+# 0.5.13 certificate invariants
+
+- BreakthroughCertificate has its own Belongings field and WndBag equipment slot. Never implement it by occupying artifact/misc/ring.
+- The certificate is progression-unique, non-droppable and may be unequipped into the backpack.
+- All bonuses must be conditional on BreakthroughCertificate.equipped(hero); removing it must remove effects without save reload.
+- Normal FOV bonus is applied in Level.updateFieldOfView before spectator override so it expands real gameplay exploration and visited reveal.
+- Revival must not interfere with breakthrough-trial failure interception; trial failure remains rollback, while certificate revival is for normal play after breakthrough.
+- Quickslot rollback must restore pre-trial layout, rebind to restored item objects, and clear unresolved placeholders. Trial-created item references must never survive rollback.
+- Crystal artifact chests are excluded from certificate chest-bonus injection.
