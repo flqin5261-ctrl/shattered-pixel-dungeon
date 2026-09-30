@@ -1683,3 +1683,72 @@ Generator V16 对大型装饰使用原版 Terrain.CUSTOM_DECO：
 - V17 不再通过“替换成可穿装饰”来处理原点/商人区；所有实际放出的装饰都必须作为真实 blocker 通过安全检查。
 - 旧 V16 存档继续保持 V16 规则：蘑菇、蕨类、装饰火把、碎石仍可穿，避免旧路线被突然改写。
 - 0.5.10 不修改怪物血量、攻击、防御、生成池、精英概率或生态节奏。
+
+
+# 34. 0.5.11 — 长期成长、动态怪物与30级突破试炼
+
+0.5.11 在 0.5.10 V17 实体环境基础上加入 Infinite World 专属长期成长。WORLD_GEN_VERSION 仍为 17；本版没有改变 Chunk 地形生成公式或 Streaming 时机。
+
+## 34.1 开局与背景
+- 新建 Infinite World 初始金币 = 300；普通模式仍使用原版初始金币。
+- 首次进入无界模式不再显示原版下水道介绍。
+- 新介绍明确：这里是无楼层终点的持久无限世界，普通地形、遗迹和 Backrooms-inspired district 被缝合在一起，商人/资源/危险分布其中，敌人会随角色成长。
+
+## 34.2 角色成长与强化上限
+- 突破前：Hero 最高 30 级；Weapon / Armor / Ring / Wand 最高 +50；Artifact 最高 +10。
+- 到达 30 级时自动发放唯一 BreakthroughToken。未突破时经验不会把 Hero 推过 30。
+- 突破后：Hero 最高 60 级；Weapon / Armor / Ring / Wand 最高 +120；Artifact 最高 +30。
+- 普通非 Infinite World 仍使用原版 Hero.MAX_LEVEL=30 和原版装备逻辑。
+- Artifact 在原生 +10 等效等级之后使用独立 overlevel 记录；突破后，已到原生上限且正在装备的神器会随 Hero XP 继续向 +30 成长，约每 1.5 个 Hero 等级的经验获得 +1 visible artifact level。Assist 强化也遵循 +10/+30 门槛。
+
+## 34.3 动态怪物强度
+每只 Infinite World 敌人在生成瞬间读取 Hero 当前：
+- level；
+- 最强 Weapon / Armor / Wand 强化；
+- 两枚最强 Ring 强化；
+- Artifact 数量和最高 visible level。
+
+生成后强度锁定，换装备不会让眼前怪物瞬间重算。
+
+动态内容：
+- threat level 1..60，并显示在怪物信息里；
+- HP 主要跟随 Hero 的 offensive power；
+- damage 主要跟随 Hero 的 defensive power，避免只强化武器却导致怪物伤害爆炸；
+- accuracy / defense 随总成长中速提高；
+- late threat levels 会逐步引入 Warlock / Monk / Golem / Succubus / Scorpio 等，但仍不加入 Boss；
+- EXP 设置与 threat level 相关的最低值，保证 30..60 长线升级不过慢；
+- 原始掉落概率乘动态 reward scale，最高约 2.25x，最终概率仍不超过 100%。
+
+高强化装备是远超原版的数值区间，因此 HP/damage 曲线刻意能覆盖 +50 和 +120，而不是只做 2x~3x 的浅放大。
+
+## 34.4 30级突破试炼
+达到 30 后可自由决定何时使用 BreakthroughToken。
+
+使用后：
+- 保存进入前 Hero 完整 Bundle、金币、能量、原 Infinite World depth/branch/pos；
+- 进入独立 branch 99 的 49×49 空旷试炼场；
+- 场内零散放置治疗药水、食物、隐形药水和实用卷轴；
+- 共 10 波，每波固定 10 个敌人；
+- 每波敌人池和倍率递增；末波混合 5 个高阶威胁 + 5 个中阶敌人，避免一次塞满十个远程高阶怪；
+- 一波清空后等待 30 action-value，再生成下一波；
+- 20/10/5/4/3/2/1 有倒计时消息。
+
+失败：
+- Hero.die() 在试炼场被提前拦截，不走 Ankh/真正死亡流程；
+- 旧 Hero 临时保持 alive，防止 Char.attack() 在调用栈返回后继续 Dungeon.fail()；
+- 恢复进入试炼前 Hero/背包/装备/消耗品/HP、金币、能量；
+- 返回原 Infinite World 坐标；
+- 重新发放 BreakthroughToken，直到成功。
+
+成功：
+- 同样恢复挑战前损耗并返回原位置；
+- 不再发信物；
+- unlock level60 / +120 equipment / +30 artifact。
+
+## 34.5 QA
+WndAssist 在 Infinite World 中新增“测试：角色升1级”按钮。
+- 正常阶段每点一次提升 1 Hero level；
+- 30级未突破时不会作弊越过门槛，而是提示/发放挑战信物；
+- 成功后可继续测试到 60。
+
+0.5.11 不能破坏：V17 实体装饰、1000 action-value 3×3 唯一神器箱、spectator x8/20 FOV、Mob distance despawn、VBO/Water/Fog/Streaming invariants。
