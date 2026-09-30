@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.5-stable",
     "development_branch": "assist-0.6.5-breakthrough-polish",
-    "release_code_sha": "2ab689931df0ab6c7eff9e539a8a0a815568b0b6",
+    "release_code_sha": "ac918f05171075c184cdc1ffe4cd799e8dff4b77",
     "world_generator_version": 17
   },
   "build": {
