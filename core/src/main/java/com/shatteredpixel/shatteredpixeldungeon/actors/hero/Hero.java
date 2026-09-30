@@ -2351,6 +2351,7 @@ public class Hero extends Char {
 	public boolean add( Buff buff ) {
 
 		if (GenesisEcho.blocksNegativeBuff(this, buff)) {
+			GenesisEcho.showImmunityFeedback(this, buff.getClass());
 			return false;
 		}
 
