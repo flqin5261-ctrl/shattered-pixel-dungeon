@@ -78,6 +78,51 @@ public class GenesisEcho extends Buff {
         return miracleLinked(hero);
     }
 
+    private static boolean controlClass(Class<?> cls) {
+        return cls != null && (
+                Paralysis.class.isAssignableFrom(cls)
+                || Roots.class.isAssignableFrom(cls)
+                || Vertigo.class.isAssignableFrom(cls)
+                || Blindness.class.isAssignableFrom(cls)
+                || Daze.class.isAssignableFrom(cls)
+                || Cripple.class.isAssignableFrom(cls)
+                || Charm.class.isAssignableFrom(cls)
+                || Terror.class.isAssignableFrom(cls)
+                || Amok.class.isAssignableFrom(cls)
+                || Drowsy.class.isAssignableFrom(cls)
+                || Sleep.class.isAssignableFrom(cls)
+                || Slow.class.isAssignableFrom(cls)
+                || Chill.class.isAssignableFrom(cls)
+                || Frost.class.isAssignableFrom(cls));
+    }
+
+    private static boolean curseClass(Class<?> cls) {
+        return cls != null && (
+                Burning.class.isAssignableFrom(cls)
+                || Poison.class.isAssignableFrom(cls)
+                || Bleeding.class.isAssignableFrom(cls)
+                || Corrosion.class.isAssignableFrom(cls)
+                || Ooze.class.isAssignableFrom(cls)
+                || Weakness.class.isAssignableFrom(cls)
+                || Vulnerable.class.isAssignableFrom(cls)
+                || Degrade.class.isAssignableFrom(cls)
+                || Hex.class.isAssignableFrom(cls)
+                || Doom.class.isAssignableFrom(cls));
+    }
+
+    public static void cleanseBlockedEffects(Hero hero) {
+        if (hero == null || !active(hero)) return;
+        boolean linked = miracleLinked(hero);
+
+        for (Buff buff : hero.buffs()) {
+            if (buff instanceof GenesisEcho) continue;
+            Class<?> cls = buff.getClass();
+            if (controlClass(cls) || (linked && (curseClass(cls) || buff.type == buffType.NEGATIVE))) {
+                buff.detach();
+            }
+        }
+    }
+
     @Override
     public boolean act() {
         spend(TICK);
@@ -125,7 +170,6 @@ public class GenesisEcho extends Buff {
                 Math.round((1f-seal.hungerMultiplier())*100f),
                 Math.round((seal.goldMultiplier()-1f)*100f),
                 Math.round((seal.speedMultiplier()-1f)*100f),
-                seal.backpackBonus(),
                 seal.visionBonus(),
                 seal.searchDistanceBonus(),
                 Math.round(seal.searchChanceBonus()*100f),
@@ -147,6 +191,7 @@ public class GenesisEcho extends Buff {
         st.genesisEchoUnlocked = true;
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
+        cleanseBlockedEffects(hero);
         if (first) {
             GLog.p("奇迹·世界完成升格——常驻权能「创世回响」已经觉醒。");
         }
@@ -159,6 +204,7 @@ public class GenesisEcho extends Buff {
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
         }
+        if (st.genesisEchoUnlocked) cleanseBlockedEffects(hero);
     }
 
     public static boolean miracleLinked(Hero hero) {
