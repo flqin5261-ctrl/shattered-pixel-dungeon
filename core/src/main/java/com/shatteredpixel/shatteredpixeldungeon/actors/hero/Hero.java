@@ -1786,7 +1786,7 @@ public class Hero extends Char {
 			interrupt();
 		}
 
-		visibleEnemies = visible;
+		visibleEnemies = spectatorTest ? new ArrayList<>() : visible;
 
 		//we also scan for blob landmarks here
 		for (Blob b : Dungeon.level.blobs.values().toArray(new Blob[0])){
