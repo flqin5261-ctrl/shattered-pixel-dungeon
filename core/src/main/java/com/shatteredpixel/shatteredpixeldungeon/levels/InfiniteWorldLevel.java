@@ -43,9 +43,11 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
 import com.watabou.utils.BArray;
@@ -99,6 +101,7 @@ public class InfiniteWorldLevel extends Level {
     // bring an outpost into the loaded window instead of missing every shop row.
     private static final int MERCHANT_SPACING_CHUNKS = 7;
     private static final int MERCHANT_SPACING_CHUNKS_V12 = 5;
+    private static final int MERCHANT_SPACING_CHUNKS_V13 = 4;
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
 
@@ -564,6 +567,7 @@ public class InfiniteWorldLevel extends Level {
                 Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
 
         ensureV12AnomalyNoteNearby(hero);
+        ensureV13MerchantDiscovery(hero);
         pruneInfiniteWorldMobs();
     }
 
@@ -884,6 +888,7 @@ public class InfiniteWorldLevel extends Level {
 
         rebaseInfiniteWorldMobs(shiftedCellsX, shiftedCellsY);
         ensureV11Shopkeeper(true);
+        ensureV13MerchantDiscovery(hero);
 
         hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
         hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
@@ -1576,11 +1581,13 @@ public class InfiniteWorldLevel extends Level {
             return false;
         }
 
-        // V12 moves merchants closer to normal exploration routes. V11 keeps the
-        // original opening buffer and seven-chunk cadence for save compatibility.
-        int spacing = state().generatorVersion >= 12
-                ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS;
-        int startBuffer = state().generatorVersion >= 12 ? 3 : 4;
+        // V13 makes outposts substantially easier to encounter and pairs the denser
+        // lattice with an explicit nearby-outpost discovery hint. Older worlds keep
+        // their exact cadence for deterministic save compatibility.
+        int spacing = state().generatorVersion >= 13 ? MERCHANT_SPACING_CHUNKS_V13
+                : (state().generatorVersion >= 12 ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS);
+        int startBuffer = state().generatorVersion >= 13 ? 2
+                : (state().generatorVersion >= 12 ? 3 : 4);
         if (Math.max(Math.abs(cx), Math.abs(cy)) <= startBuffer) return false;
 
         int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)spacing);
@@ -1588,6 +1595,72 @@ public class InfiniteWorldLevel extends Level {
 
         return Math.floorMod(cx - offsetX, spacing) == 0
                 && Math.floorMod(cy - offsetY, spacing) == 0;
+    }
+
+
+    private void ensureV13MerchantDiscovery(Hero hero) {
+        if (hero == null || state().generatorVersion < 13) return;
+
+        int heroCx = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int heroCy = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        boolean announced = false;
+
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (!(mob instanceof InfiniteWorldShopkeeper)) continue;
+
+            InfiniteWorldShopkeeper shop = (InfiniteWorldShopkeeper)mob;
+            int cx = shop.shopChunkX();
+            int cy = shop.shopChunkY();
+            int chunkDistance = Math.max(Math.abs(cx - heroCx), Math.abs(cy - heroCy));
+
+            if (chunkDistance <= HALF_WINDOW) {
+                revealV13MerchantOutpost(cx, cy);
+            }
+
+            if (chunkDistance <= 2) {
+                long hintKey = v11MerchantObjectKey(cx, cy, 0x63F1);
+                if (state().objectState(hintKey) == 0) {
+                    state().setObjectState(hintKey, 1);
+                    if (!announced) {
+                        GLog.i(Messages.get(this, "merchant_nearby"));
+                        announced = true;
+                    }
+                }
+            }
+        }
+    }
+
+    private void revealV13MerchantOutpost(int cx, int cy) {
+        int chunkLocalX = (cx - (state().centerChunkX - HALF_WINDOW)) * CHUNK_SIZE;
+        int chunkLocalY = (cy - (state().centerChunkY - HALF_WINDOW)) * CHUNK_SIZE;
+        if (chunkLocalX < 0 || chunkLocalX >= width()
+                || chunkLocalY < 0 || chunkLocalY >= height()) return;
+
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int left = chunkLocalX + spec[0];
+        int top = chunkLocalY + spec[1];
+        int right = chunkLocalX + spec[2];
+        int bottom = chunkLocalY + spec[3];
+
+        for (int y = Math.max(0, top - 1); y <= Math.min(height() - 1, bottom + 1); y++) {
+            for (int x = Math.max(0, left - 1); x <= Math.min(width() - 1, right + 1); x++) {
+                int cell = x + y * width();
+                mapped[cell] = true;
+                state().markMapped(worldKeyForLocalCell(cell));
+            }
+        }
+
+        for (int slot = 0; slot < MERCHANT_STOCK_SLOTS; slot++) {
+            int cell = v11MerchantStockCell(cx, cy, chunkLocalX, chunkLocalY, slot);
+            Heap heap = cell >= 0 ? heaps.get(cell) : null;
+            if (heap != null && heap.type == Heap.Type.FOR_SALE) heap.seen = true;
+        }
+
+        int fogLeft = Math.max(0, left - 2);
+        int fogTop = Math.max(0, top - 2);
+        int fogRight = Math.min(width(), right + 3);
+        int fogBottom = Math.min(height(), bottom + 3);
+        GameScene.updateFog(fogLeft, fogTop, fogRight - fogLeft, fogBottom - fogTop);
     }
 
     private long v11MerchantObjectKey(int cx, int cy, int salt) {
@@ -2286,7 +2359,10 @@ public class InfiniteWorldLevel extends Level {
         switch (anomaly) {
             case 1: return "Liminal_Offices";
             case 2: return "Pool_Halls";
-            default:return "Endless_Hall";
+            case 3: return "Endless_Hall";
+            case 4: return "Yellow_Maze";
+            case 5: return "Service_Tunnels";
+            default:return "Dark_Storage";
         }
     }
 
@@ -2555,12 +2631,15 @@ public class InfiniteWorldLevel extends Level {
         int mx = Math.floorDiv(cx, macro);
         int my = Math.floorDiv(cy, macro);
 
-        // Entire 5x5 chunk macro-regions share a style. V12 raises the encounter
-        // rate from 8% to 15% so these spaces are rare but realistically discoverable.
-        int anomalyChance = state().generatorVersion >= 12 ? 15 : 8;
+        // V13 deliberately makes liminal districts a major exploration feature:
+        // about 28% of macro-regions are anomalous and the style pool expands from
+        // three to six. V9-V11 remain 8%; V12 remains 15% for save compatibility.
+        int anomalyChance = state().generatorVersion >= 13 ? 28
+                : (state().generatorVersion >= 12 ? 15 : 8);
         if (Math.floorMod(hash(mx, my, 23000), 100L) >= anomalyChance) return 0;
 
-        return 1 + (int)Math.floorMod(hash(mx, my, 23001), 3L);
+        int anomalyTypes = state().generatorVersion >= 13 ? 6 : 3;
+        return 1 + (int)Math.floorMod(hash(mx, my, 23001), (long)anomalyTypes);
     }
 
     private void generateV9AnomalyChunk(int[] out, int cx, int cy, int ox, int oy,
@@ -2611,7 +2690,7 @@ public class InfiniteWorldLevel extends Level {
             carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
             carveRect(out, ox + 1, oy + 11, ox + CHUNK_SIZE - 2, oy + 12, Terrain.EMPTY);
 
-        } else {
+        } else if (anomaly == 3) {
             // Endless hall: deliberately oversized and sparse, with repeating pillars.
             carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
             for (int y = 4; y < CHUNK_SIZE - 3; y += 5) {
@@ -2621,7 +2700,53 @@ public class InfiniteWorldLevel extends Level {
                     }
                 }
             }
+        } else if (anomaly == 4) {
+            // Yellow maze: dense repeating partitions with subtly shifting gaps.
+            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+            for (int x = 4; x < CHUNK_SIZE - 2; x += 4) {
+                for (int y = 1; y < CHUNK_SIZE - 1; y++) {
+                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                }
+                int gap = 2 + range(cx, cy, 23400 + x, 0, CHUNK_SIZE - 5);
+                setFloor(out, ox + x, oy + gap);
+                if ((x & 4) == 0) setFloor(out, ox + x, oy + Math.max(2, CHUNK_SIZE - 3 - gap));
+            }
+            for (int y = 6; y < CHUNK_SIZE - 2; y += 8) {
+                for (int x = 1; x < CHUNK_SIZE - 1; x++) {
+                    if ((x % 5) != 2) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                }
+            }
+        } else if (anomaly == 5) {
+            // Service tunnels: a harsh, repetitive maintenance grid.
+            for (int x = 3; x < CHUNK_SIZE - 2; x += 7) {
+                carveRect(out, ox + x, oy + 1, ox + Math.min(CHUNK_SIZE - 2, x + 1),
+                        oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+            }
+            for (int y = 4; y < CHUNK_SIZE - 2; y += 7) {
+                carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2,
+                        oy + Math.min(CHUNK_SIZE - 2, y + 1), Terrain.EMPTY_DECO);
+            }
+            for (int y = 3; y < CHUNK_SIZE - 3; y += 7) {
+                for (int x = 2; x < CHUNK_SIZE - 2; x += 7) {
+                    if (Math.floorMod(hash(cx + x, cy + y, 23500), 3L) == 0) {
+                        out[ox + x + (oy + y) * MAP_SIZE] = Terrain.EMBERS;
+                    }
+                }
+            }
+        } else {
+            // Dark storage: repeated solid storage blocks divided by narrow aisles.
+            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+            for (int y = 3; y < CHUNK_SIZE - 5; y += 6) {
+                for (int x = 3; x < CHUNK_SIZE - 5; x += 6) {
+                    carveRect(out, ox + x, oy + y, ox + x + 2, oy + y + 3, Terrain.WALL);
+                    if (Math.floorMod(hash(cx + x, cy + y, 23600), 4L) == 0) {
+                        out[ox + x + 1 + (oy + y + 4) * MAP_SIZE] = Terrain.STATUE;
+                    }
+                }
+            }
         }
+
+        setFloor(out, ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2);
 
         // Preserve the normal shared edge contract so anomaly chunks always meet
         // conventional chunks cleanly.
@@ -3957,7 +4082,15 @@ public class InfiniteWorldLevel extends Level {
                 if (state().generatorVersion >= 9) {
                     int anomaly = v9AnomalyType(cx, cy);
                     if (anomaly != 0) {
-                        int alt = anomaly == 1 ? 3 : (anomaly == 2 ? 0 : 4);
+                        int alt;
+                        switch (anomaly) {
+                            case 1: alt = 3; break; // city
+                            case 2: alt = 0; break; // sewers
+                            case 3: alt = 4; break; // halls
+                            case 4: alt = 1; break; // prison
+                            case 5: alt = 2; break; // caves
+                            default:alt = 4; break; // halls
+                        }
 
                         InfiniteWorldAccentTilemap anomalyFloor =
                                 new InfiniteWorldAccentTilemap(
