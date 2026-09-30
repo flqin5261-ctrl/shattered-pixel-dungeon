@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.7",
-    "version_code": 953,
+    "version_name": "0.5.8",
+    "version_code": 954,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.7-stable",
-    "development_branch": "assist-0.5.7-backrooms-merchants",
-    "release_code_sha": "17ccc4f6dfd27ccb1766f2b70b52541e57a55070",
+    "stable_branch": "assist-0.5.8-stable",
+    "development_branch": "assist-0.5.8-spectator-props",
+    "release_code_sha": "b7d31989353afbe5b2b86a6e73b13a0d73f70c20",
     "world_generator_version": 15
   },
   "build": {
@@ -376,7 +376,7 @@
       "wall_phase": true,
       "pit_and_trap_phase": true,
       "terrain_mutation": false,
-      "minimum_move_multiplier": 4,
+      "minimum_move_multiplier": 8,
       "respects_higher_general_assist_speed": true,
       "monster_actor_freeze": "All Mob actors are frozen at Actor.process scheduler boundary while active.",
       "ecology_spawn_pause": true,
@@ -388,7 +388,11 @@
       "streaming": "unchanged; still only after Hero.onMotionComplete",
       "hero_render_layer": "temporarily rendered above raised terrain/walls so the hero remains visible while inside walls",
       "exit_safety": "if disabled while inside invalid terrain, Hero is moved to nearest normal standable cell",
-      "new_world_required": false
+      "new_world_required": false,
+      "visual_move_multiplier_rule": "The sprite tween also uses at least x8 in spectator mode so animation keeps pace with Hero.speed().",
+      "movement_animation": "Idle pose glides between cells with native CharSprite.State.LEVITATING effect; normal run animation is suppressed.",
+      "test_view_radius_cells": 20,
+      "test_view_radius_rule": "Only Infinite World spectator mode forces ShadowCaster.MAX_DISTANCE; normal gameplay view distance is unchanged."
     },
     "v15_backrooms_archive": {
       "no_physical_notes": true,
@@ -426,6 +430,25 @@
         "PotionBandolier",
         "MagicalHolster"
       ]
+    },
+    "v15_environment_props": {
+      "enabled": true,
+      "gameplay_collision": false,
+      "generator_version_bump_required": false,
+      "source_license": "Kenney Tiny Town 1.1 + Tiny Dungeon 1.0, CC0 1.0",
+      "source_upstream_commit": "e22e06e317be6c933b779ad7b055b6a6aeafa5e8",
+      "build_fetch_script": "scripts/fetch-assist-cc0-assets.sh",
+      "sprites": [
+        "Tiny Town bush index 5",
+        "Tiny Town mushrooms index 29",
+        "Tiny Town sign index 83",
+        "Tiny Town barrel index 107",
+        "Tiny Dungeon crate index 66"
+      ],
+      "placement": "Deterministic sparse overlays after normal heaps/traps/plants/merchant stock are created; V15 anomaly chunks receive two props and ordinary chunks receive one with ~62% chance.",
+      "examine_support": "WndInfoCell sees the CustomTilemap image and localized name/description, so magnifier inspection identifies each prop.",
+      "terrain_safety": "Props never mutate map[]/passability/water/doors and are excluded from occupied heaps/traps/plants/chars and common center crossing lanes.",
+      "provenance_doc": "docs/assist/THIRD_PARTY_ASSETS.md"
     }
   },
   "hard_invariants": [
@@ -443,6 +466,11 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.8 spectator: movement uses idle/levitating glide instead of run animation and both logical speed and PosTweener visual speed are at least x8.",
+    "0.5.8 spectator: FOV radius expands to ShadowCaster.MAX_DISTANCE=20 only while Infinite World spectator mode is active and returns to normal immediately when disabled.",
+    "0.5.8 CC0 props: bush/mushrooms/sign/barrel/crate render above existing accents without altering map collision or breaking Streaming.",
+    "0.5.8 magnifier: every new prop shows its own localized name and description instead of the underlying floor name.",
+    "0.5.8 asset pipeline: pinned Kenney atlas downloads pass Git blob verification before Gradle build.",
     "0.5.7 V15 Backrooms archive: entering each of the 14 district types automatically unlocks exactly its matching archive page without spawning an InfiniteWorldNote.",
     "0.5.7 V15 terrain: all 14 district layouts remain connected to shared chunk gateways and V10 infinite routes, with no isolated islands except intentionally water-surrounded visual islands that remain traversable by normal water.",
     "0.5.7 V15 merchant density: base 3x3 lattice is already denser than V14, and newly generated chunks gain additional persisted candidate lattices as level/action tier rises.",
@@ -483,6 +511,10 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
+    "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
+    "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
+    "After 0.5.8 spectator/visual validation, discuss and design Infinite World monster strength/progression mechanics before changing mob stats.",
     "Real-device survey V15 with spectator QA mode: verify all 14 Backrooms-inspired districts can appear through ordinary exploration and automatically unlock their archive entries.",
     "Verify merchant frequency progression over a long new V15 run without any already-generated chunk changing merchant status.",
     "Collect the four expansion bags through different merchants and verify each merchant retargets slot 0 to a bag still missing at first encounter.",
