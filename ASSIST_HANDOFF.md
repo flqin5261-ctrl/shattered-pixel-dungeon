@@ -2090,3 +2090,24 @@ Infinite World 新增两层通用成长天赋：
 - 整次AOE只调用一次 wandUsed()，因此只消耗这根法杖一次正常施法的充能与1次施法行动时间，不按怪物数量重复扣充能。
 - 原有单目标法杖施法仍保留 onUltraWandZap 的命中后秒杀。
 - 正面药剂/卷轴至少999行动值的规则不变。
+
+# 45. 0.6.14 — 滚动窗口排版对齐修复
+
+- versionName：0.6.14
+- versionCode：970
+- dev：assist-0.6.14-layout-fix
+- target stable：assist-0.6.14-stable
+
+0.6.13 已不再闪退，但 WndInfoBuff 与 WndBag 的滚动内容整体偏移到窗口右下方，形成大面积空白。截图可见：
+- 背包标题正常位于左上，物品网格却从窗口中下部/右侧开始绘制；
+- 创世回响标题正常，正文却从窗口中下部/右侧开始，且被右边界裁切。
+
+根因：0.6.13 虽然保证了 ScrollPane 已先 add 到父窗口，但仍在 Window.resize() 之前调用 ScrollPane.setRect()。setRect() 会立刻布局并计算内容相机屏幕坐标，而后续 resize() 会重新居中整个 Window；ScrollPane 的内容相机仍保存旧窗口位置，于是可视内容和窗口外框产生整体错位。
+
+0.6.14 统一改为：
+1. new ScrollPane(content)
+2. add(scrollPane)
+3. resize(windowWidth, windowHeight) —— 确定窗口最终尺寸与居中位置
+4. scrollPane.setRect(...) —— 在最终窗口坐标下布局内容相机
+
+此顺序同时应用于 WndInfoBuff 和 WndBag。禁止再在 resize() 前对窗口内 ScrollPane 做最终 setRect()。
