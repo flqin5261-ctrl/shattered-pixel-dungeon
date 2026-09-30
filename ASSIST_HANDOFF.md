@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.4**
-- 当前 versionCode：**950**
-- 当前最新稳定分支：`assist-0.5.4-stable`
-- 当前发布代码 SHA：`e621bebabd389619ee04a22a4d9cf2428d5381f0`
-- 当前对应开发分支：`assist-0.5.4-item-grant`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 13**
+- 当前最新稳定版本：**0.5.5**
+- 当前 versionCode：**951**
+- 当前最新稳定分支：`assist-0.5.5-stable`
+- 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
+- 当前对应开发分支：`assist-0.5.5-merchant-connectivity`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 14**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -1465,3 +1465,25 @@ Assist 菜单新增“获取指定物品”。
 - 生成物品自动 identify。
 
 本版 WORLD_GEN_VERSION 继续为 13；没有改变 Infinite World 地形公式，0.5.3 V13 世界可以直接继续。
+
+# 28. 0.5.5 / Generator V14 — Merchant Connectivity + Dynamic Accent Refresh
+
+用户实机确认：某次 Merchant Outpost 虽被提示并显示在地图上，但正常探索路线全部是死路；通过炸弹/隐藏房才发现一段逻辑可通行但仍显示为墙的区域。
+
+根因分成两类：
+1. Merchant Room 固定为 themed room index 0，它先刻出的 corridor 可能被后生成 room index 1/2 的 wall shell 覆盖，所以“曾经连接过”不等于最终地图可达。
+2. InfiniteWorldAccentTilemap 是静态 custom overlay；炸墙或秘密门发现后 Level.map 已更新，但旧 wall mesh 可能继续盖住新地板，产生视觉穿墙。
+
+V14 修复：
+- 所有地形 pass 完成后，对 merchant entrance -> shared chunk gateway 做真实 PASSABLE path validation；
+- 断路时才补 deterministic corridor，优先避开其他 themed room rectangle；
+- 旧 V11-V13 active merchant chunks 在 load/stream 时执行同样 repair，并通过 terrainOverrides 持久化；
+- Merchant map reveal 同时标记一条真实可走的 shop -> gateway 路线；
+- GameScene.updateMap(cell) 会刷新覆盖该 cell 的 InfiniteWorldAccentTilemap；
+- Accent refresh 含 1-cell halo，保证 wall stitching/overhang 同步；
+- SECRET_DOOR discovery 会重建当前 window 的 accent definitions，使 Secret Room 材质立即正确出现。
+
+重要兼容：
+- 新世界使用 V14。
+- 旧 V13 存档不用为了此 Bug 强制重开；商店断路会运行时修补。
+- Streaming 时机、VBO/Water 修复、唯一神器箱、V13 六类 Liminal、0.5.4 item grant 均不能破坏。
