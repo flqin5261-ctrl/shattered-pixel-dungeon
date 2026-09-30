@@ -1840,3 +1840,24 @@ V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每
 - +1 merchandise 仅 tier3/4 按低概率出现。
 - Artifact 永远不进入普通 merchant stock。
 - 不允许用世界距离替代 V15 的 Hero level/action progression；旧 V11-V14 仍保留自己的旧计算。
+
+# 0.5.8 Spectator / Decoration invariants
+
+## Spectator visual and timing invariants
+- Infinite World spectator movement is a floating glide, not a run animation.
+- Hero.speed() and CharSprite movement tween must both honor at least x8 while spectator mode is active; do not speed only one side.
+- CharSprite.State.LEVITATING is spectator presentation only and must be removed when the mode is disabled.
+- Spectator FOV may use ShadowCaster.MAX_DISTANCE (20); normal gameplay view distance must not be changed.
+- The larger FOV does not change Streaming thresholds or timing.
+- Streaming remains Hero.onMotionComplete() -> InfiniteWorldLevel.afterHeroMotionComplete() only.
+
+## External decoration invariants
+- Kenney Tiny Town/Tiny Dungeon props are CC0, 16x16 and fetched from a pinned upstream commit by scripts/fetch-assist-cc0-assets.sh.
+- The build must fail if either downloaded PNG does not match its recorded Git blob SHA.
+- InfiniteWorldDecorationLayer is visual-only. Never use these props to change map[], solid/passable arrays, water, doors, pathfinding or object-state gameplay.
+- Decoration placement must run after generated heaps/traps/plants/themed-room objects so props do not cover gameplay objects.
+- Props must remain inspectable: custom tile image(), name() and desc() must keep working through WndInfoCell.
+- Decoration overlays are appended after broad InfiniteWorldAccentTilemap floor overlays so magnifier selection resolves to the prop, not the reskinned floor.
+- Any path that clears/rebuilds customTiles (including secret-door accent refresh and Streaming rebuild) must restore the sparse decoration layer before GameScene refreshes custom overlays.
+- Environment props do not justify a generator-version bump while they remain deterministic, non-collision visual overlays.
+
