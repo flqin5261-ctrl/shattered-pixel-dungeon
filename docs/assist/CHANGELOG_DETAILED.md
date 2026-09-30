@@ -1959,3 +1959,80 @@ Streaming 时商人和普通近距离 Mob 一样重算 local position。
 - 未改变 Hero.onMotionComplete() 后才允许 Streaming 的硬约束。
 - 未改变 Tilemap VBO / Water / Fog 修复。
 - 未改变 Mob.despawnFromInfiniteWorld() 的无奖励距离清除规则。
+
+# 0.5.3 / Generator V13 — 商人真正可发现 + 六类异境
+
+版本：
+- versionName: 0.5.3
+- versionCode: 949
+- dev: assist-0.5.3-merchants-liminal
+- stable: assist-0.5.3-stable
+- WORLD_GEN_VERSION: 13
+
+用户对 0.5.2 的实机反馈确认：
+- 唯一神器箱规则正常，整局只出现一个；
+- 商人格点从 7 缩到 5 后，玩家仍然长期“见不到商人”；
+- Liminal / 类后室异常空间仍显得太少，希望增加出现频率与层级种类。
+
+## 商人可发现性
+V12 的问题不只是密度。Merchant Outpost 是二维 lattice 上的固定小房，即使据点已经进入 7×7 active window，只要玩家沿当前路线持续前进、没有偏向该房间所在 Chunk，就可能完全不进入 FOV，因此体感仍然像“没有商人”。
+
+V13 同时做三件事：
+- lattice 间距 5 -> 4 Chunk；
+- 出生排除范围约 3 -> 2 Chunk；
+- 只要商人据点进入 active window，其房间周边直接写入 mapped，出售货堆设为 seen；
+- 未提示过的商店进入 Hero 2 Chunk 范围时，输出一次本地化“附近有商人据点”提示；
+- 每个据点的提示状态使用 objectStates 记录，不反复刷屏。
+
+商店仍然：
+- 不生成在 anomaly；
+- 不生成在 Primary / Secondary 无限道路 Chunk；
+- 不改变 6 槽库存和交易逻辑；
+- 已购商品不刷新；
+- flee 后永久关闭；
+- 8 格普通怪自然生成安全区继续有效。
+
+## Liminal / 类后室区域
+- V13 5×5 macro anomaly 概率：约 28%。
+- V12 保持 15%，V9-V11 保持 8%，旧世界生成结果不被改写。
+- anomaly 类型从 3 种扩到 6 种。
+
+保留：
+1. Repeating Offices / 重复回廊
+2. Pool Halls / 静水廊厅
+3. Endless Hall / 无尽大厅
+
+新增：
+4. Yellow Maze / 黄墙迷廊
+   - 高频重复隔墙；
+   - 开口位置轻微错位；
+   - EMPTY_SP 主导，强调“熟悉但对不上记忆”的重复空间。
+5. Service Tunnels / 检修管廊
+   - 多条规则窄通道形成维护网格；
+   - EMPTY_DECO 与少量 EMBERS；
+   - 强调隐藏在巨大建筑背后的设备层。
+6. Dark Storage / 暗仓网格
+   - 大量重复实体储藏块；
+   - 狭长过道；
+   - 少量 STATUE，强调压迫、重复与方向感丧失。
+
+所有类型仍会在末尾重新连接 shared-edge gateways，并继续叠加 V10 Primary/Secondary infinite network，不能把世界封死。
+
+## Field Notes
+新增三篇：
+- Yellow_Maze
+- Service_Tunnels
+- Dark_Storage
+
+六种 anomaly 都继续使用：
+- deterministic anchor note；
+- 未收录页面进入异境后的近身可见便笺保证；
+- Document 持久化；
+- 收录后不再重复触发近身保证。
+
+## 未改动
+- 400 action-value 全局唯一神器水晶箱保持 V12 逻辑；
+- Streaming 仍只能 Hero.onMotionComplete() 后发生；
+- SHIFT 24/144/3 不改；
+- Water/VBO/Fog 修复不改；
+- Mob.despawnFromInfiniteWorld() 无奖励距离清除不改。
