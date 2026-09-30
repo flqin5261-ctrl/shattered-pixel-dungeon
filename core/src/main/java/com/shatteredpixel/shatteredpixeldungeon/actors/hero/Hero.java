@@ -1101,6 +1101,14 @@ public class Hero extends Char {
 		GameScene.resetKeyHold();
 		resting = false;
 	}
+
+	public void resetNavigationAfterTeleport() {
+		path = null;
+		curAction = null;
+		lastAction = null;
+		walkingToVisibleTrapInFog = false;
+		damageInterrupt = false;
+	}
 	
 	public void resume() {
 		curAction = lastAction;
