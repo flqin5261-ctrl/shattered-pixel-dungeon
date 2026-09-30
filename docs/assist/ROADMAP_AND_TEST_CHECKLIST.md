@@ -11,11 +11,11 @@
 
 当前开发候选：
 
-- 版本：0.6.8
-- versionCode：964
+- 版本：0.6.9
+- versionCode：965
 - Generator：V17
-- target stable：`assist-0.6.8-stable`
-- dev：`assist-0.6.8-talent-progression`
+- target stable：`assist-0.6.9-stable`
+- dev：`assist-0.6.9-genesis-talents`
 
 当前核心已经具备：
 
