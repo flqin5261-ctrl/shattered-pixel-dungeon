@@ -66,9 +66,12 @@ public class WndInfoBuff extends Window {
 				(int)Math.floor(maxWindowHeight - paneY - 2)));
 
 		ScrollPane scroll = new ScrollPane(content);
-		add(scroll); // Important: ScrollPane.layout() needs a valid parent camera.
-		scroll.setRect(0, paneY, width, paneHeight);
+		add(scroll);
 
+		// Window.resize() recenters the window. The scroll content camera must be
+		// laid out only after that final position is known, otherwise its camera
+		// keeps the pre-resize offset and the text appears in the lower-right.
 		resize(width, (int)Math.ceil(paneY + paneHeight + 2));
+		scroll.setRect(0, paneY, width, paneHeight);
 	}
 }
