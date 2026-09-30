@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -200,6 +201,12 @@ public class Shopkeeper extends NPC {
 
 	//shopkeepers are greedy!
 	public static int sellPrice(Item item){
+		// Infinite World V15 guarantees missing inventory-expansion bags at
+		// merchants. Keep those progression essentials realistically affordable
+		// instead of applying the normal greedy x5 shop markup.
+		if (Dungeon.infiniteWorld && item instanceof Bag) {
+			return Math.max(20, item.value() * 2);
+		}
 		return item.value() * 5 * (Dungeon.depth / 5 + 1);
 	}
 	
