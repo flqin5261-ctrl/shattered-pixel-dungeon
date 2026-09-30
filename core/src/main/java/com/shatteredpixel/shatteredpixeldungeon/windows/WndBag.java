@@ -301,6 +301,71 @@ public class WndBag extends WndTabbed {
 		}
 	}
 	
+	private void placeInfiniteBackpackPage(Bag container) {
+		Belongings stuff = Dungeon.hero.belongings;
+
+		placeItem( stuff.weapon != null ? stuff.weapon : new Placeholder( ItemSpriteSheet.WEAPON_HOLDER ) );
+		placeItem( stuff.armor != null ? stuff.armor : new Placeholder( ItemSpriteSheet.ARMOR_HOLDER ) );
+		placeItem( stuff.artifact != null ? stuff.artifact : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
+		placeItem( stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
+		placeItem( stuff.misc != null ? stuff.misc : new Placeholder( ItemSpriteSheet.SOMETHING ) );
+		placeItem( stuff.ring != null ? stuff.ring : new Placeholder( ItemSpriteSheet.RING_HOLDER ) );
+
+		int equipped = 6;
+		if (stuff.secondWep != null) {
+			placeItem(stuff.secondWep);
+			equipped++;
+		}
+
+		ArrayList<Item> pageItems = new ArrayList<>();
+		for (Item item : container.items) {
+			if (!(item instanceof Bag)) pageItems.add(item);
+		}
+
+		int freeSlots = Math.max(5, container.capacity() - container.items.size());
+		for (int i = 0; i < freeSlots; i++) pageItems.add(null);
+
+		int slotsPerPage = Math.max(1, nRows * nCols - equipped);
+		pageCount = Math.max(1, (int)Math.ceil(pageItems.size() / (float)slotsPerPage));
+		pageIndex = Math.max(0, Math.min(pageIndex, pageCount - 1));
+
+		int from = pageIndex * slotsPerPage;
+		int to = Math.min(pageItems.size(), from + slotsPerPage);
+		for (int i = from; i < to; i++) {
+			placeItem(pageItems.get(i));
+		}
+
+		while (count < nRows * nCols) placeItem(null);
+	}
+
+	private void addPageButtons(int width, float y) {
+		RedButton prev = new RedButton("< " + (pageIndex + 1) + "/" + pageCount, 7) {
+			@Override
+			protected void onClick() {
+				if (pageIndex <= 0) return;
+				pageIndex--;
+				hide();
+				GameScene.show(new WndBag(shownBag, selector));
+			}
+		};
+		prev.setRect(0, y, width/2f - 1, 13);
+		prev.enable(pageIndex > 0);
+		add(prev);
+
+		RedButton next = new RedButton((pageIndex + 1) + "/" + pageCount + " >", 7) {
+			@Override
+			protected void onClick() {
+				if (pageIndex >= pageCount - 1) return;
+				pageIndex++;
+				hide();
+				GameScene.show(new WndBag(shownBag, selector));
+			}
+		};
+		next.setRect(width/2f + 1, y, width/2f - 1, 13);
+		next.enable(pageIndex < pageCount - 1);
+		add(next);
+	}
+
 	protected void placeItem( final Item item ) {
 
 		count++;
