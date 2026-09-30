@@ -1936,6 +1936,10 @@ public class GameScene extends PixelScene {
 	}
 
 	
+	public static boolean isDefaultCellListener(CellSelector.Listener listener) {
+		return listener == defaultCellListener;
+	}
+
 	private static final CellSelector.Listener defaultCellListener = new CellSelector.Listener() {
 		@Override
 		public void onSelect( Integer cell ) {
