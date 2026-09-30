@@ -17,6 +17,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -29,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Reflection;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class WndAssist extends Window {
@@ -55,6 +59,7 @@ public class WndAssist extends Window {
 
         addUpgradeRow();
         addSpeedRow();
+        addItemGrantRow();
 
         // Teleport UI intentionally stays the same.
         addToggle("允许指定层传送", SPDSettings.assistTeleport(), value -> {
@@ -177,6 +182,21 @@ public class WndAssist extends Window {
         modify.setRect(btnSpeed.right() + GAP, y, MODIFY_W, BTN_H);
 
         pos = btnSpeed.bottom();
+    }
+
+
+    private void addItemGrantRow() {
+        RedButton give = new RedButton("获取指定物品", 9) {
+            @Override
+            protected void onClick() {
+                if (Dungeon.hero != null && Dungeon.level != null) {
+                    showItemGrantRoot();
+                }
+            }
+        };
+        add(give);
+        give.setRect(0, pos + GAP, WIDTH, BTN_H);
+        pos = give.bottom();
     }
 
     private void addArtifactRow() {
@@ -342,6 +362,209 @@ public class WndAssist extends Window {
                 Item.updateQuickslot();
             }
         });
+    }
+
+
+    private static final int ITEM_PAGE_SIZE = 8;
+
+    private void showItemGrantRoot() {
+        Game.scene().addToFront(new WndOptions(
+                "获取指定物品",
+                "从游戏物品图鉴中选择物品，再输入要获得的数量。",
+                "装备 / 神器 / 饰物",
+                "消耗品 / 材料 / 钥匙",
+                "返回") {
+            @Override
+            protected void onSelect(int index) {
+                if (index == 0) {
+                    showCatalogPicker(true);
+                } else if (index == 1) {
+                    showCatalogPicker(false);
+                }
+            }
+        });
+    }
+
+    private ArrayList<Catalog> availableCatalogs(boolean equipment) {
+        ArrayList<Catalog> source = equipment ? Catalog.equipmentCatalogs : Catalog.consumableCatalogs;
+        ArrayList<Catalog> result = new ArrayList<>();
+
+        for (Catalog catalog : source) {
+            if (!catalogItemClasses(catalog).isEmpty()) {
+                result.add(catalog);
+            }
+        }
+        return result;
+    }
+
+    private ArrayList<Class<?>> catalogItemClasses(Catalog catalog) {
+        ArrayList<Class<?>> result = new ArrayList<>();
+
+        for (Class<?> cls : catalog.items()) {
+            if (!Item.class.isAssignableFrom(cls)) continue;
+
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            Item preview = (Item) Reflection.newInstance((Class) cls);
+            if (preview != null) result.add(cls);
+        }
+        return result;
+    }
+
+    private void showCatalogPicker(final boolean equipment) {
+        final ArrayList<Catalog> catalogs = availableCatalogs(equipment);
+        String[] options = new String[catalogs.size() + 1];
+
+        for (int i = 0; i < catalogs.size(); i++) {
+            options[i] = catalogs.get(i).title();
+        }
+        options[options.length - 1] = "返回";
+
+        Game.scene().addToFront(new WndOptions(
+                equipment ? "装备类物品" : "消耗品与材料",
+                "选择物品分类。",
+                options) {
+            @Override
+            protected void onSelect(int index) {
+                if (index >= 0 && index < catalogs.size()) {
+                    showCatalogItems(catalogs.get(index), 0, equipment);
+                } else {
+                    showItemGrantRoot();
+                }
+            }
+        });
+    }
+
+    private void showCatalogItems(final Catalog catalog, final int requestedPage, final boolean equipment) {
+        final ArrayList<Class<?>> classes = catalogItemClasses(catalog);
+        if (classes.isEmpty()) {
+            showCatalogPicker(equipment);
+            return;
+        }
+
+        final int pageCount = Math.max(1, (classes.size() + ITEM_PAGE_SIZE - 1) / ITEM_PAGE_SIZE);
+        final int page = Math.max(0, Math.min(requestedPage, pageCount - 1));
+        final int start = page * ITEM_PAGE_SIZE;
+        final int itemCount = Math.min(ITEM_PAGE_SIZE, classes.size() - start);
+        final boolean hasPrev = page > 0;
+        final boolean hasNext = page + 1 < pageCount;
+
+        int extra = 1 + (hasPrev ? 1 : 0) + (hasNext ? 1 : 0);
+        String[] options = new String[itemCount + extra];
+
+        for (int i = 0; i < itemCount; i++) {
+            options[i] = itemDisplayName(classes.get(start + i));
+        }
+
+        int cursor = itemCount;
+        final int prevIndex = hasPrev ? cursor++ : -1;
+        if (hasPrev) options[prevIndex] = "上一页";
+        final int nextIndex = hasNext ? cursor++ : -1;
+        if (hasNext) options[nextIndex] = "下一页";
+        final int backIndex = cursor;
+        options[backIndex] = "返回分类";
+
+        Game.scene().addToFront(new WndOptions(
+                catalog.title(),
+                "选择物品。" + (pageCount > 1 ? "  第 " + (page + 1) + "/" + pageCount + " 页" : ""),
+                options) {
+            @Override
+            protected void onSelect(int index) {
+                if (index >= 0 && index < itemCount) {
+                    askItemGrantQuantity(classes.get(start + index), catalog, page, equipment);
+                } else if (index == prevIndex) {
+                    showCatalogItems(catalog, page - 1, equipment);
+                } else if (index == nextIndex) {
+                    showCatalogItems(catalog, page + 1, equipment);
+                } else if (index == backIndex) {
+                    showCatalogPicker(equipment);
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private String itemDisplayName(Class<?> cls) {
+        Item preview = (Item) Reflection.newInstance((Class) cls);
+        return preview == null ? cls.getSimpleName() : Messages.titleCase(preview.trueName());
+    }
+
+    private void askItemGrantQuantity(final Class<?> cls, final Catalog catalog,
+                                      final int page, final boolean equipment) {
+        final String itemName = itemDisplayName(cls);
+
+        GameScene.show(new WndTextInput(
+                "获取：" + itemName,
+                "输入数量，范围 1～999。可堆叠物品会直接组成一组，不可堆叠物品会生成对应份数。",
+                "1",
+                3,
+                false,
+                "获取",
+                "取消") {
+            @Override
+            public void onSelect(boolean positive, String text) {
+                if (positive) {
+                    try {
+                        int amount = Integer.parseInt(text.trim());
+                        if (amount < 1 || amount > 999) throw new NumberFormatException();
+                        grantSpecificItem(cls, amount);
+                    } catch (Exception e) {
+                        GLog.w("请输入 1～999 的整数。");
+                    }
+                }
+                showCatalogItems(catalog, page, equipment);
+            }
+        });
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void grantSpecificItem(Class<?> cls, int amount) {
+        if (Dungeon.hero == null || Dungeon.level == null) return;
+
+        Item first = (Item) Reflection.newInstance((Class) cls);
+        if (first == null) {
+            GLog.w("这个物品无法生成。");
+            return;
+        }
+
+        if (first instanceof Key) {
+            Key key = (Key) first;
+            key.depth = Dungeon.depth;
+            key.quantity(amount);
+            Notes.add(key);
+            Catalog.setSeen(cls);
+            GameScene.updateKeyDisplay();
+            GLog.p("已获得：" + Messages.titleCase(first.trueName()) + " ×" + amount);
+            return;
+        }
+
+        int granted = 0;
+
+        if (first.stackable) {
+            first.quantity(amount);
+            first.identify();
+            if (!first.collect()) {
+                Dungeon.level.drop(first, Dungeon.hero.pos).sprite.drop();
+            }
+            granted = amount;
+        } else {
+            for (int i = 0; i < amount; i++) {
+                Item item = i == 0 ? first : (Item) Reflection.newInstance((Class) cls);
+                if (item == null) break;
+
+                item.identify();
+                if (!item.collect()) {
+                    Dungeon.level.drop(item, Dungeon.hero.pos).sprite.drop();
+                }
+                granted++;
+            }
+        }
+
+        Item.updateQuickslot();
+        if (granted > 0) {
+            GLog.p("已获得：" + Messages.titleCase(first.trueName()) + " ×" + granted);
+        } else {
+            GLog.w("物品生成失败。");
+        }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
