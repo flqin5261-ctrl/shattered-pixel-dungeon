@@ -1669,10 +1669,12 @@ public class InfiniteWorldLevel extends Level {
         // V13 makes outposts substantially easier to encounter and pairs the denser
         // lattice with an explicit nearby-outpost discovery hint. Older worlds keep
         // their exact cadence for deterministic save compatibility.
-        int spacing = state().generatorVersion >= 13 ? MERCHANT_SPACING_CHUNKS_V13
-                : (state().generatorVersion >= 12 ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS);
-        int startBuffer = state().generatorVersion >= 13 ? 2
-                : (state().generatorVersion >= 12 ? 3 : 4);
+        int spacing = state().generatorVersion >= 15 ? MERCHANT_SPACING_CHUNKS_V15
+                : (state().generatorVersion >= 13 ? MERCHANT_SPACING_CHUNKS_V13
+                : (state().generatorVersion >= 12 ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS));
+        int startBuffer = state().generatorVersion >= 15 ? 1
+                : (state().generatorVersion >= 13 ? 2
+                : (state().generatorVersion >= 12 ? 3 : 4));
         if (Math.max(Math.abs(cx), Math.abs(cy)) <= startBuffer) return false;
 
         int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)spacing);
@@ -1703,6 +1705,10 @@ public class InfiniteWorldLevel extends Level {
             }
 
             if (chunkDistance <= 2) {
+                if (state().generatorVersion >= 15) {
+                    ensureV15MerchantProgressStock(cx, cy);
+                }
+
                 long hintKey = v11MerchantObjectKey(cx, cy, 0x63F1);
                 if (state().objectState(hintKey) == 0) {
                     state().setObjectState(hintKey, 1);
@@ -2051,6 +2057,43 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v11MerchantStockItem(int cx, int cy, int slot) {
+        if (state().generatorVersion >= 15) {
+            int progressTier = v15MerchantStoredProgressTier(cx, cy);
+            if (progressTier < 0) progressTier = v15CurrentMerchantProgressTier();
+
+            if (slot == 0) {
+                Item bag = v15MerchantMissingBagOffer(cx, cy);
+                if (bag != null) return bag;
+                return new PotionOfHealing();
+            }
+
+            switch (slot) {
+                case 1:
+                    return progressTier >= 2 ? new Ration() : new SmallRation();
+                case 2:
+                    if (progressTier == 0) {
+                        return range(cx, cy, 25120, 0, 1) == 0
+                                ? new PotionOfFrost() : new PotionOfLiquidFlame();
+                    }
+                    if (progressTier == 1) {
+                        return v6RandomPotion(cx, cy, 25120);
+                    }
+                    return range(cx, cy, 25122, 0, 2) == 0
+                            ? new PotionOfHealing() : v6RandomPotion(cx, cy, 25120);
+                case 3:
+                    if (progressTier <= 1) return v6SafeScroll(cx, cy, 25130);
+                    if (progressTier >= 3 && range(cx, cy, 25131, 0, 3) == 0) {
+                        return new ScrollOfTransmutation();
+                    }
+                    return range(cx, cy, 25132, 0, 2) == 0
+                            ? new ScrollOfRemoveCurse() : v6SafeScroll(cx, cy, 25130);
+                case 4:
+                    return v11MerchantEquipment(cx, cy);
+                default:
+                    return v15MerchantSpecialItem(cx, cy, progressTier);
+            }
+        }
+
         switch (slot) {
             case 0:
                 return new PotionOfHealing();
@@ -2073,23 +2116,199 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    private int v15CurrentMerchantProgressTier() {
+        int heroLevel = Dungeon.hero == null ? 1 : Dungeon.hero.lvl;
+        float action = state().heroActionValue;
+
+        int levelTier = 0;
+        if (heroLevel >= 4) levelTier = 1;
+        if (heroLevel >= 7) levelTier = 2;
+        if (heroLevel >= 11) levelTier = 3;
+        if (heroLevel >= 15) levelTier = 4;
+
+        int actionTier = 0;
+        if (action >= 300f) actionTier = 1;
+        if (action >= 800f) actionTier = 2;
+        if (action >= 1600f) actionTier = 3;
+        if (action >= 2800f) actionTier = 4;
+
+        return Math.max(levelTier, actionTier);
+    }
+
+    private int v15MerchantStoredProgressTier(int cx, int cy) {
+        int stored = state().objectState(v11MerchantObjectKey(cx, cy, 0x63F3));
+        return stored <= 0 ? -1 : Math.min(4, stored - 1);
+    }
+
+    private int v15MissingBagMask() {
+        if (Dungeon.hero == null) return 0;
+
+        int mask = 0;
+        if (Dungeon.hero.belongings.getItem(VelvetPouch.class) == null) mask |= 1;
+        if (Dungeon.hero.belongings.getItem(ScrollHolder.class) == null) mask |= 2;
+        if (Dungeon.hero.belongings.getItem(PotionBandolier.class) == null) mask |= 4;
+        if (Dungeon.hero.belongings.getItem(MagicalHolster.class) == null) mask |= 8;
+        return mask;
+    }
+
+    private Item v15BagByIndex(int index) {
+        switch (index) {
+            case 0: return new VelvetPouch();
+            case 1: return new ScrollHolder();
+            case 2: return new PotionBandolier();
+            case 3: return new MagicalHolster();
+            default:return null;
+        }
+    }
+
+    private int v15ChooseMissingBagIndex(int cx, int cy, int missingMask) {
+        ArrayList<Integer> missing = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            if ((missingMask & (1 << i)) != 0) missing.add(i);
+        }
+        if (missing.isEmpty()) return -1;
+        int pick = (int)Math.floorMod(hash(cx, cy, 25180), (long)missing.size());
+        return missing.get(pick);
+    }
+
+    private Item v15MerchantMissingBagOffer(int cx, int cy) {
+        int missingMask = v15MissingBagMask();
+        if (missingMask == 0) return null;
+
+        long key = v11MerchantObjectKey(cx, cy, 0x63F4);
+        int stored = state().objectState(key);
+        int bagIndex = stored - 1;
+
+        // If this merchant was loaded before the player reached it, or the player
+        // acquired that bag elsewhere, retarget the guaranteed offer to a bag that
+        // is still actually missing. The choice locks again once the player is near.
+        if (bagIndex < 0 || bagIndex > 3 || (missingMask & (1 << bagIndex)) == 0) {
+            bagIndex = v15ChooseMissingBagIndex(cx, cy, missingMask);
+        }
+
+        return v15BagByIndex(bagIndex);
+    }
+
+    private Item v15MerchantSpecialItem(int cx, int cy, int progressTier) {
+        if (progressTier <= 0) {
+            switch (range(cx, cy, 25150, 0, 4)) {
+                case 0: return new Bomb();
+                case 1: return new Torch();
+                case 2: return new StoneOfBlink();
+                case 3: return new Pickaxe();
+                default:return new ScrollOfRemoveCurse();
+            }
+        }
+
+        Random.pushGenerator(hash(cx, cy, 25170 + progressTier));
+        try {
+            int roll = range(cx, cy, 25171 + progressTier, 0, 99);
+
+            if (progressTier == 1) {
+                if (roll < 25) return Generator.randomUsingDefaults(Generator.Category.WAND);
+                if (roll < 45) return new ScrollOfTransmutation();
+                if (roll < 70) return new StoneOfBlink();
+                return new ScrollOfRemoveCurse();
+            }
+
+            if (progressTier == 2) {
+                if (roll < 35) return Generator.randomUsingDefaults(Generator.Category.WAND);
+                if (roll < 60) return Generator.randomUsingDefaults(Generator.Category.RING);
+                if (roll < 80) return new ScrollOfTransmutation();
+                return new StoneOfBlink();
+            }
+
+            if (progressTier == 3) {
+                if (roll < 40) return Generator.randomUsingDefaults(Generator.Category.RING);
+                if (roll < 75) return Generator.randomUsingDefaults(Generator.Category.WAND);
+                return new ScrollOfTransmutation();
+            }
+
+            if (roll < 45) return Generator.randomUsingDefaults(Generator.Category.RING);
+            if (roll < 85) return Generator.randomUsingDefaults(Generator.Category.WAND);
+            return new ScrollOfTransmutation();
+        } finally {
+            Random.popGenerator();
+        }
+    }
+
+    private void ensureV15MerchantProgressStock(int cx, int cy) {
+        if (state().generatorVersion < 15 || Dungeon.hero == null) return;
+
+        long tierKey = v11MerchantObjectKey(cx, cy, 0x63F3);
+        int storedTier = state().objectState(tierKey);
+        if (storedTier == 0) {
+            storedTier = v15CurrentMerchantProgressTier() + 1;
+            state().setObjectState(tierKey, storedTier);
+        }
+
+        int missingMask = v15MissingBagMask();
+        long bagKey = v11MerchantObjectKey(cx, cy, 0x63F4);
+        int storedBag = state().objectState(bagKey);
+        int bagIndex = storedBag - 1;
+
+        if (missingMask != 0
+                && (bagIndex < 0 || bagIndex > 3 || (missingMask & (1 << bagIndex)) == 0)) {
+            bagIndex = v15ChooseMissingBagIndex(cx, cy, missingMask);
+            if (bagIndex >= 0) state().setObjectState(bagKey, bagIndex + 1);
+        }
+
+        int ox = (cx - (state().centerChunkX - HALF_WINDOW)) * CHUNK_SIZE;
+        int oy = (cy - (state().centerChunkY - HALF_WINDOW)) * CHUNK_SIZE;
+        if (ox < 0 || oy < 0 || ox >= width() || oy >= height()) return;
+
+        for (int slot = 0; slot < MERCHANT_STOCK_SLOTS; slot++) {
+            int cell = v11MerchantStockCell(cx, cy, ox, oy, slot);
+            if (cell < 0) continue;
+
+            long consumedKey = v6ObjectKey(cell, 0x6300 + slot);
+            if (state().objectState(consumedKey) != 0) continue;
+
+            Heap heap = heaps.get(cell);
+            if (heap == null || heap.type != Heap.Type.FOR_SALE) continue;
+
+            heap.items.clear();
+            Item replacement = v11MerchantStockItem(cx, cy, slot);
+            if (replacement != null) heap.drop(replacement);
+        }
+    }
+
     private Item v11MerchantEquipment(int cx, int cy) {
-        int worldDistance = Math.max(Math.abs(cx), Math.abs(cy));
-        int tier = Math.min(4, Math.max(0, worldDistance / 12));
+        int tier;
+        if (state().generatorVersion >= 15) {
+            tier = v15MerchantStoredProgressTier(cx, cy);
+            if (tier < 0) tier = v15CurrentMerchantProgressTier();
+        } else {
+            int worldDistance = Math.max(Math.abs(cx), Math.abs(cy));
+            tier = Math.min(4, Math.max(0, worldDistance / 12));
+        }
 
         Random.pushGenerator(hash(cx, cy, 25140));
         try {
             Item item;
             int kind = range(cx, cy, 25141, 0, 99);
-            if (kind < 46) item = Generator.randomWeapon(tier, true);
-            else if (kind < 78) item = Generator.randomArmor(tier);
-            else if (kind < 90) item = Generator.randomUsingDefaults(Generator.Category.WAND);
-            else item = Generator.randomUsingDefaults(Generator.Category.RING);
+
+            if (state().generatorVersion >= 15 && tier == 0) {
+                item = kind < 58 ? Generator.randomWeapon(0, true) : Generator.randomArmor(0);
+            } else if (kind < 46) {
+                item = Generator.randomWeapon(tier, true);
+            } else if (kind < 78) {
+                item = Generator.randomArmor(tier);
+            } else if (kind < 90) {
+                item = Generator.randomUsingDefaults(Generator.Category.WAND);
+            } else {
+                item = Generator.randomUsingDefaults(Generator.Category.RING);
+            }
 
             item.cursed = false;
             item.cursedKnown = true;
             if (item.isUpgradable()) {
-                item.level(0);
+                int itemLevel = 0;
+                if (state().generatorVersion >= 15) {
+                    int upgradeChance = tier >= 4 ? 45 : (tier >= 3 ? 25 : 0);
+                    if (range(cx, cy, 25142, 0, 99) < upgradeChance) itemLevel = 1;
+                }
+                item.level(itemLevel);
                 item.identify(false);
             }
             return item;
