@@ -54,6 +54,7 @@ public class Artifact extends KindofMisc {
 	// use their original caps; this extension supplies extra effective power and
 	// visible levels 11..30 without rewriting every artifact subclass.
 	protected int assistVisibleOverlevel = 0;
+	protected float assistOverlevelProgress = 0f;
 
 	//the current artifact charge
 	protected int charge = 0;
@@ -125,9 +126,18 @@ public class Artifact extends KindofMisc {
 	}
 
 	@Override
+	public int level() {
+		int base = super.level();
+		if (Dungeon.infiniteWorld && levelCap > 0 && assistVisibleOverlevel > 0) {
+			base += Math.round((assistVisibleOverlevel * levelCap) / 10f);
+		}
+		return base;
+	}
+
+	@Override
 	public int visiblyUpgraded() {
 		if (!levelKnown || levelCap <= 0) return 0;
-		return Math.round((level()*10)/(float)levelCap) + assistVisibleOverlevel;
+		return Math.round((super.level()*10)/(float)levelCap) + assistVisibleOverlevel;
 	}
 
 	@Override
@@ -137,12 +147,6 @@ public class Artifact extends KindofMisc {
 
 	@Override
 	public int buffedLvl() {
-		// Native artifact level plus Infinite World overlevel converted back into
-		// the artifact's internal scale. This lets generic ArtifactBuff users gain
-		// real power from visible levels above +10.
-		if (Dungeon.infiniteWorld && levelCap > 0 && assistVisibleOverlevel > 0) {
-			return level() + Math.round((assistVisibleOverlevel * levelCap) / 10f);
-		}
 		return level();
 	}
 
@@ -164,15 +168,42 @@ public class Artifact extends KindofMisc {
 		int targetInternal = Math.min(levelCap, Math.round((naturalTarget*levelCap)/10f));
 
 		int guard = 0;
-		while (level() < targetInternal && guard++ < 64) {
-			int before = level();
+		while (super.level() < targetInternal && guard++ < 64) {
+			int before = super.level();
 			upgrade();
-			if (level() <= before) break;
+			if (super.level() <= before) break;
 		}
 
 		assistVisibleOverlevel = Math.max(0, targetVisible - 10);
 		updateQuickslot();
 		return visiblyUpgraded();
+	}
+
+	@Override
+	public void onHeroGainExp(float levelPercent, Hero hero) {
+		super.onHeroGainExp(levelPercent, hero);
+
+		// Once a native artifact reaches its original +10-equivalent cap, a
+		// post-breakthrough Infinite World Hero can continue training the equipped
+		// artifact toward +30. Roughly 1.5 Hero-levels of experience grants one
+		// extra visible artifact level, so +30 remains a long-run goal rather than
+		// an instant jump.
+		if (!Dungeon.infiniteWorld || hero == null || levelPercent <= 0f
+				|| !InfiniteWorldProgression.breakthroughCompleted()
+				|| levelCap <= 0 || !isEquipped(hero)
+				|| Math.round((super.level()*10)/(float)levelCap) < 10
+				|| visiblyUpgraded() >= InfiniteWorldProgression.POST_BREAKTHROUGH_ARTIFACT_CAP) {
+			return;
+		}
+
+		assistOverlevelProgress += levelPercent;
+		while (assistOverlevelProgress >= 1.5f
+				&& visiblyUpgraded() < InfiniteWorldProgression.POST_BREAKTHROUGH_ARTIFACT_CAP) {
+			assistOverlevelProgress -= 1.5f;
+			assistVisibleOverlevel++;
+			updateQuickslot();
+			GLog.p("神器成长：" + name() + " 提升至 +" + visiblyUpgraded());
+		}
 	}
 
 	public void resetForTrinity(int visibleLevel){
@@ -317,6 +348,7 @@ public class Artifact extends KindofMisc {
 	private static final String CHARGE = "charge";
 	private static final String PARTIALCHARGE = "partialcharge";
 	private static final String ASSIST_OVERLEVEL = "assist_overlevel";
+	private static final String ASSIST_OVERLEVEL_PROGRESS = "assist_overlevel_progress";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -325,6 +357,7 @@ public class Artifact extends KindofMisc {
 		bundle.put( CHARGE , charge );
 		bundle.put( PARTIALCHARGE , partialCharge );
 		bundle.put( ASSIST_OVERLEVEL, assistVisibleOverlevel );
+		bundle.put( ASSIST_OVERLEVEL_PROGRESS, assistOverlevelProgress );
 	}
 
 	@Override
@@ -336,5 +369,7 @@ public class Artifact extends KindofMisc {
 		partialCharge = bundle.getFloat( PARTIALCHARGE );
 		assistVisibleOverlevel = bundle.contains(ASSIST_OVERLEVEL)
 				? bundle.getInt(ASSIST_OVERLEVEL) : 0;
+		assistOverlevelProgress = bundle.contains(ASSIST_OVERLEVEL_PROGRESS)
+				? bundle.getFloat(ASSIST_OVERLEVEL_PROGRESS) : 0f;
 	}
 }
