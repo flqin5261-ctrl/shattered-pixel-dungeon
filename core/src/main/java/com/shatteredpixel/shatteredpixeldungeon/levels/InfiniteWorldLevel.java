@@ -1658,11 +1658,255 @@ public class InfiniteWorldLevel extends Level {
             if (heap != null && heap.type == Heap.Type.FOR_SALE) heap.seen = true;
         }
 
+        // Do not reveal an isolated landmark with no clue how to reach it. V14
+        // also maps the verified walkable access route from the shop to a shared
+        // chunk gateway. Secret rooms stay hidden because SECRET_DOOR is not passable.
+        ArrayList<Integer> access = merchantWalkPath(map, cx, cy, chunkLocalX, chunkLocalY);
+        for (int cell : access) {
+            mapped[cell] = true;
+            state().markMapped(worldKeyForLocalCell(cell));
+        }
+
         int fogLeft = Math.max(0, left - 2);
         int fogTop = Math.max(0, top - 2);
         int fogRight = Math.min(width(), right + 3);
         int fogBottom = Math.min(height(), bottom + 3);
         GameScene.updateFog(fogLeft, fogTop, fogRight - fogLeft, fogBottom - fogTop);
+    }
+
+
+    private void repairLegacyMerchantAccessInWindow() {
+        if (state().generatorVersion < 11) return;
+
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
+                int cx = state().centerChunkX + wx;
+                int cy = state().centerChunkY + wy;
+                if (!isV11MerchantChunk(cx, cy)) continue;
+
+                int ox = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                int oy = (wy + HALF_WINDOW) * CHUNK_SIZE;
+                ensureMerchantAccessInChunk(map, cx, cy, ox, oy);
+            }
+        }
+    }
+
+    private void ensureMerchantAccessInChunk(int[] terrain, int cx, int cy, int ox, int oy) {
+        if (!isV11MerchantChunk(cx, cy)) return;
+
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int doorX = ox + spec[4];
+        int doorY = oy + spec[5];
+        int outsideX = ox + spec[6];
+        int outsideY = oy + spec[7];
+
+        terrain[doorX + doorY * MAP_SIZE] = Terrain.DOOR;
+        setFloor(terrain, outsideX, outsideY);
+
+        if (!merchantWalkPath(terrain, cx, cy, ox, oy).isEmpty()) return;
+
+        ArrayList<Integer> digPath = merchantDigPath(cx, cy, ox, oy);
+        if (digPath.isEmpty()) {
+            digPath = merchantFallbackDigPath(cx, cy, ox, oy);
+        }
+
+        for (int cell : digPath) {
+            int x = cell % MAP_SIZE;
+            int y = cell / MAP_SIZE;
+            setFloor(terrain, x, y);
+        }
+
+        // A later dig path must never erase the actual shop entrance.
+        terrain[doorX + doorY * MAP_SIZE] = Terrain.DOOR;
+        setFloor(terrain, outsideX, outsideY);
+    }
+
+    private ArrayList<Integer> merchantWalkPath(int[] terrain, int cx, int cy, int ox, int oy) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int startX = spec[6];
+        int startY = spec[7];
+
+        int northX = edgeHorizontal(cx, cy);
+        int southX = edgeHorizontal(cx, cy + 1);
+        int westY = edgeVertical(cx, cy);
+        int eastY = edgeVertical(cx + 1, cy);
+
+        boolean[] targets = new boolean[CHUNK_SIZE * CHUNK_SIZE];
+        targets[northX] = true;
+        targets[southX + (CHUNK_SIZE - 1) * CHUNK_SIZE] = true;
+        targets[westY * CHUNK_SIZE] = true;
+        targets[(CHUNK_SIZE - 1) + eastY * CHUNK_SIZE] = true;
+
+        int start = startX + startY * CHUNK_SIZE;
+        int[] parent = new int[CHUNK_SIZE * CHUNK_SIZE];
+        Arrays.fill(parent, -2);
+        int[] queue = new int[CHUNK_SIZE * CHUNK_SIZE];
+        int head = 0;
+        int tail = 0;
+
+        parent[start] = -1;
+        queue[tail++] = start;
+
+        int found = -1;
+        final int[] dx = new int[]{1, 0, -1, 0};
+        final int[] dy = new int[]{0, 1, 0, -1};
+
+        while (head < tail) {
+            int cur = queue[head++];
+            if (targets[cur]) {
+                found = cur;
+                break;
+            }
+
+            int lx = cur % CHUNK_SIZE;
+            int ly = cur / CHUNK_SIZE;
+
+            for (int d = 0; d < 4; d++) {
+                int nx = lx + dx[d];
+                int ny = ly + dy[d];
+                if (nx < 0 || ny < 0 || nx >= CHUNK_SIZE || ny >= CHUNK_SIZE) continue;
+
+                int next = nx + ny * CHUNK_SIZE;
+                if (parent[next] != -2) continue;
+
+                int global = ox + nx + (oy + ny) * MAP_SIZE;
+                int flags = Terrain.flags[terrain[global]];
+                if ((flags & Terrain.PASSABLE) == 0) continue;
+
+                parent[next] = cur;
+                queue[tail++] = next;
+            }
+        }
+
+        return reconstructMerchantPath(parent, found, ox, oy);
+    }
+
+    private ArrayList<Integer> merchantDigPath(int cx, int cy, int ox, int oy) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int start = spec[6] + spec[7] * CHUNK_SIZE;
+
+        boolean[] blocked = new boolean[CHUNK_SIZE * CHUNK_SIZE];
+        int roomCount = v7RoomCount(cx, cy);
+        for (int roomIndex = 1; roomIndex < roomCount; roomIndex++) {
+            int[] other = v7RoomSpec(cx, cy, roomIndex);
+            for (int y = other[1]; y <= other[3]; y++) {
+                for (int x = other[0]; x <= other[2]; x++) {
+                    blocked[x + y * CHUNK_SIZE] = true;
+                }
+            }
+        }
+
+        int northX = edgeHorizontal(cx, cy);
+        int southX = edgeHorizontal(cx, cy + 1);
+        int westY = edgeVertical(cx, cy);
+        int eastY = edgeVertical(cx + 1, cy);
+
+        boolean[] targets = new boolean[CHUNK_SIZE * CHUNK_SIZE];
+        targets[northX] = true;
+        targets[southX + (CHUNK_SIZE - 1) * CHUNK_SIZE] = true;
+        targets[westY * CHUNK_SIZE] = true;
+        targets[(CHUNK_SIZE - 1) + eastY * CHUNK_SIZE] = true;
+
+        int[] parent = new int[CHUNK_SIZE * CHUNK_SIZE];
+        Arrays.fill(parent, -2);
+        int[] queue = new int[CHUNK_SIZE * CHUNK_SIZE];
+        int head = 0;
+        int tail = 0;
+
+        parent[start] = -1;
+        queue[tail++] = start;
+
+        int found = -1;
+        int rotation = (int)Math.floorMod(hash(cx, cy, 25200), 4L);
+        final int[] dx = new int[]{1, 0, -1, 0};
+        final int[] dy = new int[]{0, 1, 0, -1};
+
+        while (head < tail) {
+            int cur = queue[head++];
+            if (targets[cur]) {
+                found = cur;
+                break;
+            }
+
+            int lx = cur % CHUNK_SIZE;
+            int ly = cur / CHUNK_SIZE;
+
+            for (int step = 0; step < 4; step++) {
+                int d = (rotation + step) & 3;
+                int nx = lx + dx[d];
+                int ny = ly + dy[d];
+                if (nx < 0 || ny < 0 || nx >= CHUNK_SIZE || ny >= CHUNK_SIZE) continue;
+
+                int next = nx + ny * CHUNK_SIZE;
+                if (parent[next] != -2 || blocked[next]) continue;
+
+                // Do not punch accidental extra gateways through the outer frame.
+                if ((nx == 0 || ny == 0 || nx == CHUNK_SIZE - 1 || ny == CHUNK_SIZE - 1)
+                        && !targets[next]) {
+                    continue;
+                }
+
+                parent[next] = cur;
+                queue[tail++] = next;
+            }
+        }
+
+        return reconstructMerchantPath(parent, found, ox, oy);
+    }
+
+    private ArrayList<Integer> merchantFallbackDigPath(int cx, int cy, int ox, int oy) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int sx = spec[6];
+        int sy = spec[7];
+
+        int[][] targets = new int[][]{
+                {edgeHorizontal(cx, cy), 0},
+                {edgeHorizontal(cx, cy + 1), CHUNK_SIZE - 1},
+                {0, edgeVertical(cx, cy)},
+                {CHUNK_SIZE - 1, edgeVertical(cx + 1, cy)}
+        };
+
+        int best = 0;
+        int bestDist = Integer.MAX_VALUE;
+        for (int i = 0; i < targets.length; i++) {
+            int dist = Math.abs(targets[i][0] - sx) + Math.abs(targets[i][1] - sy);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+
+        int tx = targets[best][0];
+        int ty = targets[best][1];
+        ArrayList<Integer> result = new ArrayList<>();
+
+        int x = sx;
+        int y = sy;
+        boolean xFirst = (hash(cx, cy, 25201) & 1L) == 0L;
+
+        while (x != tx || y != ty) {
+            if ((xFirst && x != tx) || y == ty) {
+                x += Integer.compare(tx, x);
+            } else {
+                y += Integer.compare(ty, y);
+            }
+            result.add(ox + x + (oy + y) * MAP_SIZE);
+        }
+        return result;
+    }
+
+    private ArrayList<Integer> reconstructMerchantPath(int[] parent, int found, int ox, int oy) {
+        ArrayList<Integer> result = new ArrayList<>();
+        if (found < 0) return result;
+
+        int cur = found;
+        while (cur >= 0) {
+            int lx = cur % CHUNK_SIZE;
+            int ly = cur / CHUNK_SIZE;
+            result.add(0, ox + lx + (oy + ly) * MAP_SIZE);
+            cur = parent[cur];
+        }
+        return result;
     }
 
     private long v11MerchantObjectKey(int cx, int cy, int salt) {
@@ -2615,6 +2859,13 @@ public class InfiniteWorldLevel extends Level {
             carveV10InfiniteNetwork(out, cx, cy, ox, oy);
         } else if (state().generatorVersion >= 9) {
             carveV9InfiniteBackbone(out, cx, cy, ox, oy);
+        }
+
+        // V14's merchant access guarantee is deliberately the final terrain pass.
+        // Earlier themed-room shells can overwrite corridors carved by room index 0,
+        // so the shop must be validated only after every room/road layer is complete.
+        if (state().generatorVersion >= 14 && isV11MerchantChunk(cx, cy)) {
+            ensureMerchantAccessInChunk(out, cx, cy, ox, oy);
         }
     }
 
@@ -4226,6 +4477,26 @@ public class InfiniteWorldLevel extends Level {
                 }
             }
         }
+    }
+
+
+    @Override
+    public void discover(int cell) {
+        int oldTerrain = map[cell];
+        super.discover(cell);
+
+        if (oldTerrain == Terrain.SECRET_DOOR && map[cell] != oldTerrain) {
+            refreshInfiniteWorldAccentOverlays();
+        }
+    }
+
+    private void refreshInfiniteWorldAccentOverlays() {
+        if (customTiles == null || customWalls == null) return;
+
+        customTiles.clear();
+        customWalls.clear();
+        rebuildAccentTiles();
+        GameScene.refreshInfiniteWorldCustomOverlays();
     }
 
     public int stableTileVariance(int localPos) {
