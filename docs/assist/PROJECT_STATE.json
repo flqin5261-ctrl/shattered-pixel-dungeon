@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.10",
-    "version_code": 956,
+    "version_name": "0.5.11",
+    "version_code": 957,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.10-stable",
-    "development_branch": "assist-0.5.10-solid-scenery",
-    "release_code_sha": "a86b3bcf8a0c8fcd1df549d5b195b0a65e6a7838",
+    "stable_branch": "assist-0.5.11-stable",
+    "development_branch": "assist-0.5.11-progression",
+    "release_code_sha": "4402f08c478e39e72d9825aa5c13bb2af8417ba9",
     "world_generator_version": 17
   },
   "build": {
@@ -209,6 +209,50 @@
       "refresh_halo_cells": 1,
       "secret_room_full_overlay_rebuild_on_discovery": true,
       "purpose": "Prevent static mixed-theme wall/floor overlays from visually covering terrain that has become passable after explosions or secret-door discovery."
+    },
+    "starting_gold": 300,
+    "dynamic_monster_progression": {
+      "enabled": true,
+      "scope": "Infinite World ordinary ecology + level-30 breakthrough trial",
+      "snapshot_rule": "monster scaling is locked when the mob spawns; changing Hero equipment does not mutate already-active mobs",
+      "inputs": [
+        "Hero level",
+        "strongest owned weapon upgrade",
+        "strongest owned armor upgrade",
+        "strongest owned wand upgrade",
+        "two strongest owned ring upgrades",
+        "artifact ownership count",
+        "strongest artifact visible upgrade"
+      ],
+      "dynamic_threat_level": "1-60; approximately 78% Hero level + 22% weighted gear score + small artifact ownership bonus",
+      "hp_scaling": "responds primarily to offensive upgrades; roughly 0.95 + 0.025*(heroLevel-1) + 0.16*offensivePower, capped before trial-wave multiplier",
+      "damage_scaling": "responds primarily to defensive upgrades; roughly 0.95 + 0.018*(heroLevel-1) + 0.12*defensivePower, capped before trial-wave multiplier",
+      "accuracy_and_defense": "moderate progression with Hero level + weighted gear",
+      "loot_probability": "base loot chance multiplied by dynamic reward scale, capped at 2.25x before existing wealth/talent interactions are bounded to 100%",
+      "xp_floor": "4 + dynamicThreatLevel/3, while preserving higher native EXP",
+      "bosses_added": false
+    },
+    "breakthrough_progression": {
+      "pre_breakthrough_level_cap": 30,
+      "post_breakthrough_level_cap": 60,
+      "pre_breakthrough_equipment_cap": 50,
+      "post_breakthrough_equipment_cap": 120,
+      "pre_breakthrough_artifact_cap": 10,
+      "post_breakthrough_artifact_cap": 30,
+      "token": "BreakthroughToken is automatically issued at level 30 until the trial succeeds",
+      "arena_branch": 99,
+      "waves": 10,
+      "enemies_per_wave": 10,
+      "between_wave_action_value": 30,
+      "wave_scaling": "wave 1 is intentionally softer; enemy pools and multipliers rise each wave; wave 10 mixes five late-game threats with five mid-game threats",
+      "failure": "non-lethal; pre-trial Hero/inventory/gold/energy snapshot is restored and a new token is issued",
+      "success": "returns to the prior Infinite World position and unlocks level 60 / +120 equipment / +30 artifact progression",
+      "aid": "arena contains scattered healing, food and utility scroll/potion supplies"
+    },
+    "infinite_world_intro": {
+      "custom": true,
+      "replaces_original_sewers_story": true,
+      "theme": "one persistent boundless stitched world of ordinary, ruined and Backrooms-inspired regions whose danger adapts to the Hero"
     }
   },
   "current_content": {
@@ -491,6 +535,18 @@
       "artifact_spawn_area": "Hero-centered 3x3 cell neighbourhood, excluding Hero cell",
       "artifact_key": "one CrystalKey is added when the guaranteed chest appears",
       "monster_strength_changes": false
+    },
+    "v17_long_run_progression": {
+      "starting_gold": 300,
+      "custom_infinite_intro": true,
+      "hero_level_cap": "30 before breakthrough, 60 after",
+      "equipment_caps": "+50 before breakthrough, +120 after",
+      "artifact_caps": "+10 before breakthrough, +30 after",
+      "artifact_post_cap_growth": "after the native +10-equivalent cap, the equipped artifact earns one extra visible level per roughly 1.5 Hero levels of XP until +30; Assist boost can also test the cap",
+      "breakthrough_trial": "10 waves x 10 mobs, 30 action-value intermission",
+      "trial_failure_restores_losses": true,
+      "dynamic_mob_scaling": true,
+      "cheat_test_button": "Infinite World Assist menu includes one-click Hero +1 level testing and respects the level-30 gate"
     }
   },
   "hard_invariants": [
@@ -508,6 +564,14 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.11 start: a fresh Infinite World begins with exactly 300 gold and displays the custom Infinite World story instead of the original sewer introduction.",
+    "0.5.11 level gate: Hero stops at level 30 until the breakthrough succeeds; reaching 30 issues exactly one BreakthroughToken and existing level-30 saves receive one on movement.",
+    "0.5.11 trial: token enters branch 99 arena; exactly 10 enemies are spawned per wave, 10 waves total, with 30 action-value intermissions and countdown messages.",
+    "0.5.11 trial failure: lethal damage does not submit a normal game-over, consume an Ankh, or preserve trial losses; Hero/inventory/gold/energy restore and token is reissued.",
+    "0.5.11 trial success: Hero returns to the exact prior Infinite World position and unlocks level 60, equipment +120 and artifact +30 caps.",
+    "0.5.11 upgrade caps: Weapon/Armor/Ring/Wand normal upgrade() calls stop at +50 before breakthrough and +120 after; non-Infinite modes are unchanged.",
+    "0.5.11 artifact growth: pre-breakthrough +10 remains the cap; after breakthrough equipped artifacts can continue from their native cap toward visible +30 and Assist boost respects the same cap.",
+    "0.5.11 dynamic mobs: new mobs snapshot Hero level/gear/artifacts at spawn; HP answers offense, damage answers defense, accuracy/defense/type pool/EXP/loot rise moderately; already-active mobs do not rescale on equipment swap.",
     "0.5.10 V17 artifact chest: no guaranteed artifact chest before 1000 positive Hero action-value; at/after 1000 it appears only in one valid cell of the Hero-centered 3x3 neighbourhood and grants one CrystalKey.",
     "0.5.10 V17 solid scenery: every one of the 30 decoration kinds blocks ordinary Hero and Mob movement; none remain pass-through.",
     "0.5.10 V17 scenery safety: all-solid placement must still preserve center crossing lanes, doors, chest vicinity, room access, merchant access and local connectivity.",
@@ -564,16 +628,18 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device test fresh Infinite World start gold and custom story.",
+    "Use the Assist +1 Hero level button to reach level 30, run the full breakthrough trial, intentionally fail once, then succeed once and verify restoration/unlocks.",
+    "Compare dynamic mobs at low gear, level-30 +5/+10 gear, artificial +50 pre-breakthrough gear, and post-breakthrough +80/+120 gear; tune only from real combat feedback.",
+    "Verify all old 0.5.10 V17 scenery/artifact-chest/streaming invariants remain intact.",
     "Real-device verify the 1000-action guaranteed artifact chest appears inside the Hero-centered 3x3 neighbourhood and immediately provides a CrystalKey.",
     "Real-device verify all 30 V17 scenery kinds are solid to normal Hero/Mob pathing without creating blocked merchant rooms, doors or one-cell corridors.",
-    "Only after 0.5.10 scenery/artifact pacing is accepted, resume the separate monster-strength/progression design discussion.",
     "Real-device verify V16 physical scenery feels substantial without making normal exploration frustrating or creating hidden chokepoints.",
     "Use spectator QA to inspect high-density Level 9/10/11/94 districts and confirm clustered scenery never overlaps doors, merchants, loot, traps or critical roads.",
     "Verify old V15 saves receive denser visual scenery without pathing changes, while newly started V16 worlds receive physical blockers.",
     "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
     "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
     "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
-    "After 0.5.8 spectator/visual validation, discuss and design Infinite World monster strength/progression mechanics before changing mob stats.",
     "Real-device survey V15 with spectator QA mode: verify all 14 Backrooms-inspired districts can appear through ordinary exploration and automatically unlock their archive entries.",
     "Verify merchant frequency progression over a long new V15 run without any already-generated chunk changing merchant status.",
     "Collect the four expansion bags through different merchants and verify each merchant retargets slot 0 to a bag still missing at first encounter.",
