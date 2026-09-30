@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.8**
-- 当前 versionCode：**954**
-- 当前最新稳定分支：`assist-0.5.8-stable`
+- 当前最新稳定版本：**0.5.9**
+- 当前 versionCode：**955**
+- 当前最新稳定分支：`assist-0.5.9-stable`
 - 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.8-spectator-props`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
+- 当前对应开发分支：`assist-0.5.9-solid-decor`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 16**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -1612,3 +1612,51 @@ Infinite World Bag 定价 value×2（最低20）；普通货物保持原版 valu
 - 0.5.8 不修改怪物强度、等级、血量、攻击、防御、生成池或精英概率。
 - 用户明确要求先完成 spectator + environment visual pass，再单独讨论 monster strength mechanics。
 
+# 32. 0.5.9 / Generator V16 — Dense Solid Environment Set-pieces
+
+用户反馈 0.5.8 装饰太少，而且只是无碰撞的贴图。
+
+V16 把环境装饰升级为两类：
+- visual-only：灌木、蘑菇等；
+- solid scenery：路牌、木桶、木箱、石像、区域装饰。
+
+密度：
+- normal Chunk：2～3 组 set-piece；
+- Backrooms district Chunk：4～5 组；
+- 空间不足时宁可少放。
+
+组合共 12 类：
+- bush patch
+- mushroom patch
+- sign corner
+- barrel pair
+- crate pair
+- supply pile
+- 2×2 crate block
+- 3-barrel row
+- statue pair
+- mixed statue corner
+- region-deco pair
+- region-deco corner
+
+碰撞：
+- Kenney sign/barrel/crate 的实体格底层使用 Terrain.CUSTOM_DECO；
+- statue 用 STATUE/STATUE_SP；
+- region prop 用 REGION_DECO/REGION_DECO_ALT；
+- 这些 terrain 都是 SOLID，普通 Hero/Mob 必须绕行；
+- spectator QA 仍可穿越。
+
+不堵路硬约束：
+- solid formation 外扩 1 cell 完整 ring 必须全部 PASSABLE；
+- ring 不能有 heap/trap/plant/char；
+- center crossing band x/y 9..14 禁止放；
+- 不覆盖 gameplay objects；
+- 因此不能把一格宽 corridor、merchant route、shared gateway 封死。
+
+Persistence：
+- 每个 slot 把 style+local anchor 存 objectStates；
+- solid decoration 不写入 terrainOverrides；
+- Streaming / Save-Load 后同位置同组合；
+- V15 legacy save 继续使用旧 sparse visual-only 规则，不自动升级碰撞。
+
+当前下一阶段仍是用户提出的 monster strength mechanics；先等 V16 环境摆件实机确认。
