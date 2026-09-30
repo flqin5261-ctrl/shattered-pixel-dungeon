@@ -27,7 +27,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
@@ -425,14 +424,6 @@ public class WndUpgrade extends Window {
 
 		if (toUpgrade instanceof MissileWeapon && ((MissileWeapon) toUpgrade).extraThrownLeft){
 			bottom = addMessage(Messages.get(this, "thrown_dust"), CharSprite.WARNING, bottom);
-		}
-
-		if (toUpgrade instanceof BreakthroughCertificate) {
-			bottom = addMessage(
-					Messages.get(this, "seal_immunity",
-							((BreakthroughCertificate)toUpgrade).immunityName()),
-					CharSprite.POSITIVE,
-					bottom);
 		}
 
 		// *** Buttons for confirming/cancelling ***
