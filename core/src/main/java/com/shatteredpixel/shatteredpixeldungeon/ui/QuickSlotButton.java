@@ -28,8 +28,10 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -37,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.watabou.input.GameAction;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.utils.BArray;
 import com.watabou.utils.PathFinder;
@@ -53,6 +56,10 @@ public class QuickSlotButton extends Button {
 	
 	public static int targetingSlot = -1;
 	public static Char lastTarget = null;
+
+	private static final float GENESIS_WAND_DOUBLE_TAP = 0.35f;
+	private Wand genesisTapWand;
+	private float genesisTapTimer;
 	
 	public QuickSlotButton( int slotNum ) {
 		super();
@@ -86,6 +93,31 @@ public class QuickSlotButton extends Button {
 				if (!Dungeon.hero.isAlive() || !Dungeon.hero.ready){
 					return;
 				}
+
+				Item tappedItem = select(slotNum);
+				if (tappedItem instanceof Wand && GenesisEcho.ultraSpellcast(Dungeon.hero)) {
+					Wand wand = (Wand)tappedItem;
+
+					if (genesisTapWand == wand && genesisTapTimer > 0f) {
+						genesisTapWand = null;
+						genesisTapTimer = 0f;
+						GameScene.ready();
+						wand.genesisScreenCast(Dungeon.hero);
+						return;
+					}
+
+					genesisTapWand = wand;
+					genesisTapTimer = GENESIS_WAND_DOUBLE_TAP;
+
+					if (Dungeon.hero.belongings.contains(tappedItem)) {
+						GameScene.cancelCellSelector();
+						GameScene.centerNextWndOnInvPane();
+						tappedItem.execute(Dungeon.hero);
+						useTargeting();
+					}
+					return;
+				}
+
 				if (targetingSlot == slotNum && lastTarget != null) {
 					int cell = autoAim(lastTarget, select(slotNum));
 
@@ -176,6 +208,13 @@ public class QuickSlotButton extends Button {
 	@Override
 	public void update() {
 		super.update();
+		if (genesisTapTimer > 0f) {
+			genesisTapTimer -= Game.elapsed;
+			if (genesisTapTimer <= 0f) {
+				genesisTapTimer = 0f;
+				genesisTapWand = null;
+			}
+		}
 		if (targetingSlot != -1 && lastTarget != null && lastTarget.sprite != null){
 			crossM.point(lastTarget.sprite.center(crossM));
 		}
