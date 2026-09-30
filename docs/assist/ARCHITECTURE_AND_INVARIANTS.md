@@ -2011,3 +2011,45 @@ Road and readability guarantees have priority over target prop count.
 - Infinite Space belongs to Genesis Echo, not the item: root Backpack capacity must be at least `items.size()+5` while Genesis Echo is active.
 - Fixed Seal backpack-capacity bonuses must not be reintroduced.
 - Voluntary ScrollOfTeleportation remains allowed; generic/external teleport is blocked.
+
+# Assist 0.6.9 — Extended talent architecture
+
+## Talent array invariant
+Talent.MAX_TALENT_TIERS is now 7 and every Hero talent list is initialized to seven LinkedHashMap tiers. The threshold array includes a trailing sentinel so code may safely read tierLevelThresholds[tier+1] for tier 7.
+
+Outside Infinite World:
+- gameplay/UI remains capped to the original four tiers;
+- tiers 5-7 have zero available points and are not exposed as normal progression.
+
+Inside Infinite World:
+- tiers 5 and 6 are universal long-run progression tiers;
+- tier 7 is visible and spendable only while Genesis Echo is active;
+- tier 7 has one available point total and upgradeTalent rejects selecting a second authority until resetTier7Talent clears the tier.
+
+## Miracle mastery invariant
+GenesisEcho.miracleTalentMastery(hero) is true only when Genesis Echo exists and an equipped level-60 BreakthroughCertificate is linked as Miracle World.
+While true:
+- Hero.pointsInTalent returns maxPoints for talents stored in tiers 1-6;
+- talentPointsSpent reports full max rank totals for those tiers so UI stars match real numerical behavior;
+- stored allocation values are never overwritten. Removing Miracle World therefore restores exactly the player's actual allocations.
+Tier 7 always reads stored points and is never auto-maxed.
+
+## Genesis authority UI invariant
+GenesisEcho.GenesisTalentAuthority is a persistent positive Buff created only when one tier-7 talent is selected. Its displayed name and description come directly from that Talent enum entry. Resetting tier 7 detaches the Buff; choosing another talent recreates it.
+
+## Genesis double-tap input invariant
+CellSelector intercepts double taps only when:
+- default GameScene cell selection is active,
+- GENESIS_TELEPORT is the selected tier-7 talent,
+- the target cell is already visited.
+The first tap is held for 0.28s. A matching second tap teleports. If it does not arrive, the original single tap is forwarded to normal movement, so the authority does not permanently replace ordinary controls.
+
+## Forced execution invariant
+GenesisEcho.forceSlay is the shared endgame execution path used by:
+- Miracle World linked normal attacks,
+- Genesis Reach,
+- Genesis Overcast.
+It first invokes the target's normal die(hero) path so standard loot/stat/death hooks can run, then forcibly destroys a target that still remains alive through a special death mechanic. Allied targets are never executed.
+
+## Fortune burst invariant
+Genesis Fortune runs only after opening CHEST/LOCKED_CHEST/CRYSTAL_CHEST. It transforms the just-opened heap into distributed heaps around the Hero and does not alter the world generator version. Its random continuation loops intentionally have no fixed numeric maximum.
