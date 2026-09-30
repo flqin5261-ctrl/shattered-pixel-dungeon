@@ -2517,3 +2517,24 @@ Changes:
 - No 500-action item-choice feature and no 天降横财 in this release.
 - Base Backpack raised to 25; Seal gives +5/+8/+12/+16 capacity, with the lv60 +16 layer copied by linked Genesis Echo.
 - Capacity loss spills excess items to the Hero instead of deleting them.
+
+
+# 0.6.7 — Genesis Authority
+
+Version:
+- versionName: 0.6.7
+- versionCode: 963
+- dev: assist-0.6.7-genesis-authority
+- target stable: assist-0.6.7-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Changes:
+- Renamed the level-60 item to 奇迹·世界 / Miracle World.
+- Reworked Genesis Echo into real permanent control/instant-death/forced-teleport immunity rather than description-only behavior.
+- While Miracle World is equipped, Genesis Echo dynamically gains broad curse immunity and full damage immunity.
+- Linked curse protection explicitly covers major DoT/stat-degrade buffs and rejects any other NEGATIVE Buff.
+- Existing blocked debuffs are cleansed when Genesis Echo awakens/restores or Miracle World links.
+- Removed all fixed backpack-capacity bonuses from the Seal/Miracle World.
+- Added Genesis Echo “Infinite Space”: root backpack capacity always grows to keep at least five free slots.
+- Removed player-facing text about the lv60 EXP bonus being removed.
+- Upgrade window now displays the Seal's current permanent immunity for rapid rerolls.
