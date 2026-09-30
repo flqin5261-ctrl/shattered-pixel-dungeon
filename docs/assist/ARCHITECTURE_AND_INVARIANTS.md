@@ -1998,3 +1998,16 @@ Road and readability guarantees have priority over target prop count.
 - Generic forced teleport is blocked; explicit player Teleportation Scroll fallback passes ScrollOfTeleportation.class so voluntary teleport remains legal.
 - Backpack capacity shrink must spill items, never silently delete them.
 - 0.6.6 does not implement the deferred 500-action item selector or 天降横财.
+
+
+# 0.6.7 Genesis authority invariants
+
+- Player-facing LV60 equipment name is `奇迹·世界`. Internal `BreakthroughCertificate` class name remains for save compatibility.
+- GenesisEcho permanent layer exists independently of Miracle World equipment state.
+- Permanent layer must provide real Char immunities for control, real forced-teleport blocking, and real instant-death blocking.
+- Miracle-linked curse immunity must be conditional on `GenesisEcho.miracleLinked(hero)`; unequipping Miracle World must immediately allow ordinary negative buffs again.
+- Miracle-linked damage immunity must short-circuit `Hero.damage` before any HP/shield changes and also report Hero invulnerability.
+- Do not feed Miracle World, Genesis Echo, copied bonuses, damage/curse immunity, Infinite Space, or kill-growth HP/STR into dynamic mob scaling.
+- Infinite Space belongs to Genesis Echo, not the item: root Backpack capacity must be at least `items.size()+5` while Genesis Echo is active.
+- Fixed Seal backpack-capacity bonuses must not be reintroduced.
+- Voluntary ScrollOfTeleportation remains allowed; generic/external teleport is blocked.
