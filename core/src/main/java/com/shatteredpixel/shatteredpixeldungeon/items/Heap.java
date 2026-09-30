@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
@@ -51,6 +52,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -82,6 +84,7 @@ public class Heap implements Bundlable {
 	public LinkedList<Item> items = new LinkedList<>();
 	
 	public void open( Hero hero ) {
+		Type openedType = type;
 		switch (type) {
 		case TOMB:
 			Wraith.spawnAround( hero.pos );
@@ -110,6 +113,23 @@ public class Heap implements Bundlable {
 		if (bonus != null && !bonus.isEmpty()) {
 			items.addAll(0, bonus);
 			RingOfWealth.showFlareForBonusDrop(sprite);
+		}
+
+		if (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST || openedType == Type.CRYSTAL_CHEST) {
+			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
+			if (certificate != null && Random.Float() < certificate.chestBonusChance()) {
+				int roll = Random.Int(100);
+				Generator.Category cat;
+				if (roll < 35) cat = Generator.Category.POTION;
+				else if (roll < 70) cat = Generator.Category.SCROLL;
+				else if (roll < 85) cat = Generator.Category.FOOD;
+				else cat = Generator.Category.GOLD;
+				Item extra = Generator.random(cat);
+				if (extra != null) {
+					items.addFirst(extra);
+					GLog.p("突破祝福使宝箱额外显现了一件物品。");
+				}
+			}
 		}
 		sprite.link();
 		sprite.drop();
