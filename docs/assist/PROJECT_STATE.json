@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.5.11-stable",
     "development_branch": "assist-0.5.11-progression",
-    "release_code_sha": "4402f08c478e39e72d9825aa5c13bb2af8417ba9",
+    "release_code_sha": "d8aed9ef80c1e4774454988115ea7d111ddf0366",
     "world_generator_version": 17
   },
   "build": {
@@ -546,7 +546,8 @@
       "breakthrough_trial": "10 waves x 10 mobs, 30 action-value intermission",
       "trial_failure_restores_losses": true,
       "dynamic_mob_scaling": true,
-      "cheat_test_button": "Infinite World Assist menu includes one-click Hero +1 level testing and respects the level-30 gate"
+      "cheat_test_button": "Infinite World Assist menu has both +1 Hero level and one-click current-stage-cap buttons; both respect the level-30 gate.",
+      "breakthrough_token_delivery": "Token is forced into the Hero backpack even if normal capacity is full, using one temporary over-cap slot rather than dropping into the streaming world."
     }
   },
   "hard_invariants": [
@@ -564,6 +565,8 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.11 breakthrough token: even with a full backpack, the token stays in the backpack via one temporary over-cap slot and is never duplicated on the ground.",
+    "0.5.11 QA controls: +1 level and one-click current-stage-cap buttons both exist; the fast button reaches 30 before breakthrough and 60 after success without bypassing the trial.",
     "0.5.11 start: a fresh Infinite World begins with exactly 300 gold and displays the custom Infinite World story instead of the original sewer introduction.",
     "0.5.11 level gate: Hero stops at level 30 until the breakthrough succeeds; reaching 30 issues exactly one BreakthroughToken and existing level-30 saves receive one on movement.",
     "0.5.11 trial: token enters branch 99 arena; exactly 10 enemies are spawned per wave, 10 waves total, with 30 action-value intermissions and countdown messages.",

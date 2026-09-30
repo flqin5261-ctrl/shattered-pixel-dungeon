@@ -2415,8 +2415,9 @@ Version:
 - Artifact post-cap progression is stored separately from native artifact levels so original artifact state remains compatible; equipped capped artifacts continue long-run growth from Hero XP.
 
 ## QA
-- Infinite World Assist window includes a one-click +1 Hero level testing button.
-- The test button cannot bypass the level-30 breakthrough gate.
+- Infinite World Assist window includes both +1 Hero level and one-click current-stage-cap testing buttons.
+- The fast button reaches level 30 before breakthrough and level 60 after success; neither button can bypass the level-30 trial.
+- BreakthroughToken is guaranteed to stay in the backpack even when normal capacity is full, using one temporary over-cap slot instead of dropping into the streaming world.
 
 ## CI note
 - One intermediate 0.5.11 Action failed while downloading the Gradle distribution with `Connection reset by peer`. This was a transient runner network failure, not a compiler failure; earlier/later runs are the authority for code validity.

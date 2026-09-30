@@ -1746,9 +1746,11 @@ Generator V16 对大型装饰使用原版 Terrain.CUSTOM_DECO：
 - unlock level60 / +120 equipment / +30 artifact。
 
 ## 34.5 QA
-WndAssist 在 Infinite World 中新增“测试：角色升1级”按钮。
-- 正常阶段每点一次提升 1 Hero level；
-- 30级未突破时不会作弊越过门槛，而是提示/发放挑战信物；
-- 成功后可继续测试到 60。
+WndAssist 在 Infinite World 中新增两种等级 QA：
+- “测试：等级+1”：每点一次提升 1 Hero level，便于逐级观察动态怪物曲线；
+- “测试：直升上限”：突破前一键升到当前阶段上限30，突破后一键升到60；
+- 两个按钮都不能作弊越过30级突破门槛。
+
+BreakthroughToken 是 progression-critical 物品：即使普通背包已满，也会使用一个临时超容量槽强制放入背包，不再掉到 Infinite World 地面，避免 Streaming/重复检查造成信物复制。
 
 0.5.11 不能破坏：V17 实体装饰、1000 action-value 3×3 唯一神器箱、spectator x8/20 FOV、Mob distance despawn、VBO/Water/Fog/Streaming invariants。
