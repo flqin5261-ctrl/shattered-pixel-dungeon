@@ -32,6 +32,18 @@ public class InfiniteWorldState implements Bundlable {
     // 0 = not spawned, 1 = closed crystal chest, 2 = opened heap, 3 = artifact taken.
     public int artifactChestState = 0;
 
+    // 0.5.11 long-run progression / level-30 breakthrough state.
+    public boolean breakthroughCompleted = false;
+    public boolean breakthroughTrialActive = false;
+    public int breakthroughWave = 0;
+    public float breakthroughCountdown = -1f;
+    public int breakthroughReturnDepth = 1;
+    public int breakthroughReturnBranch = 0;
+    public int breakthroughReturnPos = -1;
+    public int breakthroughTrialGold = 0;
+    public int breakthroughTrialEnergy = 0;
+    public Bundle breakthroughHeroSnapshot = null;
+
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
     private final HashSet<Long> exploredChunks = new HashSet<>();
@@ -191,6 +203,16 @@ public class InfiniteWorldState implements Bundlable {
     private static final String ARTIFACT_CHEST_WY = "artifact_chest_wy";
     private static final String ARTIFACT_CHEST_INDEX = "artifact_chest_index";
     private static final String ARTIFACT_CHEST_STATE = "artifact_chest_state";
+    private static final String BREAKTHROUGH_COMPLETED = "breakthrough_completed";
+    private static final String BREAKTHROUGH_ACTIVE = "breakthrough_active";
+    private static final String BREAKTHROUGH_WAVE = "breakthrough_wave";
+    private static final String BREAKTHROUGH_COUNTDOWN = "breakthrough_countdown";
+    private static final String BREAKTHROUGH_RETURN_DEPTH = "breakthrough_return_depth";
+    private static final String BREAKTHROUGH_RETURN_BRANCH = "breakthrough_return_branch";
+    private static final String BREAKTHROUGH_RETURN_POS = "breakthrough_return_pos";
+    private static final String BREAKTHROUGH_GOLD = "breakthrough_gold";
+    private static final String BREAKTHROUGH_ENERGY = "breakthrough_energy";
+    private static final String BREAKTHROUGH_HERO = "breakthrough_hero";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -220,6 +242,18 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(ARTIFACT_CHEST_WY, artifactChestWorldY);
         bundle.put(ARTIFACT_CHEST_INDEX, artifactChestArtifactIndex);
         bundle.put(ARTIFACT_CHEST_STATE, artifactChestState);
+        bundle.put(BREAKTHROUGH_COMPLETED, breakthroughCompleted);
+        bundle.put(BREAKTHROUGH_ACTIVE, breakthroughTrialActive);
+        bundle.put(BREAKTHROUGH_WAVE, breakthroughWave);
+        bundle.put(BREAKTHROUGH_COUNTDOWN, breakthroughCountdown);
+        bundle.put(BREAKTHROUGH_RETURN_DEPTH, breakthroughReturnDepth);
+        bundle.put(BREAKTHROUGH_RETURN_BRANCH, breakthroughReturnBranch);
+        bundle.put(BREAKTHROUGH_RETURN_POS, breakthroughReturnPos);
+        bundle.put(BREAKTHROUGH_GOLD, breakthroughTrialGold);
+        bundle.put(BREAKTHROUGH_ENERGY, breakthroughTrialEnergy);
+        if (breakthroughHeroSnapshot != null) {
+            bundle.put(BREAKTHROUGH_HERO, breakthroughHeroSnapshot);
+        }
 
         long[] terrainKeys = new long[terrainOverrides.size()];
         int[] terrainValues = new int[terrainOverrides.size()];
@@ -288,6 +322,26 @@ public class InfiniteWorldState implements Bundlable {
         artifactChestWorldY = bundle.contains(ARTIFACT_CHEST_WY) ? bundle.getInt(ARTIFACT_CHEST_WY) : 0;
         artifactChestArtifactIndex = bundle.contains(ARTIFACT_CHEST_INDEX) ? bundle.getInt(ARTIFACT_CHEST_INDEX) : -1;
         artifactChestState = bundle.contains(ARTIFACT_CHEST_STATE) ? bundle.getInt(ARTIFACT_CHEST_STATE) : 0;
+        breakthroughCompleted = bundle.contains(BREAKTHROUGH_COMPLETED)
+                && bundle.getBoolean(BREAKTHROUGH_COMPLETED);
+        breakthroughTrialActive = bundle.contains(BREAKTHROUGH_ACTIVE)
+                && bundle.getBoolean(BREAKTHROUGH_ACTIVE);
+        breakthroughWave = bundle.contains(BREAKTHROUGH_WAVE)
+                ? bundle.getInt(BREAKTHROUGH_WAVE) : 0;
+        breakthroughCountdown = bundle.contains(BREAKTHROUGH_COUNTDOWN)
+                ? bundle.getFloat(BREAKTHROUGH_COUNTDOWN) : -1f;
+        breakthroughReturnDepth = bundle.contains(BREAKTHROUGH_RETURN_DEPTH)
+                ? bundle.getInt(BREAKTHROUGH_RETURN_DEPTH) : 1;
+        breakthroughReturnBranch = bundle.contains(BREAKTHROUGH_RETURN_BRANCH)
+                ? bundle.getInt(BREAKTHROUGH_RETURN_BRANCH) : 0;
+        breakthroughReturnPos = bundle.contains(BREAKTHROUGH_RETURN_POS)
+                ? bundle.getInt(BREAKTHROUGH_RETURN_POS) : -1;
+        breakthroughTrialGold = bundle.contains(BREAKTHROUGH_GOLD)
+                ? bundle.getInt(BREAKTHROUGH_GOLD) : 0;
+        breakthroughTrialEnergy = bundle.contains(BREAKTHROUGH_ENERGY)
+                ? bundle.getInt(BREAKTHROUGH_ENERGY) : 0;
+        breakthroughHeroSnapshot = bundle.contains(BREAKTHROUGH_HERO)
+                ? bundle.getBundle(BREAKTHROUGH_HERO) : null;
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
