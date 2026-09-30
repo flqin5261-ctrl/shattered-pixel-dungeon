@@ -373,6 +373,7 @@ public class InfiniteWorldLevel extends Level {
             if (heroFOV[cell]) continue;
             if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
             if (Actor.findChar(cell) != null) continue;
+            if (nearV11Shopkeeper(cell, 8)) continue;
             if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
             if (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]) continue;
 
@@ -380,6 +381,18 @@ public class InfiniteWorldLevel extends Level {
         }
 
         return -1;
+    }
+
+    private boolean nearV11Shopkeeper(int cell, int radius) {
+        int x = cell % width();
+        int y = cell / width();
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (!(mob instanceof InfiniteWorldShopkeeper)) continue;
+            int mx = mob.pos % width();
+            int my = mob.pos / width();
+            if (Math.max(Math.abs(mx - x), Math.abs(my - y)) <= radius) return true;
+        }
+        return false;
     }
 
     private int activeEnemyCount() {
