@@ -164,7 +164,6 @@ public class BreakthroughTrialLevel extends Level {
             mob.pos = pos;
             mob.state = mob.WANDERING;
             mob.aggro(Dungeon.hero);
-            mobs.add(mob);
             GameScene.add(mob);
         }
 
