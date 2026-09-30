@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
@@ -167,6 +168,7 @@ public class Buff extends Actor {
 
 	public static<T extends FlavourBuff> T append( Char target, Class<T> buffClass, float duration ) {
 		T buff = append( target, buffClass );
+		duration = BreakthroughCertificate.adjustConsumableDuration(target, buffClass, duration);
 		buff.spend( duration * target.resist(buffClass) );
 		return buff;
 	}
@@ -183,6 +185,7 @@ public class Buff extends Actor {
 	
 	public static<T extends FlavourBuff> T affect( Char target, Class<T> buffClass, float duration ) {
 		T buff = affect( target, buffClass );
+		duration = BreakthroughCertificate.adjustConsumableDuration(target, buffClass, duration);
 		buff.spend( duration * target.resist(buffClass) );
 		return buff;
 	}
@@ -190,6 +193,7 @@ public class Buff extends Actor {
 	//postpones an already active buff, or creates & attaches a new buff and delays that.
 	public static<T extends FlavourBuff> T prolong( Char target, Class<T> buffClass, float duration ) {
 		T buff = affect( target, buffClass );
+		duration = BreakthroughCertificate.adjustConsumableDuration(target, buffClass, duration);
 		buff.postpone( duration * target.resist(buffClass) );
 		return buff;
 	}
