@@ -223,12 +223,16 @@ public final class InfiniteWorldProgression {
     }
 
     public static void applyTrialScaling(Mob mob, Hero hero, int wave) {
-        int w = clamp(wave, 1, 10);
-        float health = 0.78f + 0.08f * (w - 1);     // 0.78 .. 1.50
-        float damage = 0.82f + 0.06f * (w - 1);     // 0.82 .. 1.36
-        float accuracy = 0.90f + 0.03f * (w - 1);   // 0.90 .. 1.17
-        float defense = 0.90f + 0.03f * (w - 1);    // 0.90 .. 1.17
-        applyDynamicScaling(mob, hero, health, damage, accuracy, defense, 1f, w - 1);
+        int w = clamp(wave, 1, 5);
+        // Compress the old ten-wave difficulty span into five waves. The first
+        // wave stays slightly forgiving, while wave 5 still reaches roughly the
+        // old finale's stat multipliers.
+        float health = 0.82f + 0.17f * (w - 1);       // 0.82 .. 1.50
+        float damage = 0.84f + 0.13f * (w - 1);       // 0.84 .. 1.36
+        float accuracy = 0.92f + 0.0625f * (w - 1);   // 0.92 .. 1.17
+        float defense = 0.92f + 0.0625f * (w - 1);    // 0.92 .. 1.17
+        int levelBonus = Math.round((w - 1) * 2.0f);  // 0,2,4,6,8
+        applyDynamicScaling(mob, hero, health, damage, accuracy, defense, 1f, levelBonus);
         // Trial rewards are temporary because the Hero snapshot is restored afterwards.
         mob.EXP = 0;
         mob.maxLvl = 0;
@@ -294,7 +298,7 @@ public final class InfiniteWorldProgression {
         st.breakthroughCountdown = -1f;
         st.breakthroughTrialActive = true;
 
-        GLog.p("挑战信物化为一道门。十波敌人将在试炼场中依次出现；每波固定10只。");
+        GLog.p("挑战信物化为一道门。五波敌人将在试炼场中依次出现；每波固定5只。");
         Level.beforeTransition();
         InterlevelScene.mode = InterlevelScene.Mode.RETURN;
         InterlevelScene.returnDepth = Dungeon.depth;
