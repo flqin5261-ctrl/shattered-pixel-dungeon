@@ -7,6 +7,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -61,6 +62,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InfiniteWorldLevel extends Level {
+
+    public static boolean assistSpectatorActive() {
+        return Dungeon.infiniteWorld
+                && Dungeon.level instanceof InfiniteWorldLevel
+                && SPDSettings.assistInfiniteSpectator();
+    }
 
     public static final int CHUNK_SIZE = 24;
 
@@ -249,6 +256,13 @@ public class InfiniteWorldLevel extends Level {
                     || Dungeon.hero == null
                     || !Dungeon.hero.isAlive()) {
                 Actor.remove(this);
+                return true;
+            }
+
+            // Spectator test mode is for terrain/streaming QA. It must not cause
+            // exploration to populate the window with new enemies.
+            if (assistSpectatorActive()) {
+                spend(MOB_RESPAWN_MIN_TURNS);
                 return true;
             }
 
