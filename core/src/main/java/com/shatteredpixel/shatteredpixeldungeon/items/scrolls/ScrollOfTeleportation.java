@@ -321,6 +321,10 @@ public class ScrollOfTeleportation extends Scroll {
 	}
 
 	public static void appear( Char ch, int pos ) {
+		appear(ch, pos, 0.4f);
+	}
+
+	public static void appear( Char ch, int pos, float fadeDuration ) {
 
 		ch.sprite.interruptMotion();
 
@@ -340,7 +344,7 @@ public class ScrollOfTeleportation extends Scroll {
 
 		if (ch.invisible == 0) {
 			ch.sprite.alpha( 0 );
-			ch.sprite.parent.add( new AlphaTweener( ch.sprite, 1, 0.4f ) );
+			ch.sprite.parent.add( new AlphaTweener( ch.sprite, 1, Math.max(0.05f, fadeDuration) ) );
 		}
 
 		if (Dungeon.level.heroFOV[pos] || ch == Dungeon.hero ) {
