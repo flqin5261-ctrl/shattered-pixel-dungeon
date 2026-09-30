@@ -118,10 +118,10 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case PEDESTAL:      return source == SOURCE_DUNGEON ? 43 : -1;
             case SARCOPHAGUS:   return source == SOURCE_DUNGEON ? 66 : -1;
             case CRYSTAL_ORB:   return source == SOURCE_DUNGEON ? 68 : -1;
-            case TABLE:         return source == SOURCE_DUNGEON ? 73 : -1;
-            case STOOL:         return source == SOURCE_DUNGEON ? 74 : -1;
+            case TABLE:         return source == SOURCE_DUNGEON ? 72 : -1;
+            case STOOL:         return source == SOURCE_DUNGEON ? 73 : -1;
             case SHELF:         return source == SOURCE_DUNGEON ? 75 : -1;
-            case ARMOR_STAND:   return source == SOURCE_DUNGEON ? 76 : -1;
+            case ARMOR_STAND:   return source == SOURCE_DUNGEON ? 74 : -1;
             case FENCE:         return source == SOURCE_DUNGEON ? 78 : -1;
             case VASE:          return source == SOURCE_DUNGEON ? 113 : -1;
             default:            return -1;
