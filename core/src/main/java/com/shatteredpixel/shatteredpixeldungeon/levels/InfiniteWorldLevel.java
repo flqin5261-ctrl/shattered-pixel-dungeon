@@ -2118,7 +2118,7 @@ public class InfiniteWorldLevel extends Level {
 
             switch (slot) {
                 case 1:
-                    return progressTier >= 2 ? new Ration() : new SmallRation();
+                    return progressTier >= 2 ? new Food() : new SmallRation();
                 case 2:
                     if (progressTier == 0) {
                         return range(cx, cy, 25120, 0, 1) == 0
