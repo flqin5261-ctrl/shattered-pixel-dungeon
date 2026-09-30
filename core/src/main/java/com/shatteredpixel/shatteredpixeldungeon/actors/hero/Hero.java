@@ -595,7 +595,7 @@ public class Hero extends Char {
 			evasion *= 3;
 		}
 		
-		if (paralysed > 0 && !InfiniteWorldLevel.assistSpectatorActive()) {
+		if (paralysed > 0) {
 			evasion /= 2;
 		}
 
@@ -879,7 +879,7 @@ public class Hero extends Char {
 		BuffIndicator.refreshHero();
 		BuffIndicator.refreshBoss();
 		
-		if (paralysed > 0) {
+		if (paralysed > 0 && !InfiniteWorldLevel.assistSpectatorActive()) {
 			
 			curAction = null;
 			
