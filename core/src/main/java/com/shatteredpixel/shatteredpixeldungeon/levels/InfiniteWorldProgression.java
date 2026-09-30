@@ -146,7 +146,10 @@ public final class InfiniteWorldProgression {
             }
             if (item instanceof BreakthroughCertificate) {
                 int certLevel = ((BreakthroughCertificate)item).certificateLevel();
-                p.certificatePower = certLevel >= 60 ? 20 : certLevel >= 50 ? 16 : certLevel >= 40 ? 12 : 8;
+                // Miracle Echo (lv60) and Genesis Echo are deliberately outside
+                // dynamic enemy scaling. Level 60 is meant to be a true endgame
+                // power break rather than another stat treadmill.
+                p.certificatePower = certLevel >= 60 ? 0 : certLevel >= 50 ? 16 : certLevel >= 40 ? 12 : 8;
                 continue;
             }
 
