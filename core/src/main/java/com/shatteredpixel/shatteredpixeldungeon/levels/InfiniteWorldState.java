@@ -45,6 +45,11 @@ public class InfiniteWorldState implements Bundlable {
     public Bundle breakthroughHeroSnapshot = null;
     public Bundle breakthroughQuickslotSnapshot = null;
 
+    // 0.6.6 level-60 endgame state. Genesis Echo is permanent once unlocked.
+    public boolean genesisEchoUnlocked = false;
+    public int genesisKillHpBonus = 0;
+    public int genesisKillStrBonus = 0;
+
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
     private final HashSet<Long> exploredChunks = new HashSet<>();
@@ -215,6 +220,9 @@ public class InfiniteWorldState implements Bundlable {
     private static final String BREAKTHROUGH_ENERGY = "breakthrough_energy";
     private static final String BREAKTHROUGH_HERO = "breakthrough_hero";
     private static final String BREAKTHROUGH_QUICKSLOT = "breakthrough_quickslot";
+    private static final String GENESIS_ECHO_UNLOCKED = "genesis_echo_unlocked";
+    private static final String GENESIS_KILL_HP = "genesis_kill_hp";
+    private static final String GENESIS_KILL_STR = "genesis_kill_str";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -259,6 +267,9 @@ public class InfiniteWorldState implements Bundlable {
         if (breakthroughQuickslotSnapshot != null) {
             bundle.put(BREAKTHROUGH_QUICKSLOT, breakthroughQuickslotSnapshot);
         }
+        bundle.put(GENESIS_ECHO_UNLOCKED, genesisEchoUnlocked);
+        bundle.put(GENESIS_KILL_HP, genesisKillHpBonus);
+        bundle.put(GENESIS_KILL_STR, genesisKillStrBonus);
 
         long[] terrainKeys = new long[terrainOverrides.size()];
         int[] terrainValues = new int[terrainOverrides.size()];
@@ -349,6 +360,12 @@ public class InfiniteWorldState implements Bundlable {
                 ? bundle.getBundle(BREAKTHROUGH_HERO) : null;
         breakthroughQuickslotSnapshot = bundle.contains(BREAKTHROUGH_QUICKSLOT)
                 ? bundle.getBundle(BREAKTHROUGH_QUICKSLOT) : null;
+        genesisEchoUnlocked = bundle.contains(GENESIS_ECHO_UNLOCKED)
+                && bundle.getBoolean(GENESIS_ECHO_UNLOCKED);
+        genesisKillHpBonus = bundle.contains(GENESIS_KILL_HP)
+                ? bundle.getInt(GENESIS_KILL_HP) : 0;
+        genesisKillStrBonus = bundle.contains(GENESIS_KILL_STR)
+                ? bundle.getInt(GENESIS_KILL_STR) : 0;
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
