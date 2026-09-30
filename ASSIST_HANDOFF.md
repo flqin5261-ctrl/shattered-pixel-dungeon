@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.0-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.1-stable`。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.0**
-- 当前 versionCode：**946**
-- 当前最新稳定分支：`assist-0.5.0-stable`
-- 当前发布代码 SHA：`c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
-- 当前对应开发分支：`assist-0.5.0-mobs`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 10**
+- 当前最新稳定版本：**0.5.1**
+- 当前 versionCode：**947**
+- 当前最新稳定分支：`assist-0.5.1-stable`
+- 当前发布代码 SHA：`e14bac5c266d6b0cad3189ace9dc7492967ac74b`
+- 当前对应开发分支：`assist-0.5.1-merchants`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 11**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -109,9 +109,9 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.5.0-stable` 和最新开发分支。
+4. 检查最新稳定分支 `assist-0.5.1-stable` 和最新开发分支。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
-   - `assist-0.5.1-xxxxx`
+   - `assist-0.5.2-xxxxx`
 6. **不要覆盖历史 stable 分支。**
 7. 每次可安装版本都必须：
    - versionCode 递增
@@ -840,6 +840,7 @@ Infinite World 是：
 - `assist-0.4.3-stable`
 - `assist-0.4.4-stable`
 - `assist-0.5.0-stable`
+- `assist-0.5.1-stable`
 
 主要变化：
 
@@ -1339,3 +1340,23 @@ Window shift 3 Chunk 后必须同步重定位当前附近 Mob：
 - WORLD_GEN_VERSION 仍为 10。
 
 因此现有 V10 Infinite World 可以直接升级后出现怪物，不必为了怪物功能重开世界。
+
+
+# 24. 0.5.1 — 流浪商人据点
+
+Generator V11 新增稀有、固定世界坐标的商人据点。
+
+核心规则：
+
+- 商人不是普通随机 NPC，而是世界结构的一部分。
+- 据点只出现在普通区域，避开出生区、Liminal anomaly 和 V10 无限道路主/次干线。
+- 商店占一个真正的主题房，普通门进入。
+- 7-Chunk 商人格点保证 7×7 活动窗口同时最多一个商人，避免原版 Shopkeeper 的全局 FOR_SALE 逻辑互相干扰。
+- 每店最多 6 件商品，内容偏基础补给 + 1 件装备，不制造新的高密度奖励。
+- 商品购买后永久缺货，不因 Streaming/Save-Load 刷新。
+- 商人逃跑后据点永久关闭。
+- 正常 Streaming 离开只 unload，不算逃跑。
+- 商人是中立 NPC，不进入 0.5.0 普通敌人的 40 格 despawn。
+- 普通敌人不会直接刷新在商人 8 格范围内。
+
+0.5.1 改变了基础房间主题，因此 WORLD_GEN_VERSION 从 10 升到 11。要看到新商店房必须重新开始 Infinite World；旧 V10 世界继续使用旧地形公式。
