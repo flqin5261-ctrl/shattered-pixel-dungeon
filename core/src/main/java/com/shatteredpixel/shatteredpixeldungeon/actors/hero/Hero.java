@@ -280,7 +280,7 @@ public class Hero extends Char {
 
 		// Genesis Echo kill growth is exactly +1 max HP per enemy, so apply this
 		// after percentage multipliers rather than letting the permanent point be
-		// amplified by rings or Miracle Echo.
+		// amplified by rings or Miracle World.
 		HT += GenesisEcho.permanentHpBonus(this);
 		
 		if (boostHP){
@@ -1674,6 +1674,11 @@ public class Hero extends Char {
 	}
 
 	@Override
+	public boolean isInvulnerable(Class effect) {
+		return GenesisEcho.damageImmune(this) || super.isInvulnerable(effect);
+	}
+
+	@Override
 	public int glyphLevel(Class<? extends Armor.Glyph> cls) {
 		if (belongings.armor() != null && belongings.armor().hasGlyph(cls, this)){
 			return Math.max(super.glyphLevel(cls), belongings.armor.buffedLvl());
@@ -1689,6 +1694,7 @@ public class Hero extends Char {
 	@Override
 	public void damage( int dmg, Object src ) {
 		if (SPDSettings.assistInvincible() || InfiniteWorldLevel.assistSpectatorActive()) return;
+		if (GenesisEcho.damageImmune(this)) return;
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null) {
 			return;
@@ -2246,7 +2252,7 @@ public class Hero extends Char {
 	
 	public static int maxExp( int lvl ){
 		if (Dungeon.infiniteWorld && lvl == 59) {
-			// Level 60 grants Miracle Echo + Genesis Echo, so this final step is
+			// Level 60 grants Miracle World + Genesis Echo, so this final step is
 			// intentionally a much longer endgame grind.
 			return 3600;
 		}
@@ -2269,6 +2275,10 @@ public class Hero extends Char {
 
 	@Override
 	public boolean add( Buff buff ) {
+
+		if (GenesisEcho.blocksNegativeBuff(this, buff)) {
+			return false;
+		}
 
 		if (buff.type == Buff.buffType.NEGATIVE &&
 				(buff(TimekeepersHourglass.timeStasis.class) != null || buff(TimeStasis.class) != null)) {
