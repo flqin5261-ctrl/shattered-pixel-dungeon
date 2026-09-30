@@ -62,9 +62,33 @@ public class GenesisEcho extends Buff {
         boolean linked = seal != null && seal.certificateLevel() >= 60;
 
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        return Messages.get(this, linked ? "desc_linked" : "desc_unlinked",
+        if (!linked) {
+            return Messages.get(this, "desc_unlinked",
+                    st.genesisKillHpBonus,
+                    st.genesisKillStrBonus);
+        }
+
+        return Messages.get(this, "desc_linked",
                 st.genesisKillHpBonus,
-                st.genesisKillStrBonus);
+                st.genesisKillStrBonus,
+                Math.round((seal.healthMultiplier()-1f)*100f),
+                seal.strengthBonus(),
+                Math.round((seal.damageMultiplier()-1f)*100f),
+                Math.round((seal.accuracyMultiplier()-1f)*100f),
+                Math.round((seal.evasionMultiplier()-1f)*100f),
+                Math.round((1f-seal.damageTakenMultiplier())*100f),
+                Math.round((1f-seal.negativeEffectMultiplier())*100f),
+                Math.round((1f-seal.hungerMultiplier())*100f),
+                Math.round((seal.goldMultiplier()-1f)*100f),
+                Math.round((seal.speedMultiplier()-1f)*100f),
+                seal.visionBonus(),
+                seal.searchDistanceBonus(),
+                Math.round(seal.searchChanceBonus()*100f),
+                Math.round((seal.wandChargeMultiplier()-1f)*100f),
+                Math.round((seal.consumableDurationMultiplier()-1f)*100f),
+                Math.round((1f-seal.shopPriceMultiplier())*100f),
+                Math.round(seal.chestBonusChance()*100f),
+                Math.round(seal.regenInterval()));
     }
 
     public static boolean active(Hero hero) {
