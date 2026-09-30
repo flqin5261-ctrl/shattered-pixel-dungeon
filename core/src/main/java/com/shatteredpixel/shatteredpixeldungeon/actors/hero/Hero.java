@@ -98,6 +98,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Stone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
@@ -270,6 +271,11 @@ public class Hero extends Char {
 		if (buff(ElixirOfMight.HTBoost.class) != null){
 			HT += buff(ElixirOfMight.HTBoost.class).boost();
 		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) {
+			HT = Math.round(HT * certificate.healthMultiplier());
+		}
 		
 		if (boostHP){
 			HP += Math.max(HT - curHT, 0);
@@ -290,6 +296,9 @@ public class Hero extends Char {
 		if (hasTalent(Talent.STRONGMAN)){
 			strBonus += (int)Math.floor(STR * (0.03f + 0.05f*pointsInTalent(Talent.STRONGMAN)));
 		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) strBonus += certificate.strengthBonus();
 
 		return STR + strBonus;
 	}
@@ -700,6 +709,11 @@ public class Hero extends Char {
 			dmg = Math.round(dmg * 1.025f + (.025f*pointsInTalent(Talent.WEAPON_RECHARGING)));
 		}
 
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) {
+			dmg = Math.round(dmg * certificate.damageMultiplier());
+		}
+
 		if (dmg < 0) dmg = 0;
 		return dmg;
 	}
@@ -738,6 +752,9 @@ public class Hero extends Char {
 		}
 
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) speed *= certificate.speedMultiplier();
 
 		float assistMoveMultiplier = SPDSettings.assistSpeed()
 				? SPDSettings.assistSpeedMultiplier() : 1f;
@@ -832,6 +849,10 @@ public class Hero extends Char {
 	@Override
 	public void spend( float time ) {
 		super.spend(time);
+		if (time > 0f) {
+			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+			if (certificate != null) certificate.processHeroTime(this, time);
+		}
 		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
 			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
 		}
@@ -840,6 +861,10 @@ public class Hero extends Char {
 	@Override
 	public void spendConstant(float time) {
 		super.spendConstant(time);
+		if (time > 0f) {
+			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+			if (certificate != null) certificate.processHeroTime(this, time);
+		}
 		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
 			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
 		}
@@ -2183,6 +2208,9 @@ public class Hero extends Char {
 					&& !InfiniteWorldProgression.breakthroughCompleted()) {
 				InfiniteWorldProgression.onHeroAtBreakthroughGate(this);
 			}
+			if (Dungeon.infiniteWorld && InfiniteWorldProgression.breakthroughCompleted()) {
+				InfiniteWorldProgression.syncBreakthroughCertificate(this);
+			}
 		}
 	}
 	
@@ -2258,6 +2286,14 @@ public class Hero extends Char {
 			// normal game-over after finishTrial() has restored the real Hero.
 			HP = Math.max(1, HP);
 			((BreakthroughTrialLevel)Dungeon.level).finishTrial(false);
+			return;
+		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null && certificate.consumeRevive(this)) {
+			PotionOfHealing.cure(this);
+			Buff.prolong(this, Invulnerability.class, 3f);
+			GLog.p("突破之证释放了充能中的不死祝福，你从致命伤中恢复。");
 			return;
 		}
 
