@@ -1385,7 +1385,7 @@ public abstract class Level implements Bundlable {
 				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
 				viewDist *= EyeOfNewt.visionRangeMultiplier();
 				BreakthroughCertificate certificate = BreakthroughCertificate.equipped((Hero)c);
-				if (certificate != null) viewDist += certificate.visionBonus();
+				if (certificate != null) viewDist += certificate.effectiveVisionBonus((Hero)c);
 
 				// Infinite World spectator mode is a map QA tool, not normal
 				// gameplay. Use the shadow caster's full supported radius so the
