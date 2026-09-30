@@ -88,6 +88,7 @@ import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonWallsTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.FogOfWar;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.GridTileMap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.RaisedTerrainTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.TerrainFeaturesTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.WallBlockingTilemap;
@@ -1441,6 +1442,7 @@ public class GameScene extends PixelScene {
 			scene.terrainFeatures.updateMap();
 			scene.raisedTerrain.updateMap();
 			scene.walls.updateMap();
+			refreshInfiniteWorldAccentVisuals(-1);
 			updateFog();
 		}
 	}
@@ -1453,8 +1455,46 @@ public class GameScene extends PixelScene {
 			scene.terrainFeatures.updateMapCell( cell );
 			scene.raisedTerrain.updateMapCell( cell );
 			scene.walls.updateMapCell( cell );
+			refreshInfiniteWorldAccentVisuals(cell);
 			//update adjacent cells too
 			updateFog( cell, 1 );
+		}
+	}
+
+
+	private static void refreshInfiniteWorldAccentVisuals(int cell) {
+		if (!Dungeon.infiniteWorld || Dungeon.level == null) return;
+
+		for (CustomTilemap visual : Dungeon.level.customTiles) {
+			if (visual instanceof InfiniteWorldAccentTilemap) {
+				InfiniteWorldAccentTilemap accent = (InfiniteWorldAccentTilemap) visual;
+				if (cell < 0) accent.refresh();
+				else accent.refreshIfAffected(cell);
+			}
+		}
+
+		for (CustomTilemap visual : Dungeon.level.customWalls) {
+			if (visual instanceof InfiniteWorldAccentTilemap) {
+				InfiniteWorldAccentTilemap accent = (InfiniteWorldAccentTilemap) visual;
+				if (cell < 0) accent.refresh();
+				else accent.refreshIfAffected(cell);
+			}
+		}
+	}
+
+	public static void refreshInfiniteWorldCustomOverlays() {
+		if (scene == null || !Dungeon.infiniteWorld || Dungeon.level == null) return;
+
+		synchronized (scene) {
+			scene.customTiles.clear();
+			for (CustomTilemap visual : Dungeon.level.customTiles) {
+				scene.addCustomTile(visual);
+			}
+
+			scene.customWalls.clear();
+			for (CustomTilemap visual : Dungeon.level.customWalls) {
+				scene.addCustomWall(visual);
+			}
 		}
 	}
 
