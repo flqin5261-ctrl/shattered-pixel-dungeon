@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.5",
-    "version_code": 951,
+    "version_name": "0.5.6",
+    "version_code": 952,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.5-stable",
-    "development_branch": "assist-0.5.5-merchant-connectivity",
-    "release_code_sha": "dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1",
+    "stable_branch": "assist-0.5.6-stable",
+    "development_branch": "assist-0.5.6-spectator-test",
+    "release_code_sha": "dd68b81f5be265818e33216bb99321d34c0964b4",
     "world_generator_version": 14
   },
   "build": {
@@ -329,6 +329,27 @@
       "avoids_other_themed_room_rectangles_when_digging": true,
       "fallback_route_if_no_clean_path": true,
       "maps_verified_walkable_route_on_merchant_discovery": true
+    },
+    "infinite_spectator_test_mode": {
+      "enabled": true,
+      "scope": "Infinite World only",
+      "setting_key": "assist_infinite_spectator",
+      "wall_phase": true,
+      "pit_and_trap_phase": true,
+      "terrain_mutation": false,
+      "minimum_move_multiplier": 4,
+      "respects_higher_general_assist_speed": true,
+      "monster_actor_freeze": "All Mob actors are frozen at Actor.process scheduler boundary while active.",
+      "ecology_spawn_pause": true,
+      "visible_enemies_block_actions": false,
+      "damage_immunity": true,
+      "ignores_root_paralysis_vertigo_for_travel": true,
+      "manual_interactions_preserved": "chests, pickups, merchant trade, keys/doors and normal Hero interactions continue to use normal actions",
+      "exploration": "normal Dungeon.observe/FOV/visited flow continues each step and InfiniteWorldState exploration is synchronized",
+      "streaming": "unchanged; still only after Hero.onMotionComplete",
+      "hero_render_layer": "temporarily rendered above raised terrain/walls so the hero remains visible while inside walls",
+      "exit_safety": "if disabled while inside invalid terrain, Hero is moved to nearest normal standable cell",
+      "new_world_required": false
     }
   },
   "hard_invariants": [
@@ -346,6 +367,11 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.6 spectator: long-click/key movement can phase through WALL/WALL_DECO/solid terrain without changing Level.map and still streams at normal thresholds.",
+    "0.5.6 spectator: existing mobs remain visually present but never move, detect, attack, or interrupt Hero; InfiniteWorldMobEcology never spawns enemies while active.",
+    "0.5.6 spectator: chest opening, pickup, FOR_SALE purchase and other manual interactions still work even with frozen enemies visible.",
+    "0.5.6 spectator: Hero remains visible above walls while phasing; fog and visited cells update like normal exploration.",
+    "0.5.6 spectator: disabling inside wall/chasm safely settles Hero on nearest valid standable cell and restores normal collision/action rules.",
     "0.5.5 V14 merchant access: every revealed merchant room must have an actually walkable route to a shared chunk gateway; no merchant landmark may be isolated behind unrelated themed-room shells.",
     "0.5.5 legacy repair: existing V11-V13 saves must repair disconnected active merchant chunks at load/stream time and persist the terrain repair as overrides.",
     "0.5.5 overlay refresh: bombing/changing a wall under InfiniteWorldAccentTilemap must immediately remove stale wall visuals; hero must never be visually hidden inside a logically passable old wall.",
@@ -375,6 +401,8 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device stress-test Infinite spectator mode across repeated 7x7 streaming shifts, wall interiors, anomaly regions and merchant outposts.",
+    "Verify monster actor freeze and ecology pause remain exact during movement and during time-spending interactions such as opening chests and trading.",
     "Real-device reproduce the historical merchant-isolated-room scenario and verify V14/legacy repair provides a visible, walkable route without bombs.",
     "Stress-test bomb destruction and secret-room reveal across mixed-theme overlays; logical terrain and visible terrain must remain synchronized.",
     "Real-device verify Assist item grant menu navigation, item naming, quantity entry, backpack-full drop fallback and current-depth keys.",
