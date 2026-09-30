@@ -36,6 +36,7 @@ on:
       - assist-0.5.10-solid-scenery
       - assist-0.5.11-progression
       - assist-0.5.12-short-trial
+      - assist-0.5.13-breakthrough-certificate
   workflow_dispatch:
 
 permissions:
