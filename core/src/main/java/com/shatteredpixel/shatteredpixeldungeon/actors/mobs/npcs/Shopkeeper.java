@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.BlobImmunity;
@@ -213,13 +214,14 @@ public class Shopkeeper extends NPC {
 	}
 
 	public static int sellPrice(Item item){
+		if (GenesisEcho.freeShop(Dungeon.hero)) return 0;
 		return breakthroughDiscount(baseSellPrice(item));
 	}
 
 	public static int breakthroughDiscount(int price){
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
 		if (certificate != null) {
-			price = Math.max(1, Math.round(price * certificate.shopPriceMultiplier()));
+			price = Math.max(1, Math.round(price * certificate.effectiveShopPriceMultiplier(Dungeon.hero)));
 		}
 		return price;
 	}
