@@ -1911,3 +1911,41 @@ Road and readability guarantees have priority over target prop count.
 - If all eight adjacent cells are invalid, spawning is deferred until a later positive Hero action; do not widen the radius.
 - Creation grants one current-depth CrystalKey through the existing Notes/KeyRecord path.
 - Artifact chest lifecycle/persistence remains 0 not spawned / 1 closed / 2 opened heap / 3 artifact taken.
+
+
+# 0.5.11 long-run progression invariants
+
+## Scope
+- Long-run growth is Infinite World only. Do not raise the global upstream `Hero.MAX_LEVEL`; ordinary modes must retain the original cap and balance.
+- WORLD_GEN_VERSION remains 17 because this version does not change deterministic terrain formulas.
+- Streaming timing remains exclusively `Hero.onMotionComplete() -> InfiniteWorldLevel.afterHeroMotionComplete()`.
+
+## Level-30 gate
+- Infinite World Hero may reach level 30 normally but may not advance to 31 until `InfiniteWorldState.breakthroughCompleted`.
+- At the gate, excess EXP is held below the next level threshold rather than silently carrying the Hero through.
+- A BreakthroughToken is issued if one is not already in belongings.
+- Existing level-30 Infinite World saves receive the token from normal movement/gate checks.
+
+## Upgrade caps
+- Weapon/Armor/Ring/Wand: +50 pre-breakthrough, +120 post-breakthrough.
+- Artifact: visible +10 pre-breakthrough, visible +30 post-breakthrough.
+- The standard equipment cap is enforced in `Item.upgrade()` only for Infinite World equipment families; direct level setters remain available for restore/generation internals.
+- Artifact native state is preserved. Extra post-+10 growth is persisted separately and converted into effective artifact level for artifact effects.
+
+## Dynamic mob snapshot
+- Dynamic scaling is applied once when an Infinite World enemy is created.
+- Inputs are Hero level, strongest owned weapon/armor/wand, top two rings, artifact count and artifact level.
+- HP primarily reacts to offensive equipment; damage primarily reacts to defensive equipment. This avoids punishing a glass cannon with maximum incoming-damage scaling and avoids turning armor alone into an HP sponge multiplier.
+- Accuracy/defense, type pool, EXP floor and loot chance scale more moderately.
+- Existing active mobs are never recomputed when equipment changes.
+- Distance despawn remains reward-free and must never use die()/destroy().
+
+## Breakthrough arena
+- Arena uses branch 99 and a 49x49 dedicated Level.
+- New token entry must always call `Dungeon.newLevel()` for branch 99 so every attempt starts clean.
+- A normal save/load while already inside the trial may restore the current trial level and wave state.
+- Entry snapshot includes Hero bundle plus gold/energy and original depth/branch/position.
+- Ten waves; exactly ten spawn attempts with a spacious arena designed so all ten legal cells should exist.
+- A cleared wave starts a 30 action-value countdown.
+- Trial Hero death is intercepted before Ankh/game-over handling. The temporary old Hero object is kept technically alive until the current damage call stack returns so `Char.attack()` cannot subsequently call `Dungeon.fail()`.
+- Success and failure restore the pre-trial snapshot. Failure reissues the token; success unlocks the post-30 caps.
