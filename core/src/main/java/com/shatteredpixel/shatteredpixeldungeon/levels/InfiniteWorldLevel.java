@@ -3567,7 +3567,7 @@ public class InfiniteWorldLevel extends Level {
                             out[ox + dx + (oy + by + 2) * MAP_SIZE] = Terrain.DOOR;
                         }
                     }
-                    out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.WELL;
+                    out[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.WELL;
                     break;
             }
         }
