@@ -115,7 +115,7 @@ public class Heap implements Bundlable {
 			RingOfWealth.showFlareForBonusDrop(sprite);
 		}
 
-		if (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST || openedType == Type.CRYSTAL_CHEST) {
+		if (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST) {
 			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
 			if (certificate != null && Random.Float() < certificate.chestBonusChance()) {
 				int roll = Random.Int(100);
