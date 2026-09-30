@@ -21,6 +21,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.InfiniteWorldNote;
@@ -40,6 +41,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
@@ -48,6 +51,7 @@ import com.watabou.utils.Callback;
 import com.watabou.utils.BArray;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,8 +98,13 @@ public class InfiniteWorldLevel extends Level {
     // It is also dense enough that a long straight exploration route can eventually
     // bring an outpost into the loaded window instead of missing every shop row.
     private static final int MERCHANT_SPACING_CHUNKS = 7;
+    private static final int MERCHANT_SPACING_CHUNKS_V12 = 5;
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
+
+    // V12 pacing guarantees: after 400 positive hero action-time the run receives
+    // exactly one visible, nearby crystal chest containing an artifact.
+    private static final float GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE = 400f;
 
     // Keep recently generated chunks in memory. The world itself is still seed-driven;
     // this cache only avoids rebuilding chunks when the player walks back and forth.
@@ -527,6 +536,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6Plants();
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
+        restoreGuaranteedArtifactChest();
     }
 
     @Override
@@ -553,7 +563,248 @@ public class InfiniteWorldLevel extends Level {
                 Math.floorDiv(st.heroWorldX, CHUNK_SIZE),
                 Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
 
+        ensureV12AnomalyNoteNearby(hero);
         pruneInfiniteWorldMobs();
+    }
+
+    public void recordHeroAction(float time) {
+        if (time <= 0f || Dungeon.level != this || state().generatorVersion < 12) return;
+
+        InfiniteWorldState st = state();
+        st.heroActionValue += time;
+
+        if (st.artifactChestState == 0
+                && st.heroActionValue >= GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE) {
+            spawnGuaranteedArtifactChest();
+        }
+    }
+
+    private void ensureV12AnomalyNoteNearby(Hero hero) {
+        if (hero == null || state().generatorVersion < 12) return;
+
+        int cx = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int cy = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        int anomaly = v9AnomalyType(cx, cy);
+        if (anomaly == 0) return;
+
+        String page = v9AnomalyNotePage(anomaly);
+        if (Document.INFINITE_WORLD_NOTES.isPageFound(page) || activeAnomalyNoteExists(page)) return;
+
+        int cell = findNearbyVisibleObjectCell(hero, 1, 4);
+        if (cell < 0) cell = hero.pos;
+
+        Heap heap = heaps.get(cell);
+        if (heap != null && heap.type != Heap.Type.HEAP) {
+            cell = findNearbyVisibleObjectCell(hero, 1, 7);
+            if (cell < 0) return;
+            heap = heaps.get(cell);
+        }
+
+        InfiniteWorldNote note = new InfiniteWorldNote();
+        note.page(page);
+
+        if (heap == null) {
+            heap = new Heap();
+            heap.pos = cell;
+            heap.type = Heap.Type.HEAP;
+            heap.seen = true;
+            heap.drop(note);
+            heaps.put(cell, heap);
+            GameScene.add(heap);
+        } else {
+            heap.drop(note);
+            heap.seen = true;
+        }
+
+        visited[cell] = true;
+        mapped[cell] = true;
+        long key = worldKeyForLocalCell(cell);
+        state().markVisited(key);
+        state().markMapped(key);
+    }
+
+    private boolean activeAnomalyNoteExists(String page) {
+        for (Heap heap : heaps.valueList()) {
+            for (Item item : heap.items) {
+                if (item instanceof InfiniteWorldNote
+                        && page.equals(((InfiniteWorldNote)item).page())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int findNearbyVisibleObjectCell(Hero hero, int minDistance, int maxDistance) {
+        if (hero == null) return -1;
+
+        boolean[] walkable = BArray.or(passable, avoid, null);
+        PathFinder.buildDistanceMap(hero.pos, walkable, maxDistance);
+
+        int hx = hero.pos % width();
+        int hy = hero.pos / width();
+        int best = -1;
+        long bestScore = Long.MAX_VALUE;
+
+        for (int y = Math.max(1, hy - maxDistance); y <= Math.min(height() - 2, hy + maxDistance); y++) {
+            for (int x = Math.max(1, hx - maxDistance); x <= Math.min(width() - 2, hx + maxDistance); x++) {
+                int cell = x + y * width();
+                int dist = PathFinder.distance[cell];
+                if (dist < minDistance || dist > maxDistance) continue;
+                if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
+                if (Actor.findChar(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+
+                Heap heap = heaps.get(cell);
+                if (heap != null && heap.type != Heap.Type.HEAP) continue;
+
+                long score = (heroFOV[cell] ? 0L : 1_000_000L)
+                        + (long)dist * 10_000L
+                        + Math.floorMod(hash(worldXForLocalCell(cell), worldYForLocalCell(cell), 27100), 10_000L);
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = cell;
+                }
+            }
+        }
+        return best;
+    }
+
+    private int chooseGuaranteedArtifactIndex() {
+        ArrayList<Integer> available = new ArrayList<>();
+        for (int i = 0; i < Generator.Category.ARTIFACT.classes.length; i++) {
+            if (i < Generator.Category.ARTIFACT.probs.length
+                    && Generator.Category.ARTIFACT.probs[i] > 0f) {
+                available.add(i);
+            }
+        }
+
+        int chosen;
+        if (!available.isEmpty()) {
+            int pick = (int)Math.floorMod(
+                    hash(state().heroWorldX, state().heroWorldY, 27200),
+                    (long)available.size());
+            chosen = available.get(pick);
+            @SuppressWarnings("unchecked")
+            Class<? extends Artifact> cls =
+                    (Class<? extends Artifact>)Generator.Category.ARTIFACT.classes[chosen];
+            Generator.removeArtifact(cls);
+        } else {
+            chosen = (int)Math.floorMod(
+                    hash(state().heroWorldX, state().heroWorldY, 27201),
+                    (long)Generator.Category.ARTIFACT.classes.length);
+        }
+        return chosen;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Artifact guaranteedArtifactItem(int index) {
+        Class<?>[] classes = Generator.Category.ARTIFACT.classes;
+        if (classes.length == 0) return null;
+        if (index < 0 || index >= classes.length) index = 0;
+
+        Artifact artifact = (Artifact)Reflection.newInstance((Class<? extends Artifact>)classes[index]);
+        artifact.cursed = false;
+        artifact.cursedKnown = true;
+        return artifact;
+    }
+
+    private void spawnGuaranteedArtifactChest() {
+        if (Dungeon.hero == null || state().artifactChestState != 0) return;
+
+        int cell = findNearbyVisibleObjectCell(Dungeon.hero, 2, 5);
+        if (cell < 0) cell = findNearbyVisibleObjectCell(Dungeon.hero, 1, 7);
+        if (cell < 0) return;
+
+        InfiniteWorldState st = state();
+        st.artifactChestWorldX = worldXForLocalCell(cell);
+        st.artifactChestWorldY = worldYForLocalCell(cell);
+        st.artifactChestArtifactIndex = chooseGuaranteedArtifactIndex();
+        st.artifactChestState = 1;
+
+        Artifact artifact = guaranteedArtifactItem(st.artifactChestArtifactIndex);
+        if (artifact == null) {
+            st.artifactChestState = 0;
+            st.artifactChestArtifactIndex = -1;
+            return;
+        }
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.type = Heap.Type.CRYSTAL_CHEST;
+        heap.seen = true;
+        heap.drop(artifact);
+        heaps.put(cell, heap);
+        GameScene.add(heap);
+
+        visited[cell] = true;
+        mapped[cell] = true;
+        long key = worldKeyForLocalCell(cell);
+        st.markVisited(key);
+        st.markMapped(key);
+
+        // The guaranteed chest must never become a key soft-lock. Give the player
+        // one normal Infinite World crystal key at the moment the chest appears.
+        Notes.add(new CrystalKey(Dungeon.depth));
+        GameScene.updateKeyDisplay();
+    }
+
+    private int localCellForWorld(int worldX, int worldY) {
+        int localX = worldX - (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
+        int localY = worldY - (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
+        if (localX < 0 || localX >= width() || localY < 0 || localY >= height()) return -1;
+        return localX + localY * width();
+    }
+
+    private void restoreGuaranteedArtifactChest() {
+        InfiniteWorldState st = state();
+        if (st.generatorVersion < 12 || st.artifactChestState <= 0 || st.artifactChestState >= 3) return;
+
+        int cell = localCellForWorld(st.artifactChestWorldX, st.artifactChestWorldY);
+        if (cell < 0 || heaps.get(cell) != null) return;
+
+        Artifact artifact = guaranteedArtifactItem(st.artifactChestArtifactIndex);
+        if (artifact == null) return;
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.type = st.artifactChestState == 1 ? Heap.Type.CRYSTAL_CHEST : Heap.Type.HEAP;
+        heap.seen = true;
+        heap.drop(artifact);
+        heaps.put(cell, heap);
+
+        visited[cell] = true;
+        mapped[cell] = true;
+        long key = worldKeyForLocalCell(cell);
+        st.markVisited(key);
+        st.markMapped(key);
+    }
+
+    private void snapshotGuaranteedArtifactChest() {
+        InfiniteWorldState st = state();
+        if (st.generatorVersion < 12 || st.artifactChestState <= 0 || st.artifactChestState >= 3) return;
+
+        int cell = localCellForWorld(st.artifactChestWorldX, st.artifactChestWorldY);
+        if (cell < 0) return;
+
+        Heap heap = heaps.get(cell);
+        if (heap == null) {
+            st.artifactChestState = 3;
+            return;
+        }
+
+        boolean artifactPresent = false;
+        for (Item item : heap.items) {
+            if (item instanceof Artifact) {
+                artifactPresent = true;
+                break;
+            }
+        }
+
+        if (!artifactPresent) {
+            st.artifactChestState = 3;
+        } else {
+            st.artifactChestState = heap.type == Heap.Type.CRYSTAL_CHEST ? 1 : 2;
+        }
     }
 
     /**
@@ -696,6 +947,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV6PlantStates();
         snapshotV7ThemedRoomStates();
         snapshotV9AnomalyNotes();
+        snapshotGuaranteedArtifactChest();
     }
 
     private void rebuildWindow() {
@@ -734,6 +986,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6Plants();
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
+        restoreGuaranteedArtifactChest();
     }
 
     private void applyTerrainOverrides() {
@@ -1319,15 +1572,18 @@ public class InfiniteWorldLevel extends Level {
             return false;
         }
 
-        // Keep the immediate starting region free of commerce so the opening still
-        // feels like exploration rather than spawning next to a shop.
-        if (Math.max(Math.abs(cx), Math.abs(cy)) <= 4) return false;
+        // V12 moves merchants closer to normal exploration routes. V11 keeps the
+        // original opening buffer and seven-chunk cadence for save compatibility.
+        int spacing = state().generatorVersion >= 12
+                ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS;
+        int startBuffer = state().generatorVersion >= 12 ? 3 : 4;
+        if (Math.max(Math.abs(cx), Math.abs(cy)) <= startBuffer) return false;
 
-        int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)MERCHANT_SPACING_CHUNKS);
-        int offsetY = (int)Math.floorMod(hash(0, 0, 25001), (long)MERCHANT_SPACING_CHUNKS);
+        int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)spacing);
+        int offsetY = (int)Math.floorMod(hash(0, 0, 25001), (long)spacing);
 
-        return Math.floorMod(cx - offsetX, MERCHANT_SPACING_CHUNKS) == 0
-                && Math.floorMod(cy - offsetY, MERCHANT_SPACING_CHUNKS) == 0;
+        return Math.floorMod(cx - offsetX, spacing) == 0
+                && Math.floorMod(cy - offsetY, spacing) == 0;
     }
 
     private long v11MerchantObjectKey(int cx, int cy, int salt) {
@@ -1960,6 +2216,10 @@ public class InfiniteWorldLevel extends Level {
                 int anomaly = v9AnomalyType(cx, cy);
                 if (anomaly == 0 || !v9IsAnomalyNoteAnchor(cx, cy)) return;
 
+                String page = v9AnomalyNotePage(anomaly);
+                if (state().generatorVersion >= 12
+                        && Document.INFINITE_WORLD_NOTES.isPageFound(page)) return;
+
                 int cell = ox + CHUNK_SIZE / 2 + (oy + CHUNK_SIZE / 2) * width();
                 long key = v6ObjectKey(cell, 0x6100 + anomaly);
                 if (state().objectState(key) != 0) return;
@@ -1972,7 +2232,7 @@ public class InfiniteWorldLevel extends Level {
                 }
 
                 InfiniteWorldNote note = new InfiniteWorldNote();
-                note.page(v9AnomalyNotePage(anomaly));
+                note.page(page);
 
                 Heap heap = new Heap();
                 heap.pos = cell;
@@ -2291,9 +2551,10 @@ public class InfiniteWorldLevel extends Level {
         int mx = Math.floorDiv(cx, macro);
         int my = Math.floorDiv(cy, macro);
 
-        // Entire 5x5 chunk macro-regions share a style, producing spaces that
-        // feel much larger than one chunk. Roughly 8% of macro-regions are anomalous.
-        if (Math.floorMod(hash(mx, my, 23000), 100L) >= 8) return 0;
+        // Entire 5x5 chunk macro-regions share a style. V12 raises the encounter
+        // rate from 8% to 15% so these spaces are rare but realistically discoverable.
+        int anomalyChance = state().generatorVersion >= 12 ? 15 : 8;
+        if (Math.floorMod(hash(mx, my, 23000), 100L) >= anomalyChance) return 0;
 
         return 1 + (int)Math.floorMod(hash(mx, my, 23001), 3L);
     }
