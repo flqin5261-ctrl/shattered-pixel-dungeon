@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventorySlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
@@ -89,6 +90,7 @@ public class WndBag extends WndTabbed {
 
 	private Component itemContent;
 	private ScrollPane itemScroll;
+	private final ArrayList<BagSlot> itemSlots = new ArrayList<>();
 
 	public WndBag( Bag bag ) {
 		this(bag, null);
@@ -132,7 +134,7 @@ public class WndBag extends WndTabbed {
 				PixelScene.uiCamera.height - chrome.marginVer() - tabHeight() - TITLE_HEIGHT - 6);
 		int viewportHeight = Math.min(contentHeight, maxViewportHeight);
 
-		itemScroll = new ScrollPane(itemContent);
+		itemScroll = new BagScrollPane(itemContent);
 		itemScroll.setRect(0, TITLE_HEIGHT, windowWidth, viewportHeight);
 		add(itemScroll);
 
@@ -293,87 +295,211 @@ public class WndBag extends WndTabbed {
 	protected void placeItem( final Item item ) {
 
 		count++;
-		
+
 		int x = col * (slotWidth + SLOT_MARGIN);
 		int y = row * (slotHeight + SLOT_MARGIN);
 
-		InventorySlot slot = new InventorySlot( item ){
-			@Override
-			protected void onClick() {
-				if (lastBag != item && !lastBag.contains(item) && !item.isEquipped(Dungeon.hero)){
-
-					hide();
-
-				} else if (selector != null) {
-
-					if (selector.hideAfterSelecting()){
-						hide();
-					}
-					selector.onSelect( item );
-
-				} else {
-
-					Game.scene().addToFront(new WndUseItem( WndBag.this, item ) );
-
-				}
-			}
-
-			@Override
-			protected void onRightClick() {
-				if (lastBag != item && !lastBag.contains(item) && !item.isEquipped(Dungeon.hero)){
-
-					hide();
-
-				} else if (selector != null) {
-
-					if (selector.hideAfterSelecting()){
-						hide();
-					}
-					selector.onSelect( item );
-
-				} else {
-
-					RightClickMenu r = new RightClickMenu(item){
-						@Override
-						public void onSelect(int index) {
-							WndBag.this.hide();
-						}
-					};
-					WndBag.this.addToFront(r);
-					r.camera = WndBag.this.camera();
-					PointF mousePos = PointerEvent.currentHoverPos();
-					mousePos = camera.screenToCamera((int)mousePos.x, (int)mousePos.y);
-					r.setPos(mousePos.x-3, mousePos.y-3);
-
-				}
-			}
-
-			@Override
-			protected boolean onLongClick() {
-				if (selector == null && item.defaultAction() != null) {
-					hide();
-					QuickSlotButton.set( item );
-					return true;
-				} else if (selector != null) {
-					Game.scene().addToFront(new WndInfoItem(item));
-					return true;
-				} else {
-					return false;
-				}
-			}
-		};
+		BagSlot slot = new BagSlot(item);
 		slot.setRect( x, y, slotWidth, slotHeight );
 		itemContent.add(slot);
+		itemSlots.add(slot);
 
 		if (item == null || (selector != null && !selector.itemSelectable(item))){
 			slot.enable(false);
 		}
-		
+
 		if (++col >= nCols) {
 			col = 0;
 			row++;
 		}
 
+	}
+
+	private BagSlot slotAt(float x, float y) {
+		for (BagSlot slot : itemSlots) {
+			if (slot.active && slot.inside(x, y)) return slot;
+		}
+		return null;
+	}
+
+	private class BagSlot extends InventorySlot {
+
+		private final Item bagItem;
+
+		BagSlot(Item item) {
+			super(item);
+			this.bagItem = item;
+		}
+
+		void pressFromScroll() {
+			onPointerDown();
+		}
+
+		void releaseFromScroll() {
+			onPointerUp();
+		}
+
+		void clickFromScroll(int button) {
+			switch (button) {
+				case PointerEvent.RIGHT:
+					onRightClick();
+					break;
+				case PointerEvent.MIDDLE:
+					onMiddleClick();
+					break;
+				case PointerEvent.LEFT:
+				default:
+					onClick();
+					break;
+			}
+		}
+
+		boolean longClickFromScroll() {
+			return onLongClick();
+		}
+
+		@Override
+		protected void onClick() {
+			if (lastBag != bagItem && !lastBag.contains(bagItem) && !bagItem.isEquipped(Dungeon.hero)){
+
+				hide();
+
+			} else if (selector != null) {
+
+				if (selector.hideAfterSelecting()){
+					hide();
+				}
+				selector.onSelect( bagItem );
+
+			} else {
+
+				Game.scene().addToFront(new WndUseItem( WndBag.this, bagItem ) );
+
+			}
+		}
+
+		@Override
+		protected void onRightClick() {
+			if (lastBag != bagItem && !lastBag.contains(bagItem) && !bagItem.isEquipped(Dungeon.hero)){
+
+				hide();
+
+			} else if (selector != null) {
+
+				if (selector.hideAfterSelecting()){
+					hide();
+				}
+				selector.onSelect( bagItem );
+
+			} else {
+
+				RightClickMenu r = new RightClickMenu(bagItem){
+					@Override
+					public void onSelect(int index) {
+						WndBag.this.hide();
+					}
+				};
+				WndBag.this.addToFront(r);
+				r.camera = WndBag.this.camera();
+				PointF mousePos = PointerEvent.currentHoverPos();
+				mousePos = WndBag.this.camera().screenToCamera((int)mousePos.x, (int)mousePos.y);
+				r.setPos(mousePos.x-3, mousePos.y-3);
+
+			}
+		}
+
+		@Override
+		protected boolean onLongClick() {
+			if (selector == null && bagItem.defaultAction() != null) {
+				hide();
+				QuickSlotButton.set( bagItem );
+				return true;
+			} else if (selector != null) {
+				Game.scene().addToFront(new WndInfoItem(bagItem));
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	private class BagScrollPane extends ScrollPane {
+
+		private BagPointerController bagController;
+
+		BagScrollPane(Component content) {
+			super(content);
+
+			remove(controller);
+			controller.destroy();
+
+			bagController = new BagPointerController();
+			controller = bagController;
+			add(controller);
+			layout();
+		}
+
+		@Override
+		public synchronized void update() {
+			super.update();
+			bagController.updateLongPress();
+		}
+
+		private class BagPointerController extends PointerController {
+
+			private BagSlot pressedSlot;
+			private boolean moved;
+			private boolean longHandled;
+			private float pressTime;
+
+			@Override
+			protected void onPointerDown(PointerEvent event) {
+				PointF p = content.camera.screenToCamera((int)event.current.x, (int)event.current.y);
+				pressedSlot = slotAt(p.x, p.y);
+				moved = false;
+				longHandled = false;
+				pressTime = 0f;
+				if (pressedSlot != null) pressedSlot.pressFromScroll();
+			}
+
+			@Override
+			protected void onDrag(PointerEvent event) {
+				if (!moved && PointF.distance(event.current, event.start) > PixelScene.defaultZoom * 8) {
+					moved = true;
+					if (pressedSlot != null) {
+						pressedSlot.releaseFromScroll();
+						pressedSlot = null;
+					}
+				}
+				super.onDrag(event);
+			}
+
+			@Override
+			protected void onPointerUp(PointerEvent event) {
+				if (pressedSlot != null) pressedSlot.releaseFromScroll();
+				super.onPointerUp(event);
+				if (moved) pressedSlot = null;
+			}
+
+			@Override
+			protected void onClick(PointerEvent event) {
+				if (!moved && !longHandled && pressedSlot != null) {
+					pressedSlot.clickFromScroll(event.button);
+				}
+				pressedSlot = null;
+			}
+
+			void updateLongPress() {
+				if (pressedSlot == null || moved || longHandled || curEvent == null) return;
+				pressTime += Game.elapsed;
+				if (pressTime >= Button.longClick && pressedSlot.longClickFromScroll()) {
+					longHandled = true;
+					pressedSlot.releaseFromScroll();
+					pressedSlot = null;
+					reset();
+				}
+			}
+		}
 	}
 
 	@Override
