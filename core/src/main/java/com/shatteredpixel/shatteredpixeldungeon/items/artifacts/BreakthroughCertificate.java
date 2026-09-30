@@ -468,12 +468,12 @@ public class BreakthroughCertificate extends EquipableItem {
 
     @Override
     public void doDrop(Hero hero) {
-        GLog.w("破界之印无法被丢弃。");
+        GLog.w(name() + "无法被丢弃。");
     }
 
     @Override
     public void cast(final Hero user, int dst) {
-        GLog.w("破界之印无法被投掷或摧毁。");
+        GLog.w(name() + "无法被投掷或摧毁。");
     }
 
     @Override
