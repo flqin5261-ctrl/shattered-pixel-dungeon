@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -95,6 +96,9 @@ public class WndAssist extends Window {
         }
 
         addUpgradeRow();
+        if (Dungeon.infiniteWorld) {
+            addLevelTestRow();
+        }
         addSpeedRow();
         addItemGrantRow();
 
@@ -192,6 +196,26 @@ public class WndAssist extends Window {
         modify.setRect(btnUpgrade.right() + GAP, y, MODIFY_W, BTN_H);
 
         pos = btnUpgrade.bottom();
+    }
+
+    private void addLevelTestRow() {
+        RedButton levelUp = new RedButton("测试：角色升1级", 9) {
+            @Override
+            protected void onClick() {
+                if (Dungeon.hero == null) return;
+                InfiniteWorldProgression.testLevelUp(Dungeon.hero);
+                if (Dungeon.infiniteWorld
+                        && Dungeon.hero.lvl >= InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP
+                        && !InfiniteWorldProgression.breakthroughCompleted()) {
+                    text("测试：30级突破");
+                } else {
+                    text("测试：角色升1级");
+                }
+            }
+        };
+        add(levelUp);
+        levelUp.setRect(0, pos + GAP, WIDTH, BTN_H);
+        pos = levelUp.bottom();
     }
 
     private void addSpeedRow() {
