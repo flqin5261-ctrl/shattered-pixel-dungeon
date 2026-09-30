@@ -2111,3 +2111,25 @@ Infinite World 新增两层通用成长天赋：
 4. scrollPane.setRect(...) —— 在最终窗口坐标下布局内容相机
 
 此顺序同时应用于 WndInfoBuff 和 WndBag。禁止再在 resize() 前对窗口内 ScrollPane 做最终 setRect()。
+
+# 46. 0.6.15 — 奇迹秒杀权能与超极限施法继承关系修正
+
+- versionName：0.6.15
+- versionCode：971
+- dev：assist-0.6.15-execution-authority
+- target stable：assist-0.6.15-stable
+
+## 语义修正
+“机制秒杀”属于“奇迹·世界已佩戴 + 创世回响存在”的联动权能，不属于第7层“超极限施法”本身。
+
+奇迹·世界佩戴期间：
+- Hero 成功命中的近战、徒手、投掷/远程武器攻击会触发 GenesisEcho.tryMiracleExecute；
+- 普通单目标法杖命中也会触发同一机制秒杀，不要求第7层选择超极限施法；
+- 特殊死亡机制怪仍通过 forceSlay 的 die -> destroy 兜底终结。
+
+超极限施法自身：
+- 双击快捷栏法杖，对当前屏幕所有可见敌对 Mob 结算一次真实AOE伤害；
+- DamageWand 使用当前法杖 min/max 形成AOE伤害；非直接伤害型法杖使用随法杖等级增长的创世AOE伤害包；
+- 整次AOE只扣一次法杖正常充能与一次施法行动时间；
+- 未佩戴奇迹·世界时，AOE只造成伤害，不自动秒杀；
+- 已佩戴奇迹·世界时，每个AOE目标在伤害后额外继承创世回响的机制秒杀。
