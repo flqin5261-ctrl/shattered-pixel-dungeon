@@ -309,6 +309,14 @@ public abstract class Mob extends Char {
 		return assistDamageScale;
 	}
 
+	public int assistScaleSpecialDamage(int damage) {
+		// Special bolts often bypass ordinary armor reduction. Applying the full
+		// armor-driven melee multiplier would make high-gear Warlocks/DM-100s
+		// disproportionately lethal, so use the square-root response here.
+		float scale = (float)Math.sqrt(Math.max(1f, assistDamageScale));
+		return Math.max(0, Math.round(damage * Math.min(4.5f, scale)));
+	}
+
 	public float assistAccuracyScale() {
 		return assistAccuracyScale;
 	}
