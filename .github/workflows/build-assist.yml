@@ -35,6 +35,7 @@ on:
       - assist-0.5.9-environment-rich
       - assist-0.5.10-solid-scenery
       - assist-0.5.11-progression
+      - assist-0.5.12-short-trial
   workflow_dispatch:
 
 permissions:
