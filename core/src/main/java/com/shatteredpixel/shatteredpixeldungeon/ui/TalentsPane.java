@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ui;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
@@ -83,6 +84,11 @@ public class TalentsPane extends ScrollPane {
 			}
 		}
 
+		if (!Dungeon.infiniteWorld) {
+			tiersAvailable = Math.min(tiersAvailable, 4);
+		} else if (tiersAvailable > 6 && (Dungeon.hero == null || !GenesisEcho.active(Dungeon.hero))) {
+			tiersAvailable = 6;
+		}
 		tiersAvailable = Math.min(tiersAvailable, talents.size());
 
 		for (int i = 0; i < Math.min(tiersAvailable, talents.size()); i++){
@@ -116,6 +122,15 @@ public class TalentsPane extends ScrollPane {
 					&& Dungeon.hero.armorAbility == null
 					? "choose_tier4_infinite" : (Dungeon.infiniteWorld ? "unlock_tier4_infinite" : "unlock_tier4");
 			blockText = PixelScene.renderTextBlock(Messages.get(this, key), 6);
+			content.add(blockText);
+		} else if (tiersAvailable == 4 && Dungeon.infiniteWorld) {
+			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier5_infinite"), 6);
+			content.add(blockText);
+		} else if (tiersAvailable == 5 && Dungeon.infiniteWorld) {
+			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier6_infinite"), 6);
+			content.add(blockText);
+		} else if (tiersAvailable == 6 && Dungeon.infiniteWorld) {
+			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier7_infinite"), 6);
 			content.add(blockText);
 		} else {
 			blockText = null;
@@ -185,7 +200,7 @@ public class TalentsPane extends ScrollPane {
 
 			if (mode == TalentButton.Mode.UPGRADE) {
 				setupStars();
-				if (Dungeon.hero.talentPointsAvailable(tier) > 0){
+				if (tier != 7 && Dungeon.hero.talentPointsAvailable(tier) > 0){
 
 					random = new IconButton(Icons.SHUFFLE.get()){
 						@Override
@@ -236,12 +251,14 @@ public class TalentsPane extends ScrollPane {
 
 			buttons = new ArrayList<>();
 			for (Talent talent : talents.keySet()){
-				TalentButton btn = new TalentButton(tier, talent, talents.get(talent), mode){
+				int shownPoints = Dungeon.hero == null ? talents.get(talent) : Dungeon.hero.pointsInTalent(talent);
+				TalentButton btn = new TalentButton(tier, talent, shownPoints, mode){
 					@Override
 					public void upgradeTalent() {
 						super.upgradeTalent();
 						if (parent != null) {
 							setupStars();
+							if (tier == 7) ensureTier7ResetButton();
 							TalentTierPane.this.layout();
 						}
 					}
@@ -249,7 +266,44 @@ public class TalentsPane extends ScrollPane {
 				buttons.add(btn);
 				add(btn);
 			}
+			if (mode == TalentButton.Mode.UPGRADE && tier == 7) ensureTier7ResetButton();
 
+		}
+
+		private void ensureTier7ResetButton(){
+			if (tier != 7 || Dungeon.hero == null || Dungeon.hero.talentPointsSpent(7) <= 0 || random != null) return;
+			random = new IconButton(Icons.SHUFFLE.get()){
+				@Override
+				protected void onClick() {
+					super.onClick();
+					GameScene.show(new WndOptions(
+							Icons.SHUFFLE.get(),
+							Messages.get(TalentsPane.class, "tier7_reset_title"),
+							Messages.get(TalentsPane.class, "tier7_reset_sure"),
+							Messages.get(TalentsPane.class, "tier7_reset_yes"),
+							Messages.get(TalentsPane.class, "tier7_reset_no")) {
+						@Override
+						protected void onSelect(int index) {
+							super.onSelect(index);
+							if (index == 0 && TalentTierPane.this.parent != null) {
+								Dungeon.hero.resetTier7Talent();
+								for (TalentButton button : buttons) {
+									button.pointsInTalent = Dungeon.hero.pointsInTalent(button.talent);
+									button.layout();
+								}
+								if (random != null) {
+									random.killAndErase();
+									random.destroy();
+									random = null;
+								}
+								setupStars();
+								TalentTierPane.this.layout();
+							}
+						}
+					});
+				}
+			};
+			add(random);
 		}
 
 		private void setupStars(){
