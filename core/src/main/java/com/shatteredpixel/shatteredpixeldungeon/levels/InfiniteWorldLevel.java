@@ -3017,109 +3017,297 @@ public class InfiniteWorldLevel extends Level {
                                         int westY, int eastY) {
         carveRect(out, ox, oy, ox + CHUNK_SIZE - 1, oy + CHUNK_SIZE - 1, Terrain.WALL);
 
-        if (anomaly == 1) {
-            // Repetitive liminal offices: mostly empty rooms separated by a rigid
-            // wall lattice, with deterministic gaps that repeat across a 5x5 district.
-            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
-
-            for (int x = 5; x < CHUNK_SIZE - 2; x += 6) {
-                for (int y = 1; y < CHUNK_SIZE - 1; y++) {
-                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+        if (state().generatorVersion < 15) {
+            // Preserve the exact six legacy layouts used by V9-V14 saves.
+            if (anomaly == 1) {
+                carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                for (int x = 5; x < CHUNK_SIZE - 2; x += 6) {
+                    for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                    int gapA = 2 + range(cx, cy, 23100 + x, 0, CHUNK_SIZE - 5);
+                    int gapB = 2 + range(cx, cy, 23120 + x, 0, CHUNK_SIZE - 5);
+                    setFloor(out, ox + x, oy + gapA);
+                    setFloor(out, ox + x, oy + gapB);
                 }
-                int gapA = 2 + range(cx, cy, 23100 + x, 0, CHUNK_SIZE - 5);
-                int gapB = 2 + range(cx, cy, 23120 + x, 0, CHUNK_SIZE - 5);
-                setFloor(out, ox + x, oy + gapA);
-                setFloor(out, ox + x, oy + gapB);
-            }
-            for (int y = 5; y < CHUNK_SIZE - 2; y += 6) {
-                for (int x = 1; x < CHUNK_SIZE - 1; x++) {
-                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                for (int y = 5; y < CHUNK_SIZE - 2; y += 6) {
+                    for (int x = 1; x < CHUNK_SIZE - 1; x++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                    int gapA = 2 + range(cx, cy, 23140 + y, 0, CHUNK_SIZE - 5);
+                    int gapB = 2 + range(cx, cy, 23160 + y, 0, CHUNK_SIZE - 5);
+                    setFloor(out, ox + gapA, oy + y);
+                    setFloor(out, ox + gapB, oy + y);
                 }
-                int gapA = 2 + range(cx, cy, 23140 + y, 0, CHUNK_SIZE - 5);
-                int gapB = 2 + range(cx, cy, 23160 + y, 0, CHUNK_SIZE - 5);
-                setFloor(out, ox + gapA, oy + y);
-                setFloor(out, ox + gapB, oy + y);
-            }
-
-        } else if (anomaly == 2) {
-            // Pool halls: broad empty floors, repeated pools and narrow dry lanes.
-            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
-
-            for (int by = 3; by <= 15; by += 12) {
-                for (int bx = 3; bx <= 15; bx += 12) {
-                    int w = 5 + range(cx + bx, cy + by, 23200, 0, 2);
-                    int h = 5 + range(cx + bx, cy + by, 23201, 0, 2);
-                    carveRect(out, ox + bx, oy + by,
-                            Math.min(ox + CHUNK_SIZE - 3, ox + bx + w),
-                            Math.min(oy + CHUNK_SIZE - 3, oy + by + h),
-                            Terrain.WATER);
-                }
-            }
-
-            // Repeating crosswalks keep the pools readable and traversable.
-            carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
-            carveRect(out, ox + 1, oy + 11, ox + CHUNK_SIZE - 2, oy + 12, Terrain.EMPTY);
-
-        } else if (anomaly == 3) {
-            // Endless hall: deliberately oversized and sparse, with repeating pillars.
-            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
-            for (int y = 4; y < CHUNK_SIZE - 3; y += 5) {
-                for (int x = 4; x < CHUNK_SIZE - 3; x += 5) {
-                    if (((x + y + cx + cy) & 1) == 0) {
-                        out[ox + x + (oy + y) * MAP_SIZE] = Terrain.STATUE;
+            } else if (anomaly == 2) {
+                carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                for (int by = 3; by <= 15; by += 12) {
+                    for (int bx = 3; bx <= 15; bx += 12) {
+                        int w = 5 + range(cx + bx, cy + by, 23200, 0, 2);
+                        int h = 5 + range(cx + bx, cy + by, 23201, 0, 2);
+                        carveRect(out, ox + bx, oy + by,
+                                Math.min(ox + CHUNK_SIZE - 3, ox + bx + w),
+                                Math.min(oy + CHUNK_SIZE - 3, oy + by + h),
+                                Terrain.WATER);
                     }
                 }
-            }
-        } else if (anomaly == 4) {
-            // Yellow maze: dense repeating partitions with subtly shifting gaps.
-            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
-            for (int x = 4; x < CHUNK_SIZE - 2; x += 4) {
-                for (int y = 1; y < CHUNK_SIZE - 1; y++) {
-                    out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                carveRect(out, ox + 1, oy + 11, ox + CHUNK_SIZE - 2, oy + 12, Terrain.EMPTY);
+            } else if (anomaly == 3) {
+                carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                for (int y = 4; y < CHUNK_SIZE - 3; y += 5) {
+                    for (int x = 4; x < CHUNK_SIZE - 3; x += 5) {
+                        if (((x + y + cx + cy) & 1) == 0) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.STATUE;
+                    }
                 }
-                int gap = 2 + range(cx, cy, 23400 + x, 0, CHUNK_SIZE - 5);
-                setFloor(out, ox + x, oy + gap);
-                if ((x & 4) == 0) setFloor(out, ox + x, oy + Math.max(2, CHUNK_SIZE - 3 - gap));
-            }
-            for (int y = 6; y < CHUNK_SIZE - 2; y += 8) {
-                for (int x = 1; x < CHUNK_SIZE - 1; x++) {
-                    if ((x % 5) != 2) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+            } else if (anomaly == 4) {
+                carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                for (int x = 4; x < CHUNK_SIZE - 2; x += 4) {
+                    for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                    int gap = 2 + range(cx, cy, 23400 + x, 0, CHUNK_SIZE - 5);
+                    setFloor(out, ox + x, oy + gap);
+                    if ((x & 4) == 0) setFloor(out, ox + x, oy + Math.max(2, CHUNK_SIZE - 3 - gap));
                 }
-            }
-        } else if (anomaly == 5) {
-            // Service tunnels: a harsh, repetitive maintenance grid.
-            for (int x = 3; x < CHUNK_SIZE - 2; x += 7) {
-                carveRect(out, ox + x, oy + 1, ox + Math.min(CHUNK_SIZE - 2, x + 1),
-                        oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
-            }
-            for (int y = 4; y < CHUNK_SIZE - 2; y += 7) {
-                carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2,
-                        oy + Math.min(CHUNK_SIZE - 2, y + 1), Terrain.EMPTY_DECO);
-            }
-            for (int y = 3; y < CHUNK_SIZE - 3; y += 7) {
-                for (int x = 2; x < CHUNK_SIZE - 2; x += 7) {
-                    if (Math.floorMod(hash(cx + x, cy + y, 23500), 3L) == 0) {
-                        out[ox + x + (oy + y) * MAP_SIZE] = Terrain.EMBERS;
+                for (int y = 6; y < CHUNK_SIZE - 2; y += 8) {
+                    for (int x = 1; x < CHUNK_SIZE - 1; x++) {
+                        if ((x % 5) != 2) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                    }
+                }
+            } else if (anomaly == 5) {
+                for (int x = 3; x < CHUNK_SIZE - 2; x += 7) {
+                    carveRect(out, ox + x, oy + 1, ox + Math.min(CHUNK_SIZE - 2, x + 1),
+                            oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                }
+                for (int y = 4; y < CHUNK_SIZE - 2; y += 7) {
+                    carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2,
+                            oy + Math.min(CHUNK_SIZE - 2, y + 1), Terrain.EMPTY_DECO);
+                }
+                for (int y = 3; y < CHUNK_SIZE - 3; y += 7) {
+                    for (int x = 2; x < CHUNK_SIZE - 2; x += 7) {
+                        if (Math.floorMod(hash(cx + x, cy + y, 23500), 3L) == 0) {
+                            out[ox + x + (oy + y) * MAP_SIZE] = Terrain.EMBERS;
+                        }
+                    }
+                }
+            } else {
+                carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                for (int y = 3; y < CHUNK_SIZE - 5; y += 6) {
+                    for (int x = 3; x < CHUNK_SIZE - 5; x += 6) {
+                        carveRect(out, ox + x, oy + y, ox + x + 2, oy + y + 3, Terrain.WALL);
+                        if (Math.floorMod(hash(cx + x, cy + y, 23600), 4L) == 0) {
+                            out[ox + x + 1 + (oy + y + 4) * MAP_SIZE] = Terrain.STATUE;
+                        }
                     }
                 }
             }
         } else {
-            // Dark storage: repeated solid storage blocks divided by narrow aisles.
-            carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
-            for (int y = 3; y < CHUNK_SIZE - 5; y += 6) {
-                for (int x = 3; x < CHUNK_SIZE - 5; x += 6) {
-                    carveRect(out, ox + x, oy + y, ox + x + 2, oy + y + 3, Terrain.WALL);
-                    if (Math.floorMod(hash(cx + x, cy + y, 23600), 4L) == 0) {
-                        out[ox + x + 1 + (oy + y + 4) * MAP_SIZE] = Terrain.STATUE;
+            // V15: fourteen Backrooms-inspired environments. These are normal
+            // Infinite World terrain districts, not separate levels or portals.
+            switch (anomaly) {
+                case 1: // Level 0 - Threshold: repetitive yellow-office maze.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                    for (int x = 4; x < CHUNK_SIZE - 2; x += 4) {
+                        for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                        int gapA = 2 + range(cx, cy, 24000 + x, 0, CHUNK_SIZE - 5);
+                        int gapB = 2 + range(cx, cy, 24020 + x, 0, CHUNK_SIZE - 5);
+                        setFloor(out, ox + x, oy + gapA);
+                        setFloor(out, ox + x, oy + gapB);
                     }
-                }
+                    for (int y = 5; y < CHUNK_SIZE - 2; y += 5) {
+                        int from = 2 + range(cx, cy, 24040 + y, 0, 2);
+                        for (int x = from; x < CHUNK_SIZE - 2; x += 7) {
+                            carveRect(out, ox + x, oy + y, ox + Math.min(x + 3, CHUNK_SIZE - 2), oy + y, Terrain.WALL);
+                        }
+                    }
+                    break;
+
+                case 2: // Level 1 - Habitable Zone: concrete service/storage halls.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    for (int y = 3; y < CHUNK_SIZE - 5; y += 7) {
+                        for (int x = 3; x < CHUNK_SIZE - 5; x += 7) {
+                            carveRect(out, ox + x, oy + y, ox + x + 3, oy + y + 3, Terrain.WALL_DECO);
+                            if (((x + y + cx + cy) & 1) == 0) {
+                                out[ox + x + 1 + (oy + y + 4) * MAP_SIZE] = Terrain.STATUE_SP;
+                            }
+                        }
+                    }
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    break;
+
+                case 3: // Level 2 - Abandoned Utility Halls: tight pipe corridors.
+                    for (int x = 2; x < CHUNK_SIZE - 2; x += 5) {
+                        carveRect(out, ox + x, oy + 1, ox + Math.min(x + 1, CHUNK_SIZE - 2), oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    }
+                    for (int y = 3; y < CHUNK_SIZE - 2; y += 6) {
+                        carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2, oy + Math.min(y + 1, CHUNK_SIZE - 2), Terrain.EMPTY_DECO);
+                    }
+                    for (int y = 2; y < CHUNK_SIZE - 2; y += 6) {
+                        int x = 2 + range(cx, cy, 24100 + y, 0, CHUNK_SIZE - 5);
+                        out[ox + x + (oy + y) * MAP_SIZE] = Terrain.EMBERS;
+                    }
+                    break;
+
+                case 4: // Level 3 - Electrical Station: dense machinery grid.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    for (int x = 3; x < CHUNK_SIZE - 3; x += 5) {
+                        for (int y = 2; y < CHUNK_SIZE - 2; y++) {
+                            if ((y % 6) < 4) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL_DECO;
+                        }
+                    }
+                    for (int y = 4; y < CHUNK_SIZE - 3; y += 6) {
+                        carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2, oy + y + 1, Terrain.EMPTY);
+                        for (int x = 2; x < CHUNK_SIZE - 2; x += 6) {
+                            if (Math.floorMod(hash(cx + x, cy + y, 24200), 2L) == 0) {
+                                out[ox + x + (oy + y) * MAP_SIZE] = Terrain.EMBERS;
+                            }
+                        }
+                    }
+                    break;
+
+                case 5: // Level 4 - Abandoned Office: broad office bays and partitions.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                    for (int x = 6; x < CHUNK_SIZE - 2; x += 6) {
+                        for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                        setFloor(out, ox + x, oy + 3 + range(cx, cy, 24300 + x, 0, CHUNK_SIZE - 7));
+                        setFloor(out, ox + x, oy + 3 + range(cx, cy, 24320 + x, 0, CHUNK_SIZE - 7));
+                    }
+                    for (int y = 6; y < CHUNK_SIZE - 2; y += 6) {
+                        for (int x = 1; x < CHUNK_SIZE - 1; x++) {
+                            if ((x % 6) > 2) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
+                        }
+                    }
+                    break;
+
+                case 6: // Level 5 - Terror Hotel: central hall with repeated side rooms.
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY_SP);
+                    for (int y = 2; y <= 15; y += 7) {
+                        carveRect(out, ox + 2, oy + y, ox + 8, oy + y + 5, Terrain.EMPTY_DECO);
+                        carveRect(out, ox + 15, oy + y, ox + 21, oy + y + 5, Terrain.EMPTY_DECO);
+                        out[ox + 9 + (oy + y + 2) * MAP_SIZE] = Terrain.DOOR;
+                        out[ox + 14 + (oy + y + 2) * MAP_SIZE] = Terrain.DOOR;
+                    }
+                    out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.PEDESTAL;
+                    break;
+
+                case 7: // Level 6 - Lights Out: narrow, claustrophobic corridors.
+                    for (int y = 2; y < CHUNK_SIZE - 2; y += 4) {
+                        int startX = 1 + range(cx, cy, 24400 + y, 0, 3);
+                        carveRect(out, ox + startX, oy + y, ox + CHUNK_SIZE - 2, oy + y, Terrain.EMPTY_SP);
+                        int connectorX = 2 + range(cx, cy, 24420 + y, 0, CHUNK_SIZE - 5);
+                        carveRect(out, ox + connectorX, oy + Math.max(1, y - 3),
+                                ox + connectorX, oy + Math.min(CHUNK_SIZE - 2, y + 3), Terrain.EMPTY_SP);
+                    }
+                    break;
+
+                case 8: // Level 7 - Thalassophobia: open ocean with sparse dry islands.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.WATER);
+                    for (int i = 0; i < 5; i++) {
+                        int ix = 3 + range(cx, cy, 24500 + i * 2, 0, CHUNK_SIZE - 8);
+                        int iy = 3 + range(cx, cy, 24501 + i * 2, 0, CHUNK_SIZE - 8);
+                        int r = 1 + range(cx, cy, 24520 + i, 0, 1);
+                        carveRect(out, ox + ix - r, oy + iy - r, ox + ix + r, oy + iy + r, Terrain.EMPTY);
+                    }
+                    carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.WATER);
+                    break;
+
+                case 9: // Level 8 - Cave Systems: irregular chambers joined by winding tunnels.
+                    for (int i = 0; i < 7; i++) {
+                        int px = 3 + range(cx, cy, 24600 + i * 3, 0, CHUNK_SIZE - 7);
+                        int py = 3 + range(cx, cy, 24601 + i * 3, 0, CHUNK_SIZE - 7);
+                        int rw = 1 + range(cx, cy, 24602 + i * 3, 0, 2);
+                        int rh = 1 + range(cx, cy, 24603 + i * 3, 0, 2);
+                        carveRect(out, ox + px - rw, oy + py - rh, ox + px + rw, oy + py + rh, Terrain.EMPTY_DECO);
+                        carveWanderPathV5(out, ox + px, oy + py,
+                                ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2,
+                                cx, cy, 24640 + i, 1);
+                    }
+                    for (int i = 0; i < 3; i++) {
+                        int wx = 4 + range(cx, cy, 24670 + i, 0, CHUNK_SIZE - 9);
+                        int wy = 4 + range(cx, cy, 24680 + i, 0, CHUNK_SIZE - 9);
+                        out[ox + wx + (oy + wy) * MAP_SIZE] = Terrain.WATER;
+                    }
+                    break;
+
+                case 10: // Level 9 - The Suburbs: streets bordered by small repeated houses.
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY);
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    for (int by = 2; by <= 15; by += 13) {
+                        for (int bx = 2; bx <= 15; bx += 13) {
+                            carveRect(out, ox + bx, oy + by, ox + bx + 6, oy + by + 6, Terrain.WALL);
+                            carveRect(out, ox + bx + 1, oy + by + 1, ox + bx + 5, oy + by + 5, Terrain.EMPTY_SP);
+                            int doorX = bx < 10 ? bx + 6 : bx;
+                            int doorY = by + 3;
+                            out[ox + doorX + (oy + doorY) * MAP_SIZE] = Terrain.DOOR;
+                        }
+                    }
+                    break;
+
+                case 11: // Level 10 - Bumper Crop: endless fields split by farm lanes.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.HIGH_GRASS);
+                    for (int x = 4; x < CHUNK_SIZE - 2; x += 7) {
+                        carveRect(out, ox + x, oy + 1, ox + x + 1, oy + CHUNK_SIZE - 2, Terrain.GRASS);
+                    }
+                    for (int y = 5; y < CHUNK_SIZE - 2; y += 8) {
+                        carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2, oy + y + 1, Terrain.EMPTY);
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        int tx = 3 + range(cx, cy, 24700 + i, 0, CHUNK_SIZE - 6);
+                        int ty = 3 + range(cx, cy, 24710 + i, 0, CHUNK_SIZE - 6);
+                        out[ox + tx + (oy + ty) * MAP_SIZE] = Terrain.STATUE_SP;
+                    }
+                    break;
+
+                case 12: // Level 11 - The City That Never Sleeps: street grid and solid blocks.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.WALL);
+                    for (int x = 5; x < CHUNK_SIZE; x += 8) {
+                        carveRect(out, ox + x, oy + 1, ox + Math.min(x + 2, CHUNK_SIZE - 2), oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    }
+                    for (int y = 5; y < CHUNK_SIZE; y += 8) {
+                        carveRect(out, ox + 1, oy + y, ox + CHUNK_SIZE - 2, oy + Math.min(y + 2, CHUNK_SIZE - 2), Terrain.EMPTY);
+                    }
+                    for (int y = 2; y < CHUNK_SIZE - 2; y += 8) {
+                        for (int x = 2; x < CHUNK_SIZE - 2; x += 8) {
+                            if (Math.floorMod(hash(cx + x, cy + y, 24800), 3L) == 0) {
+                                out[ox + x + (oy + y) * MAP_SIZE] = Terrain.STATUE;
+                            }
+                        }
+                    }
+                    break;
+
+                case 13: // Level 37 - Sublimity / Poolrooms.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    for (int by = 2; by < CHUNK_SIZE - 4; by += 8) {
+                        for (int bx = 2; bx < CHUNK_SIZE - 4; bx += 8) {
+                            int w = 4 + range(cx + bx, cy + by, 24900, 0, 3);
+                            int h = 4 + range(cx + bx, cy + by, 24901, 0, 3);
+                            carveRect(out, ox + bx, oy + by,
+                                    Math.min(ox + CHUNK_SIZE - 3, ox + bx + w),
+                                    Math.min(oy + CHUNK_SIZE - 3, oy + by + h), Terrain.WATER);
+                        }
+                    }
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY);
+                    break;
+
+                case 14: // Level 94 - Motion: toy-like town blocks surrounded by grass.
+                default:
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.GRASS);
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY);
+                    for (int by = 3; by <= 16; by += 13) {
+                        for (int bx = 3; bx <= 16; bx += 13) {
+                            carveRect(out, ox + bx, oy + by, ox + bx + 4, oy + by + 4, Terrain.WALL);
+                            carveRect(out, ox + bx + 1, oy + by + 1, ox + bx + 3, oy + by + 3, Terrain.EMPTY_SP);
+                            int dx = bx < 10 ? bx + 4 : bx;
+                            out[ox + dx + (oy + by + 2) * MAP_SIZE] = Terrain.DOOR;
+                        }
+                    }
+                    out[ox + 12 + (oy + 12) * MAP_SIZE] = Terrain.WELL;
+                    break;
             }
         }
 
         setFloor(out, ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2);
 
-        // Preserve the normal shared edge contract so anomaly chunks always meet
-        // conventional chunks cleanly.
+        // Preserve the normal shared-edge contract so every Backrooms district
+        // remains part of the ordinary walkable Infinite World network.
         int centerX = ox + CHUNK_SIZE / 2;
         int centerY = oy + CHUNK_SIZE / 2;
         carveWanderPathV5(out, ox + northX, oy, centerX, centerY, cx, cy, 23300, 1);
