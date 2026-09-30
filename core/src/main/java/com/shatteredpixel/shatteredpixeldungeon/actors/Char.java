@@ -92,6 +92,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalSpire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Necromancer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Tengu;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
@@ -453,6 +454,10 @@ public abstract class Char extends Actor {
 
 			dmg *= AscensionChallenge.statModifier(this);
 
+			if (this instanceof Mob) {
+				dmg *= ((Mob)this).assistDamageScale();
+			}
+
 			//friendly endure
 			Endure.EndureTracker endure = buff(Endure.EndureTracker.class);
 			if (endure != null) dmg = endure.damageFactor(dmg);
@@ -620,6 +625,13 @@ public abstract class Char extends Actor {
 	public static boolean hit( Char attacker, Char defender, float accMulti, boolean magic ) {
 		float acuStat = attacker.attackSkill( defender );
 		float defStat = defender.defenseSkill( attacker );
+
+		if (attacker instanceof Mob) {
+			acuStat *= ((Mob)attacker).assistAccuracyScale();
+		}
+		if (defender instanceof Mob) {
+			defStat *= ((Mob)defender).assistDefenseScale();
+		}
 
 		if (defender instanceof Hero && ((Hero) defender).damageInterrupt){
 			((Hero) defender).interrupt();
