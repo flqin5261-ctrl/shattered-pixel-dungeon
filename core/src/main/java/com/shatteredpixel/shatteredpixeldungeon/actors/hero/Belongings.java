@@ -57,7 +57,11 @@ public class Belongings implements Iterable<Item> {
 			image = ItemSpriteSheet.BACKPACK;
 		}
 		public int capacity(){
-			int cap = super.capacity();
+			// Assist Infinite World baseline is deliberately roomier than upstream.
+			int cap = 25;
+			Hero hero = owner instanceof Hero ? (Hero)owner : Dungeon.hero;
+			BreakthroughCertificate seal = BreakthroughCertificate.equipped(hero);
+			if (seal != null) cap += seal.effectiveBackpackBonus(hero);
 			for (Item item : items){
 				if (item instanceof Bag){
 					cap++;
