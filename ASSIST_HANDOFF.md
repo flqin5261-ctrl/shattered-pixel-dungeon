@@ -85,11 +85,11 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.5**
-- 当前 versionCode：**951**
-- 当前最新稳定分支：`assist-0.5.5-stable`
+- 当前最新稳定版本：**0.5.6**
+- 当前 versionCode：**952**
+- 当前最新稳定分支：`assist-0.5.6-stable`
 - 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.5-merchant-connectivity`
+- 当前对应开发分支：`assist-0.5.6-spectator-test`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 14**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -1487,3 +1487,28 @@ V14 修复：
 - 新世界使用 V14。
 - 旧 V13 存档不用为了此 Bug 强制重开；商店断路会运行时修补。
 - Streaming 时机、VBO/Water 修复、唯一神器箱、V13 六类 Liminal、0.5.4 item grant 均不能破坏。
+
+# 29. 0.5.6 — Infinite World Spectator QA Mode
+
+Assist 菜单在 Infinite World 中增加“无界旁观测试模式”，专用于快速实机排查地图生成、连通性、Streaming、Fog 与贴图 Bug。
+
+核心行为：
+- 只在 Infinite World 显示/生效；
+- Hero 通过临时 QA path map 穿 WALL / solid / pit，不修改真实 Terrain；
+- 最低移动倍率 ×4，已有 Assist speed 更高时沿用更高倍率；
+- 每一步仍是正常 Hero.move，Streaming 仍只能在 Hero.onMotionComplete 后触发；
+- Dungeon.observe / FOV / visited / mapped / InfiniteWorldState 探索持久化继续正常；
+- Actor.process 在 Mob.act 之前冻结所有 Mob actor，怪物不检测、不移动、不攻击；
+- InfiniteWorldMobEcology 暂停自然刷怪；
+- 冻结怪物仍显示，但不再打断 Hero 连续移动、拾取或交易；
+- Hero 可正常开箱、捡物、买 FOR_SALE、与商人/NPC 交互和解锁；
+- 穿过 trap / plant / chasm / floor blob 不触发 occupyCell 物理效果；
+- Hero 在测试模式中免伤，并忽略 Root / Paralysis / Vertigo 对移动的阻断；
+- Hero Sprite 临时放到 wall/raised terrain 上方，穿墙时人物仍可见；
+- 关闭模式时若 Hero 位于非法格，自动落到最近正常可站立格。
+
+兼容与硬约束：
+- WORLD_GEN_VERSION 仍为 14；
+- 0.5.5 V14 存档可直接继续，不需要重新开始；
+- 不得借此模式改动 Streaming 时机、Water backdrop、VBO batching/flush、absolute world coordinate 规则；
+- 该模式是 QA 工具，不得把其临时 passability 写入 terrainOverrides 或正常世界生成公式。
