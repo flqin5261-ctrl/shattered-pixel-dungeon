@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -333,9 +334,17 @@ public class WndRanking extends WndTabbed {
 			camera = WndRanking.this.camera;
 
 			int tiers = 1;
-			if (Dungeon.hero.lvl >= 6) tiers++;
-			if (Dungeon.hero.lvl >= 12 && Dungeon.hero.subClass != HeroSubClass.NONE) tiers++;
-			if (Dungeon.hero.lvl >= 20 && Dungeon.hero.armorAbility != null) tiers++;
+			if (Dungeon.infiniteWorld) {
+				while (tiers < Talent.MAX_TALENT_TIERS
+						&& Dungeon.hero.lvl + 1 >= Talent.tierLevelThresholds[tiers+1]) {
+					tiers++;
+				}
+				if (tiers > 6 && !GenesisEcho.active(Dungeon.hero)) tiers = 6;
+			} else {
+				if (Dungeon.hero.lvl >= 6) tiers++;
+				if (Dungeon.hero.lvl >= 12 && Dungeon.hero.subClass != HeroSubClass.NONE) tiers++;
+				if (Dungeon.hero.lvl >= 20 && Dungeon.hero.armorAbility != null) tiers++;
+			}
 			while (Dungeon.hero.talents.size() > tiers){
 				Dungeon.hero.talents.remove(Dungeon.hero.talents.size()-1);
 			}
