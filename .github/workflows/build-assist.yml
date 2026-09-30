@@ -28,6 +28,7 @@ on:
       - assist-0.5.2-discovery
       - assist-0.5.3-merchants-liminal
       - assist-0.5.4-item-grant
+      - assist-0.5.5-merchant-connectivity
   workflow_dispatch:
 
 permissions:
