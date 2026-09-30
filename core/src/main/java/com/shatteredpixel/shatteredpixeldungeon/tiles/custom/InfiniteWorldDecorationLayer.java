@@ -1,8 +1,8 @@
 /*
  * Shattered Pixel Dungeon - Assist Edition
  *
- * Additional Infinite World decoration sprites are sourced from Kenney's
- * Tiny Town / Tiny Dungeon packs under CC0 1.0. See docs/assist/THIRD_PARTY_ASSETS.md.
+ * Infinite World environment props use Kenney Tiny Town / Tiny Dungeon assets
+ * under CC0 1.0. See docs/assist/THIRD_PARTY_ASSETS.md.
  */
 package com.shatteredpixel.shatteredpixeldungeon.tiles.custom;
 
@@ -21,11 +21,41 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public static final int SOURCE_TOWN = 0;
     public static final int SOURCE_DUNGEON = 1;
 
-    public static final int BUSH = 1;
+    // Keep the original numeric ids 1..5 stable for old 0.5.8 save bundles.
+    public static final int ROUND_TREE = 1;
+    public static final int BUSH = ROUND_TREE; // legacy code alias
     public static final int MUSHROOMS = 2;
     public static final int SIGN = 3;
     public static final int BARREL = 4;
-    public static final int CRATE = 5;
+    public static final int CASKET = 5;
+    public static final int CRATE = CASKET; // legacy code alias
+
+    public static final int PINE_TREE_GREEN = 6;
+    public static final int PINE_TREE_AUTUMN = 7;
+    public static final int ROUND_TREE_AUTUMN = 8;
+    public static final int FERN = 9;
+    public static final int FENCE_POST = 10;
+    public static final int FENCE_RAIL = 11;
+    public static final int WARNING_SIGN = 12;
+    public static final int ROCK = 13;
+    public static final int LOG = 14;
+    public static final int EMPTY_TUB = 15;
+    public static final int WATER_TROUGH = 16;
+    public static final int WOODEN_CRATE = 17;
+    public static final int WOODEN_POST = 18;
+
+    public static final int TORCH = 19;
+    public static final int RUBBLE = 20;
+    public static final int BOOKSHELF = 21;
+    public static final int STONE_CROSS = 22;
+    public static final int GRAVESTONE = 23;
+    public static final int TABLE = 24;
+    public static final int STOOL = 25;
+    public static final int STONE_BASIN = 26;
+    public static final int CUPBOARD = 27;
+    public static final int IRON_RAIL = 28;
+    public static final int CAMPFIRE = 29;
+    public static final int WEAPON_RACK = 30;
 
     private static final String SOURCE = "source";
     private static final String CELLS = "cells";
@@ -42,6 +72,63 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
         this.source = source;
         setRect(0, 0, width, height);
         updateTexture();
+    }
+
+    public static int sourceForKind(int kind) {
+        switch (kind) {
+            case CASKET:
+            case TORCH:
+            case RUBBLE:
+            case BOOKSHELF:
+            case STONE_CROSS:
+            case GRAVESTONE:
+            case TABLE:
+            case STOOL:
+            case STONE_BASIN:
+            case CUPBOARD:
+            case IRON_RAIL:
+            case CAMPFIRE:
+            case WEAPON_RACK:
+                return SOURCE_DUNGEON;
+            default:
+                return SOURCE_TOWN;
+        }
+    }
+
+    public static boolean isBlockingKind(int kind) {
+        switch (kind) {
+            case MUSHROOMS:
+            case FERN:
+            case TORCH:
+            case RUBBLE:
+                return false;
+
+            default:
+                return kind > 0;
+        }
+    }
+
+    public static boolean isClusterFriendly(int kind) {
+        switch (kind) {
+            case ROUND_TREE:
+            case MUSHROOMS:
+            case BARREL:
+            case PINE_TREE_GREEN:
+            case PINE_TREE_AUTUMN:
+            case ROUND_TREE_AUTUMN:
+            case FERN:
+            case FENCE_POST:
+            case FENCE_RAIL:
+            case ROCK:
+            case LOG:
+            case WOODEN_CRATE:
+            case WOODEN_POST:
+            case RUBBLE:
+            case IRON_RAIL:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void updateTexture() {
@@ -67,16 +154,80 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     }
 
     private int visualForKind(int kind) {
-        // Packed sheets are 12 columns, 16x16 px per tile.
-        // Tiny Town: bush=5, mushrooms=29, sign=83, barrel=107.
-        // Tiny Dungeon: crate=66.
+        if (source == SOURCE_TOWN) {
+            switch (kind) {
+                case ROUND_TREE:         return 5;
+                case MUSHROOMS:          return 29;
+                case SIGN:               return 83;
+                case BARREL:             return 107;
+                case PINE_TREE_GREEN:    return 4;
+                case PINE_TREE_AUTUMN:   return 10;
+                case ROUND_TREE_AUTUMN:  return 11;
+                case FERN:               return 17;
+                case FENCE_POST:         return 59;
+                case FENCE_RAIL:         return 81;
+                case WARNING_SIGN:       return 95;
+                case ROCK:               return 105;
+                case LOG:                return 106;
+                case EMPTY_TUB:          return 130;
+                case WATER_TROUGH:       return 131;
+                case WOODEN_CRATE:       return 57;
+                case WOODEN_POST:        return 71;
+                default:                 return -1;
+            }
+        } else {
+            switch (kind) {
+                case CASKET:       return 66;
+                case TORCH:        return 29;
+                case RUBBLE:       return 42;
+                case BOOKSHELF:    return 63;
+                case STONE_CROSS:  return 64;
+                case GRAVESTONE:   return 65;
+                case TABLE:        return 72;
+                case STOOL:        return 73;
+                case STONE_BASIN:  return 74;
+                case CUPBOARD:     return 75;
+                case IRON_RAIL:    return 79;
+                case CAMPFIRE:     return 120;
+                case WEAPON_RACK:  return 122;
+                default:           return -1;
+            }
+        }
+    }
+
+    private String keyForKind(int kind) {
         switch (kind) {
-            case BUSH:      return source == SOURCE_TOWN ? 5 : -1;
-            case MUSHROOMS: return source == SOURCE_TOWN ? 29 : -1;
-            case SIGN:      return source == SOURCE_TOWN ? 83 : -1;
-            case BARREL:    return source == SOURCE_TOWN ? 107 : -1;
-            case CRATE:     return source == SOURCE_DUNGEON ? 66 : -1;
-            default:        return -1;
+            case ROUND_TREE:         return "round_tree";
+            case MUSHROOMS:          return "mushrooms";
+            case SIGN:               return "sign";
+            case BARREL:             return "barrel";
+            case CASKET:             return "casket";
+            case PINE_TREE_GREEN:    return "pine_tree_green";
+            case PINE_TREE_AUTUMN:   return "pine_tree_autumn";
+            case ROUND_TREE_AUTUMN:  return "round_tree_autumn";
+            case FERN:               return "fern";
+            case FENCE_POST:         return "fence_post";
+            case FENCE_RAIL:         return "fence_rail";
+            case WARNING_SIGN:       return "warning_sign";
+            case ROCK:               return "rock";
+            case LOG:                return "log";
+            case EMPTY_TUB:          return "empty_tub";
+            case WATER_TROUGH:       return "water_trough";
+            case WOODEN_CRATE:       return "wooden_crate";
+            case WOODEN_POST:        return "wooden_post";
+            case TORCH:              return "torch";
+            case RUBBLE:             return "rubble";
+            case BOOKSHELF:          return "bookshelf";
+            case STONE_CROSS:        return "stone_cross";
+            case GRAVESTONE:         return "gravestone";
+            case TABLE:              return "table";
+            case STOOL:              return "stool";
+            case STONE_BASIN:        return "stone_basin";
+            case CUPBOARD:           return "cupboard";
+            case IRON_RAIL:          return "iron_rail";
+            case CAMPFIRE:           return "campfire";
+            case WEAPON_RACK:        return "weapon_rack";
+            default:                 return null;
         }
     }
 
@@ -96,26 +247,14 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
 
     @Override
     public String name(int x, int y) {
-        switch (kindAt(x, y)) {
-            case BUSH:      return Messages.get(this, "bush_name");
-            case MUSHROOMS: return Messages.get(this, "mushrooms_name");
-            case SIGN:      return Messages.get(this, "sign_name");
-            case BARREL:    return Messages.get(this, "barrel_name");
-            case CRATE:     return Messages.get(this, "crate_name");
-            default:        return null;
-        }
+        String key = keyForKind(kindAt(x, y));
+        return key == null ? null : Messages.get(this, key + "_name");
     }
 
     @Override
     public String desc(int x, int y) {
-        switch (kindAt(x, y)) {
-            case BUSH:      return Messages.get(this, "bush_desc");
-            case MUSHROOMS: return Messages.get(this, "mushrooms_desc");
-            case SIGN:      return Messages.get(this, "sign_desc");
-            case BARREL:    return Messages.get(this, "barrel_desc");
-            case CRATE:     return Messages.get(this, "crate_desc");
-            default:        return null;
-        }
+        String key = keyForKind(kindAt(x, y));
+        return key == null ? null : Messages.get(this, key + "_desc");
     }
 
     @Override
