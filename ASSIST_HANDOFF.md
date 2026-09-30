@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.3-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查当前最新 stable 分支。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.8**
-- 当前 versionCode：**954**
-- 当前最新稳定分支：`assist-0.5.8-stable`
-- 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.8-spectator-props`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
+- 当前最新稳定版本：**0.5.9**
+- 当前 versionCode：**955**
+- 当前最新稳定分支：`assist-0.5.9-stable`
+- 当前发布代码 SHA：`4a987553a9705db2dd05b645c77681e9f0a6aaf8`
+- 当前对应开发分支：`assist-0.5.9-environment-rich`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 16**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -1612,3 +1612,45 @@ Infinite World Bag 定价 value×2（最低20）；普通货物保持原版 valu
 - 0.5.8 不修改怪物强度、等级、血量、攻击、防御、生成池或精英概率。
 - 用户明确要求先完成 spectator + environment visual pass，再单独讨论 monster strength mechanics。
 
+# 32. 0.5.9 / Generator V16 — 高密度环境装饰 + 实体场景物件
+
+用户实机反馈 0.5.8 的五种装饰数量太少，而且全部只是可穿过贴图，环境仍显得空。
+0.5.9 暂不做可交互家具/容器，先把“不可交互环境装饰”做完整。
+
+## 32.1 装饰目录
+InfiniteWorldDecorationLayer 从 5 类扩到 30 类。
+自然/道路类包括多种绿树/秋色树、蕨类、蘑菇、栅栏、木柱、路牌/警示牌、岩石、原木、木桶、封死木箱、木盆、水槽。
+室内/地牢类包括旧棺匣、火把、碎石、书架、石十字、墓碑、桌凳、石盆、柜子、铁栏、冷却火堆、武器陈列架。
+全部支持放大镜自己的 sprite/name/desc；全部不可拾取、不可打开、不可使用。
+
+## 32.2 密度与分区
+普通 Chunk 约 2-4 个；Backrooms district 根据主题约 3-13 个。
+兼容类型会形成约 3 个以内的小簇，而不是每个物件完全独立随机散落。
+Level 1-3 偏工业，4-5 偏室内家具，8 偏洞穴，9 偏郊区，10 偏田野，11 偏城市，37 保持整洁池厅，94 偏小镇/自然。
+
+## 32.3 V16 实体装饰
+Generator V16 对大型装饰使用原版 Terrain.CUSTOM_DECO：
+- 普通 Hero/Mob 不能穿过；
+- 自动寻路会绕开；
+- 仍由 CustomTilemap 绘制 Kenney sprite；
+- 无交互行为；
+- spectator QA 因为本来就忽略 solid terrain，所以仍可穿过。
+
+可穿过的小型地表装饰当前为：蘑菇、蕨类、碎石、装饰火把。
+
+## 32.4 防堵路
+硬装饰不允许：
+- 堵原点广场；
+- 在 Merchant Chunk 形成实体阻挡；
+- 放进中心保证通行十字带；
+- 占用 room access；
+- 靠近 chest；
+- 靠近 door/secret door/transition/well/alchemy/pedestal；
+- 成为局部 chokepoint。
+局部安全检测会把候选格虚拟封闭，并确认周围可走邻格在 7x7 范围内仍互相连通，同时计入同 Chunk 已选中的其他硬装饰。
+
+## 32.5 兼容
+- 新建 V16 世界：高密度装饰 + 大型装饰真实碰撞。
+- 旧 V15 世界：会看到扩展后的高密度视觉装饰，但不会被突然加入新的实体碰撞，避免旧路线被改写。
+- WORLD_GEN_VERSION 变更只服务于物理场景兼容边界；V15 的 14 类 Backrooms 和成长商人规则继续沿用。
+- 0.5.9 仍不修改怪物强度。怪物强度机制等用户确认环境版本后单独讨论。
