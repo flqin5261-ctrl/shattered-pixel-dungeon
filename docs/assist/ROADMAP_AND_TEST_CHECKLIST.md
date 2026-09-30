@@ -1621,3 +1621,52 @@ V15 地形分布发生变化，要验证 14 类新环境必须重新开始创建
 - [ ] Do not change monster stats/strength rules in 0.5.8.
 - [ ] After the spectator/visual pass is validated on device, design the Infinite World monster strength progression as the next separate task.
 
+# B18. 0.5.9 / Generator V16 环境摆件专项回归
+
+要验证 V16 新碰撞摆件，需要新建 V16 Infinite World。
+
+## B18.1 密度与观感
+- [ ] 普通 Chunk 大多数能看到 2～3 组环境组合。
+- [ ] Backrooms district 明显比普通区域更丰富，约 4～5 组。
+- [ ] 不再呈现“大片空地只有一个贴图”的感觉。
+- [ ] 木箱/木桶等按组出现，而不是全部孤立单格。
+- [ ] 视觉仍保持像素风一致，不出现明显缩放/滤镜模糊。
+
+## B18.2 Collision
+- [ ] 普通模式不能走进实体木桶。
+- [ ] 普通模式不能走进实体木箱。
+- [ ] 实体路牌会占格。
+- [ ] STATUE / STATUE_SP 正常阻挡。
+- [ ] REGION_DECO / REGION_DECO_ALT 正常阻挡。
+- [ ] Mob pathing 同样绕开这些摆件。
+- [ ] 无界旁观测试模式仍可以直接穿过。
+
+## B18.3 Non-interactive
+- [ ] 木箱不是 Heap/Chest，点击不会打开。
+- [ ] 木桶不会掉落。
+- [ ] 路牌没有额外操作按钮。
+- [ ] 石像/区域装饰没有脚本交互。
+- [ ] 放大镜仍能识别 Kenney bush/mushrooms/sign/barrel/crate 的名称与说明。
+
+## B18.4 Route safety
+- [ ] 任何 solid formation 周围都能绕行。
+- [ ] 2×2 木箱堆不出现在一格宽走廊。
+- [ ] 三木桶排不封死门口。
+- [ ] 商店入口/货架路线正常。
+- [ ] 四边 shared gateway 正常。
+- [ ] V10 Primary/Secondary infinite roads 不被装饰截断。
+- [ ] Chunk 中央通行十字带保持清爽。
+
+## B18.5 Persistence
+- [ ] Save/Load 后摆件位置和类型不变。
+- [ ] Streaming 离开再回来不漂移。
+- [ ] 不重复叠加同一组摆件。
+- [ ] terrainOverrides 不被 deterministic solid scenery 污染。
+- [ ] 老 V15 存档仍保留旧的无碰撞装饰行为。
+
+## B18.6 核心回归
+- [ ] Spectator 悬浮 / ×8 / 20-cell vision 正常。
+- [ ] 14 类 V15 Backrooms terrain 正常。
+- [ ] 商人 connectivity / progression / mandatory Bag 正常。
+- [ ] unique Artifact chest 正常。
+- [ ] Water/VBO/Fog/Streaming 无回归。
