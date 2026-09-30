@@ -2036,3 +2036,28 @@ V13 同时做三件事：
 - SHIFT 24/144/3 不改；
 - Water/VBO/Fog 修复不改；
 - Mob.despawnFromInfiniteWorld() 无奖励距离清除不改。
+
+# 0.5.4 — 指定物品 / 指定数量作弊
+
+版本：
+- versionName: 0.5.4
+- versionCode: 950
+- dev: assist-0.5.4-item-grant
+- stable: assist-0.5.4-stable
+- WORLD_GEN_VERSION: 13（不变）
+
+新增 Assist 菜单按钮“获取指定物品”。
+
+流程：
+1. 选择“装备 / 神器 / 饰物”或“消耗品 / 材料 / 钥匙”。
+2. 分类直接读取原版 Catalog。
+3. 选择具体物品；长列表按每页 8 个分页。
+4. 输入数量 1～999。
+5. 可堆叠物品直接生成一个对应数量的 stack；不可堆叠物品逐件生成。
+6. 正常背包放不下时掉在 Hero 当前格，不静默丢失。
+7. Key 类型不进入背包，而是以 Dungeon.depth 为当前层写入 Notes/KeyRecord，并刷新钥匙 UI。
+8. 生成物品自动 identify，方便作弊使用。
+
+物品来源使用 Catalog 而不是另写一套硬编码清单，因此会覆盖原版图鉴中的武器、护甲、投掷武器、法杖、戒指、神器、饰物、袋子、药水、卷轴、种子、符石、食物、炸弹、飞镖、炼金酿剂/药剂、法术、钥匙以及大部分任务/杂项物品。
+
+本版只改 Assist UI/物品生成，不改 Infinite World 世界生成公式，所以 Generator V13 保持不变，0.5.3 V13 存档可直接继续。
