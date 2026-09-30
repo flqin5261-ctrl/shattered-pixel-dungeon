@@ -11,11 +11,11 @@
 
 当前开发候选：
 
-- 版本：0.5.12
-- versionCode：958
+- 版本：0.6.8
+- versionCode：964
 - Generator：V17
-- target stable：`assist-0.5.12-stable`
-- dev：`assist-0.5.12-short-trial`
+- target stable：`assist-0.6.8-stable`
+- dev：`assist-0.6.8-talent-progression`
 
 当前核心已经具备：
 
@@ -1871,3 +1871,19 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Existing 0.6.6 save upgrades cleanly without losing Genesis kill-growth data.
 
 - [ ] Infinite Space pagination: fill the root backpack beyond one page, navigate all pages, use/select/quickslot items from later pages, and verify the final page keeps five usable empty slots.
+
+
+# B27. 0.6.8 Infinite World talent progression regression
+
+- [ ] Infinite World Hero at level 11 still has only the tiers appropriate for that level.
+- [ ] Reaching level 12 exposes tier-3 base class talents even when no subclass has been selected yet.
+- [ ] Reaching level 12 with no subclass grants exactly one Tengu's Mask; repeated world refresh/save-load does not duplicate it.
+- [ ] Choosing a subclass with the mask adds the correct subclass tier-3 talents and preserves existing tier-3 points.
+- [ ] Reaching level 20 with no armor ability grants exactly one King's Crown.
+- [ ] Before the crown is used, the talent window tells the player to use the crown rather than incorrectly mentioning the second/fourth Boss.
+- [ ] Choosing an armor ability with the crown initializes and displays the correct tier-4 talents.
+- [ ] An old level-60 Infinite World save with missing subclass/armor ability receives the missing selector item(s) on world entry/refresh.
+- [ ] Full backpack cannot cause Tengu's Mask or King's Crown to be dropped/lost.
+- [ ] Normal non-Infinite dungeon keeps upstream Boss/item talent gating unchanged.
+- [ ] Miracle World description no longer ends with the redundant Genesis-link explanation.
+- [ ] Genesis Echo description no longer exposes the dynamic-monster-scaling implementation note.
