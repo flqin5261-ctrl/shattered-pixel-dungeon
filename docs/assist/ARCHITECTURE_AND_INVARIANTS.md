@@ -1861,3 +1861,29 @@ V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每
 - Any path that clears/rebuilds customTiles (including secret-door accent refresh and Streaming rebuild) must restore the sparse decoration layer before GameScene refreshes custom overlays.
 - Environment props do not justify a generator-version bump while they remain deterministic, non-collision visual overlays.
 
+# V16 physical scenery invariants
+
+## Visual versus physical decoration
+InfiniteWorldDecorationLayer remains the renderer and magnifier source.
+For Generator V16, bulky scenery uses Terrain.CUSTOM_DECO while soft scenery leaves the original passable terrain unchanged.
+Collision must never be implemented with invisible Mob actors or Hero-only movement hacks.
+
+## Backward compatibility
+Generator V15 remains visual-only even when running 0.5.9.
+Do not retroactively set CUSTOM_DECO in old V15 worlds.
+Generator V16 and later may use physical scenery.
+
+## Deterministic replay
+Scenery plans are deterministic from chunk coordinate, anomaly type and slot.
+The base V16 terrain receives CUSTOM_DECO only after roads, themed rooms and merchant connectivity passes are complete.
+The visual pass replays the same plan from baseWindow.
+If a V16 physical cell no longer contains CUSTOM_DECO because of a terrain override, its sprite must not reappear.
+Soft props may be suppressed when a real Heap, Trap, Plant or Char occupies their cell.
+
+## Connectivity safety
+Never place solid scenery on the central crossing band, room-access reservations, doors/transitions/wells/alchemy/pedestals, chest cells/vicinity, merchant chunks, the origin plaza, or local articulation/chokepoints.
+The local safety test must account for already selected hard scenery from the same chunk so several individually safe props cannot combine into a blockade.
+
+## Density
+High density is visual/environmental, not permission to fill navigation space.
+Road and readability guarantees have priority over target prop count.
