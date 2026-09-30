@@ -303,6 +303,17 @@ public class GenesisEcho extends Buff {
         }
     }
 
+    public static boolean miracleExecutionActive(Hero hero) {
+        return miracleLinked(hero);
+    }
+
+    public static boolean tryMiracleExecute(Hero hero, Char enemy) {
+        if (!miracleExecutionActive(hero) || enemy == null || enemy == hero || !enemy.isAlive()) return false;
+        if (enemy.alignment == Char.Alignment.ALLY) return false;
+        forceSlay(hero, enemy);
+        return true;
+    }
+
     public static void forceSlay(Hero hero, Char enemy) {
         if (hero == null || enemy == null || enemy == hero || !enemy.isAlive()) return;
         if (enemy.alignment == Char.Alignment.ALLY) return;
@@ -342,12 +353,10 @@ public class GenesisEcho extends Buff {
     }
 
     public static void onUltraWandZap(Hero hero, int aimedCell, int collisionCell) {
-        if (!ultraSpellcast(hero)) return;
+        if (hero == null || !miracleExecutionActive(hero)) return;
         Char target = Actor.findChar(aimedCell);
         if (target == null) target = Actor.findChar(collisionCell);
-        if (target != null && target != hero && target.alignment != Char.Alignment.ALLY) {
-            forceSlay(hero, target);
-        }
+        tryMiracleExecute(hero, target);
     }
 
     public static class GenesisTalentAuthority extends Buff {
