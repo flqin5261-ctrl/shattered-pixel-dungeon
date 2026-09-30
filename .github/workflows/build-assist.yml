@@ -37,6 +37,7 @@ on:
       - assist-0.5.11-progression
       - assist-0.5.12-short-trial
       - assist-0.5.13-breakthrough-certificate
+      - assist-0.6.4-certificate-ui
   workflow_dispatch:
 
 permissions:
