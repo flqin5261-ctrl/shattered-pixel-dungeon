@@ -94,7 +94,7 @@ public class Hunger extends Buff implements Hero.Doom {
 				hungerDelay /= SaltCube.hungerGainMultiplier();
 
 				BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
-				float certificateHunger = certificate == null ? 1f : certificate.hungerMultiplier();
+				float certificateHunger = certificate == null ? 1f : certificate.effectiveHungerMultiplier(hero);
 				float newLevel = level + (1f/hungerDelay) * certificateHunger;
 				if (newLevel >= STARVING) {
 
