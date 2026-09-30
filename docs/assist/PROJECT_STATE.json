@@ -8,11 +8,11 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.13",
-    "version_code": 959,
+    "version_name": "0.6.4",
+    "version_code": 960,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.13-stable",
-    "development_branch": "assist-0.5.13-breakthrough-certificate",
+    "stable_branch": "assist-0.6.4-stable",
+    "development_branch": "assist-0.6.4-certificate-ui",
     "release_code_sha": "21537cc9c24b2de32e6d50121358350aa98d2f6d",
     "world_generator_version": 17
   },
@@ -278,7 +278,10 @@
           "shop": "-8%",
           "chest_bonus": "8%",
           "regen": "~1% max HP / 18 action-value",
-          "revive": "300 action-value charge, revive at 30% HP"
+          "revive": "300 action-value charge, revive at 30% HP",
+          "accuracy": "+5%",
+          "evasion": "+4%",
+          "exp": "+5%"
         },
         "40": {
           "hp": "+15%",
@@ -291,7 +294,10 @@
           "shop": "-12%",
           "chest_bonus": "12%",
           "regen": "~1% / 15",
-          "revive": "260 charge, 36% HP"
+          "revive": "260 charge, 36% HP",
+          "accuracy": "+8%",
+          "evasion": "+7%",
+          "exp": "+8%"
         },
         "50": {
           "hp": "+22%",
@@ -304,7 +310,10 @@
           "shop": "-16%",
           "chest_bonus": "17%",
           "regen": "~1% / 12",
-          "revive": "220 charge, 42% HP"
+          "revive": "220 charge, 42% HP",
+          "accuracy": "+12%",
+          "evasion": "+10%",
+          "exp": "+12%"
         },
         "60": {
           "hp": "+30%",
@@ -317,14 +326,29 @@
           "shop": "-20%",
           "chest_bonus": "25%",
           "regen": "~1% / 10",
-          "revive": "180 charge, 50% HP"
+          "revive": "180 charge, 50% HP",
+          "accuracy": "+16%",
+          "evasion": "+14%",
+          "exp": "+15%"
         }
       },
       "unequip": "all bonuses stop immediately",
       "chest_rule": "extra supply roll applies only to normal and locked chests; unique crystal artifact chests are never modified",
       "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability",
       "attack_scope": "certificate damage multiplier applies to normal Hero weapon/unarmed damage and DamageWand rolls",
-      "dynamic_enemy_response": "certificate tier contributes moderate progression power to future mob snapshots so the permanent blessing does not make post-breakthrough ecology static"
+      "dynamic_enemy_response": "certificate tier contributes moderate progression power to future mob snapshots so the permanent blessing does not make post-breakthrough ecology static",
+      "status_ui": {
+        "placement": "existing hero BuffIndicator directly under the top-left HP bar",
+        "icon": "AMULET icon with certificate tier text 30/40/50/60; tier text is forced visible in compact mobile UI",
+        "click": "opens WndInfoBuff showing current bonuses line-by-line, Undying Totem status, and the full next-tier preview",
+        "max_tier": "lv60 shows a maximum-tier message instead of a next-tier preview"
+      },
+      "additional_bonuses": {
+        "accuracy": "+5/+8/+12/+16%",
+        "evasion": "+4/+7/+10/+14%",
+        "experience": "+5/+8/+12/+15%",
+        "balance_note": "no flat damage reduction or permanent immunity was added; HP/regen/revive already provide strong defensive scaling"
+      }
     }
   },
   "current_content": {
@@ -643,6 +667,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.6.4 certificate formatting: item description and clickable status buff list every bonus on its own line.",
+    "0.6.4 top-left badge: under the HP bar, certificate blessing uses an amulet-style icon and visibly shows 30/40/50/60 even in compact mobile UI.",
+    "0.6.4 status click: current tier, totem charge, and complete next-tier stat preview are readable without opening the inventory.",
+    "0.6.4 new bonuses: accuracy/evasion/EXP bonuses change real Hero calculations and disappear immediately when certificate is unequipped.",
     "0.5.13 attack scope: certificate damage bonus affects both physical Hero damageRoll and damaging wand rolls.",
     "0.5.13 dynamic ecology: newly spawned mobs after certificate tier upgrades become moderately stronger; already-active mobs remain unchanged.",
     "0.5.13 quickslot rollback: put a trial-only cheated wand in quickslot, fail the trial, and verify both the wand and its shortcut icon disappear; pre-trial shortcuts must rebind to restored real items.",
@@ -800,5 +828,16 @@
       "monster persistence or boss persistence architecture"
     ],
     "always_update_records_after_changes": true
+  },
+  "versioning_policy": {
+    "scheme": "single-digit patch rollover for user-facing Assist versions",
+    "rule": "0.x.0..0.x.9 then roll to 0.(x+1).0; do not publish 0.x.10+",
+    "legacy_mapping": {
+      "0.5.10": "0.6.0",
+      "0.5.11": "0.6.1",
+      "0.5.12": "0.6.2",
+      "0.5.13": "0.6.3"
+    },
+    "compatibility": "legacy branch names remain preserved; new stable alias branches assist-0.6.0..0.6.3 point to the corresponding historical builds"
   }
 }
