@@ -49,6 +49,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.custom.InfiniteWorldDecorationLayer;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
@@ -557,6 +558,7 @@ public class InfiniteWorldLevel extends Level {
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
+        rebuildV15DecorationProps();
     }
 
     @Override
@@ -1081,6 +1083,7 @@ public class InfiniteWorldLevel extends Level {
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
+        rebuildV15DecorationProps();
     }
 
     private void applyTerrainOverrides() {
@@ -5082,12 +5085,138 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+
+    private void rebuildV15DecorationProps() {
+        if (state().generatorVersion < 15 || customTiles == null) return;
+
+        final InfiniteWorldDecorationLayer townLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_TOWN, width(), height());
+        final InfiniteWorldDecorationLayer dungeonLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_DUNGEON, width(), height());
+        final boolean[] claimed = new boolean[length()];
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+                int count = anomaly != 0 ? 2
+                        : (Math.floorMod(hash(cx, cy, 29100), 100L) < 62 ? 1 : 0);
+
+                for (int slot = 0; slot < count; slot++) {
+                    int cell = v15DecorationCell(cx, cy, ox, oy, slot, claimed);
+                    if (cell < 0) continue;
+
+                    int kind = v15DecorationKind(cx, cy, slot, anomaly);
+                    if (kind == InfiniteWorldDecorationLayer.CRATE) {
+                        dungeonLayer.put(cell, kind, InfiniteWorldLevel.this);
+                    } else {
+                        townLayer.put(cell, kind, InfiniteWorldLevel.this);
+                    }
+                    claimed[cell] = true;
+                }
+            }
+        });
+
+        // These layers are deliberately appended after broad floor accents.
+        // WndInfoCell therefore sees the prop's image/name/description when the
+        // magnifier targets it, while the underlying map terrain stays unchanged.
+        if (!townLayer.isEmpty()) customTiles.add(townLayer);
+        if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
+    }
+
+    private int v15DecorationCell(int cx, int cy, int ox, int oy,
+                                  int slot, boolean[] claimed) {
+        final int inner = CHUNK_SIZE - 4; // local 2..21
+        final int area = inner * inner;
+        int start = (int)Math.floorMod(hash(cx, cy, 29120 + slot * 11), (long)area);
+
+        // 137 is coprime with 400, so this visits every interior cell at most once.
+        for (int attempt = 0; attempt < area; attempt++) {
+            int idx = Math.floorMod(start + attempt * 137, area);
+            int lx = 2 + idx % inner;
+            int ly = 2 + idx / inner;
+            int cell = ox + lx + (oy + ly) * width();
+
+            if (cell < 0 || cell >= length() || claimed[cell]) continue;
+            if (solid[cell] || pit[cell] || water[cell] || secret[cell]) continue;
+
+            int terrain = map[cell];
+            if (terrain != Terrain.EMPTY && terrain != Terrain.EMPTY_SP
+                    && terrain != Terrain.EMPTY_DECO && terrain != Terrain.GRASS) {
+                continue;
+            }
+
+            if (heaps.get(cell) != null || traps.get(cell) != null
+                    || plants.get(cell) != null || Actor.findChar(cell) != null) {
+                continue;
+            }
+
+            // Do not clutter the common guaranteed crossing lanes.
+            if ((lx >= 10 && lx <= 13) || (ly >= 10 && ly <= 13)) continue;
+
+            return cell;
+        }
+        return -1;
+    }
+
+    private int v15DecorationKind(int cx, int cy, int slot, int anomaly) {
+        int roll = range(cx, cy, 29180 + slot * 13, 0, 99);
+
+        switch (anomaly) {
+            case 2:  // Level 1 - service/storage
+            case 3:  // Level 2 - utility halls
+            case 4:  // Level 3 - electrical station
+                return roll < 45 ? InfiniteWorldDecorationLayer.BARREL
+                        : (roll < 82 ? InfiniteWorldDecorationLayer.CRATE
+                        : InfiniteWorldDecorationLayer.SIGN);
+
+            case 5:  // Level 4 - abandoned office
+            case 6:  // Level 5 - hotel
+                return roll < 42 ? InfiniteWorldDecorationLayer.SIGN
+                        : (roll < 72 ? InfiniteWorldDecorationLayer.CRATE
+                        : InfiniteWorldDecorationLayer.BARREL);
+
+            case 9:  // Level 8 - caves
+                return roll < 68 ? InfiniteWorldDecorationLayer.MUSHROOMS
+                        : InfiniteWorldDecorationLayer.CRATE;
+
+            case 10: // Level 9 - suburbs
+            case 12: // Level 11 - city
+                return roll < 45 ? InfiniteWorldDecorationLayer.SIGN
+                        : (roll < 75 ? InfiniteWorldDecorationLayer.BARREL
+                        : InfiniteWorldDecorationLayer.BUSH);
+
+            case 11: // Level 10 - fields
+            case 14: // Level 94 - motion/town
+                return roll < 50 ? InfiniteWorldDecorationLayer.BUSH
+                        : (roll < 78 ? InfiniteWorldDecorationLayer.MUSHROOMS
+                        : InfiniteWorldDecorationLayer.SIGN);
+
+            case 8:  // Level 7 - ocean
+            case 13: // Level 37 - poolrooms
+                return roll < 58 ? InfiniteWorldDecorationLayer.SIGN
+                        : InfiniteWorldDecorationLayer.BARREL;
+
+            default:
+                switch (roll / 20) {
+                    case 0: return InfiniteWorldDecorationLayer.BUSH;
+                    case 1: return InfiniteWorldDecorationLayer.MUSHROOMS;
+                    case 2: return InfiniteWorldDecorationLayer.SIGN;
+                    case 3: return InfiniteWorldDecorationLayer.BARREL;
+                    default:return InfiniteWorldDecorationLayer.CRATE;
+                }
+        }
+    }
+
     private void refreshInfiniteWorldAccentOverlays() {
         if (customTiles == null || customWalls == null) return;
 
         customTiles.clear();
         customWalls.clear();
         rebuildAccentTiles();
+        rebuildV15DecorationProps();
         GameScene.refreshInfiniteWorldCustomOverlays();
     }
 
