@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Shopkeeper;
@@ -32,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
@@ -40,9 +42,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.DocumentPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.Guidebook;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -133,6 +137,65 @@ public class Heap implements Bundlable {
 		}
 		sprite.link();
 		sprite.drop();
+
+		if (GenesisEcho.ultraFortune(hero)
+				&& (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST || openedType == Type.CRYSTAL_CHEST)) {
+			genesisFortuneBurst(hero);
+		}
+	}
+
+	private void genesisFortuneBurst(Hero hero) {
+		ArrayList<Item> burst = new ArrayList<>(items);
+
+		int extraCount = 10;
+		while (Random.Float() < 0.55f) extraCount++;
+		for (int i = 0; i < extraCount; i++) {
+			Item extra = Generator.randomUsingDefaults();
+			if (extra != null) burst.add(extra);
+		}
+
+		for (Item item : burst) {
+			if (item == null) continue;
+			if (item instanceof Weapon || item instanceof Armor || item instanceof Ring || item instanceof Wand) {
+				item.level(120);
+				item.levelKnown = true;
+			}
+			if (item.stackable) {
+				int qty = Math.max(10, item.quantity());
+				while (Random.Float() < 0.45f) qty += Random.IntRange(1, 10);
+				item.quantity(qty);
+			}
+		}
+
+		ArrayList<Integer> cells = new ArrayList<>();
+		int width = Dungeon.level.width();
+		int hx = hero.pos % width;
+		int hy = hero.pos / width;
+		for (int dy = -4; dy <= 4; dy++) {
+			for (int dx = -4; dx <= 4; dx++) {
+				int x = hx + dx;
+				int y = hy + dy;
+				if (x < 0 || y < 0 || x >= Dungeon.level.width() || y >= Dungeon.level.height()) continue;
+				int cell = x + y * width;
+				if (cell == hero.pos) continue;
+				if ((Dungeon.level.passable[cell] || Dungeon.level.avoid[cell])
+						&& com.shatteredpixel.shatteredpixeldungeon.actors.Actor.findChar(cell) == null) {
+					cells.add(cell);
+				}
+			}
+		}
+		Random.shuffle(cells);
+
+		items.clear();
+		destroy();
+
+		int index = 0;
+		for (Item item : burst) {
+			int cell = cells.isEmpty() ? hero.pos : cells.get(index++ % cells.size());
+			Heap dropped = Dungeon.level.drop(item, cell);
+			if (dropped != null && dropped.sprite != null) dropped.sprite.drop(hero.pos);
+		}
+		GLog.p("超极限好运：宝箱物品大爆发！");
 	}
 	
 	public Heap setHauntedIfCursed(){
