@@ -586,6 +586,52 @@ public class InfiniteWorldLevel extends Level {
         pruneInfiniteWorldMobs();
     }
 
+
+    public void settleHeroAfterSpectator(Hero hero) {
+        if (hero == null || Dungeon.level != this) return;
+
+        int current = hero.pos;
+        if (current >= 0 && current < length()
+                && insideMap(current)
+                && !solid[current] && !pit[current]
+                && (passable[current] || avoid[current])) {
+            return;
+        }
+
+        int hx = current % width();
+        int hy = current / width();
+        int best = -1;
+        long bestScore = Long.MAX_VALUE;
+
+        for (int cell = 0; cell < length(); cell++) {
+            if (!insideMap(cell) || solid[cell] || pit[cell]) continue;
+            if (!(passable[cell] || avoid[cell])) continue;
+
+            Char occupant = Actor.findChar(cell);
+            if (occupant != null && occupant != hero) continue;
+
+            int x = cell % width();
+            int y = cell / width();
+            int dist = Math.abs(x - hx) + Math.abs(y - hy);
+            long score = (long)dist * 100_000L
+                    + (visited[cell] ? 0L : 20_000L)
+                    + Math.floorMod(hash(worldXForLocalCell(cell), worldYForLocalCell(cell), 28600), 10_000L);
+
+            if (score < bestScore) {
+                bestScore = score;
+                best = cell;
+            }
+        }
+
+        if (best >= 0) {
+            hero.pos = best;
+            if (hero.sprite != null) hero.sprite.place(best);
+            recordHeroMove(hero);
+            Dungeon.observe();
+            GameScene.updateFog();
+        }
+    }
+
     public void recordHeroAction(float time) {
         if (time <= 0f || Dungeon.level != this || state().generatorVersion < 12) return;
 
