@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.5.13-stable",
     "development_branch": "assist-0.5.13-breakthrough-certificate",
-    "release_code_sha": "be27e59c9c56b622de7aea5d0c7f7799c35dc356",
+    "release_code_sha": "21537cc9c24b2de32e6d50121358350aa98d2f6d",
     "world_generator_version": 17
   },
   "build": {
@@ -322,7 +322,9 @@
       },
       "unequip": "all bonuses stop immediately",
       "chest_rule": "extra supply roll applies only to normal and locked chests; unique crystal artifact chests are never modified",
-      "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability"
+      "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability",
+      "attack_scope": "certificate damage multiplier applies to normal Hero weapon/unarmed damage and DamageWand rolls",
+      "dynamic_enemy_response": "certificate tier contributes moderate progression power to future mob snapshots so the permanent blessing does not make post-breakthrough ecology static"
     }
   },
   "current_content": {
@@ -641,6 +643,8 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.13 attack scope: certificate damage bonus affects both physical Hero damageRoll and damaging wand rolls.",
+    "0.5.13 dynamic ecology: newly spawned mobs after certificate tier upgrades become moderately stronger; already-active mobs remain unchanged.",
     "0.5.13 quickslot rollback: put a trial-only cheated wand in quickslot, fail the trial, and verify both the wand and its shortcut icon disappear; pre-trial shortcuts must rebind to restored real items.",
     "0.5.13 certificate slot: Artifact + BreakthroughCertificate can be equipped simultaneously; unequipping certificate removes all certificate bonuses immediately.",
     "0.5.13 certificate tiers: reaching Hero 40/50/60 upgrades certificate name and stat package automatically.",
