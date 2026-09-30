@@ -32,6 +32,9 @@ public class GenesisEcho extends Buff {
         immunities.add(Amok.class);
         immunities.add(Drowsy.class);
         immunities.add(Sleep.class);
+        immunities.add(Slow.class);
+        immunities.add(Chill.class);
+        immunities.add(Frost.class);
     }
 
     @Override
