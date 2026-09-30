@@ -1728,6 +1728,11 @@ public class Hero extends Char {
 			else if (pointsInTalent(Talent.IRON_STOMACH) == 2)  damage = 0;
 		}
 
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null && !(src instanceof Hunger)) {
+			damage *= certificate.damageTakenMultiplier();
+		}
+
 		dmg = Math.round(damage);
 
 		//we ceil this one to avoid letting the player easily take 0 dmg from tenacity early
@@ -2240,6 +2245,16 @@ public class Hero extends Char {
 	}
 	
 	@Override
+	public float resist(Class effect) {
+		float result = super.resist(effect);
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null && BreakthroughCertificate.isSupportedNegativeEffect(effect)) {
+			result *= certificate.negativeEffectMultiplier();
+		}
+		return result;
+	}
+
+	@Override
 	public boolean add( Buff buff ) {
 
 		if (buff.type == Buff.buffType.NEGATIVE &&
@@ -2643,6 +2658,8 @@ public class Hero extends Char {
 		boolean circular = pointsInTalent(Talent.WIDE_SEARCH) == 1;
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
 		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
+		BreakthroughCertificate searchCertificate = BreakthroughCertificate.equipped(this);
+		if (searchCertificate != null) distance += searchCertificate.searchDistanceBonus();
 		
 		boolean foresight = buff(Foresight.class) != null;
 		boolean foresightScan = foresight && !Dungeon.level.mapped[pos];
@@ -2729,6 +2746,12 @@ public class Hero extends Char {
 						//unintentional door detection scales from 20% at floor 0 to 0% at floor 20
 						} else {
 							chance = 0.2f - (Dungeon.depth / 100f);
+						}
+
+						if (searchCertificate != null
+								&& (Dungeon.level.map[curr] == Terrain.SECRET_TRAP
+								|| Dungeon.level.map[curr] == Terrain.SECRET_DOOR)) {
+							chance = Math.min(1f, chance + searchCertificate.searchChanceBonus());
 						}
 
 						//don't want to let the player search though hidden doors in tutorial
