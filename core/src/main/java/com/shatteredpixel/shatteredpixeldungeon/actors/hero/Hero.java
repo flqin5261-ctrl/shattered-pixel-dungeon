@@ -265,7 +265,7 @@ public class Hero extends Char {
 	public void updateHT( boolean boostHP ){
 		int curHT = HT;
 		
-		HT = 20 + 5*(lvl-1) + HTBoost + GenesisEcho.permanentHpBonus(this);
+		HT = 20 + 5*(lvl-1) + HTBoost;
 		float multiplier = RingOfMight.HTMultiplier(this);
 		HT = Math.round(multiplier * HT);
 		
@@ -277,6 +277,11 @@ public class Hero extends Char {
 		if (certificate != null) {
 			HT = Math.round(HT * certificate.effectiveHealthMultiplier(this));
 		}
+
+		// Genesis Echo kill growth is exactly +1 max HP per enemy, so apply this
+		// after percentage multipliers rather than letting the permanent point be
+		// amplified by rings or Miracle Echo.
+		HT += GenesisEcho.permanentHpBonus(this);
 		
 		if (boostHP){
 			HP += Math.max(HT - curHT, 0);
