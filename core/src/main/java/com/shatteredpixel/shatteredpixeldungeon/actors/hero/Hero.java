@@ -152,7 +152,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.BreakthroughTrialLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -2117,6 +2119,16 @@ public class Hero extends Char {
 		
 		boolean levelUp = false;
 		while (this.exp >= maxExp()) {
+
+			// Infinite World has a real progression gate at level 30. XP no longer
+			// pushes the Hero past 30 until the breakthrough trial is completed.
+			if (Dungeon.infiniteWorld && lvl >= InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP
+					&& !InfiniteWorldProgression.breakthroughCompleted()) {
+				this.exp = Math.min(this.exp, Math.max(0, maxExp() - 1));
+				InfiniteWorldProgression.onHeroAtBreakthroughGate(this);
+				break;
+			}
+
 			this.exp -= maxExp();
 
 			if (buff(Talent.WandPreservationCounter.class) != null
@@ -2124,7 +2136,7 @@ public class Hero extends Char {
 				buff(Talent.WandPreservationCounter.class).detach();
 			}
 
-			if (lvl < MAX_LEVEL) {
+			if (lvl < InfiniteWorldProgression.heroLevelCap(this)) {
 				lvl++;
 				levelUp = true;
 				
@@ -2165,6 +2177,12 @@ public class Hero extends Char {
 			Item.updateQuickslot();
 			
 			Badges.validateLevelReached();
+
+			if (Dungeon.infiniteWorld
+					&& lvl == InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP
+					&& !InfiniteWorldProgression.breakthroughCompleted()) {
+				InfiniteWorldProgression.onHeroAtBreakthroughGate(this);
+			}
 		}
 	}
 	
@@ -2230,7 +2248,15 @@ public class Hero extends Char {
 
 	@Override
 	public void die( Object cause ) {
-		
+
+		// The level-30 breakthrough trial is non-lethal by design. Failure restores
+		// the pre-trial Hero snapshot and returns to Infinite World without consuming
+		// ankhs or ending the run.
+		if (Dungeon.infiniteWorld && Dungeon.level instanceof BreakthroughTrialLevel) {
+			((BreakthroughTrialLevel)Dungeon.level).finishTrial(false);
+			return;
+		}
+
 		curAction = null;
 
 		Ankh ankh = null;
