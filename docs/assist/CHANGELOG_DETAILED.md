@@ -2340,3 +2340,37 @@ The chokepoint test removes the candidate virtually and verifies its immediately
 - New V16 worlds gain physical blockers.
 - 0.5.8 spectator flight still phases through all scenery.
 - Monster strength/stats remain untouched in 0.5.9.
+
+
+# 0.5.10 / Generator V17 — Solid Scenery + Artifact Chest Pacing
+
+Version:
+- versionName: 0.5.10
+- versionCode: 956
+- dev: assist-0.5.10-solid-scenery
+- target stable: assist-0.5.10-stable
+- WORLD_GEN_VERSION: 17
+
+## Guaranteed artifact chest
+- Trigger raised from 400 to 1000 positive Infinite World Hero action-value.
+- Spawn is constrained to the Hero-centered 3x3 cell neighbourhood (one of the eight adjacent cells).
+- If no adjacent legal cell exists, the spawn is deferred and retried on a later positive Hero action; it is never pushed outside the requested 3x3 area.
+- The chest remains a single persistent CRYSTAL_CHEST containing one artifact.
+- One CrystalKey is granted when the chest is created.
+
+## All scenery is physical in V17
+- All 30 InfiniteWorldDecorationLayer kinds are solid in newly generated V17 worlds.
+- Every visible prop uses Terrain.CUSTOM_DECO for ordinary collision/pathfinding.
+- Hero and ordinary mobs must route around every prop.
+- Props remain non-interactive and spectator mode still phases through them.
+- Existing V16 saves preserve the old V16 pass-through exceptions (mushrooms, fern, decorative torch and rubble).
+
+## Safety
+- Center crossing lanes, room access, chest vicinity and critical terrain remain protected.
+- Local connectivity/chokepoint checks apply to every V17 prop and account for already planned blockers in the same chunk.
+- V17 removes the old pass-through fallback for origin/merchant areas; any decoration that is actually placed must satisfy real blocker safety.
+
+## Not changed
+- Monster strength/stats/ecology are unchanged.
+- Streaming timing remains Hero.onMotionComplete() -> InfiniteWorldLevel.afterHeroMotionComplete().
+- applicationId and stable signing key remain unchanged.
