@@ -5189,9 +5189,12 @@ public class InfiniteWorldLevel extends Level {
             }
 
             boolean hard = physicalMode && InfiniteWorldDecorationLayer.isBlockingKind(kind, state().generatorVersion);
-            if (hard && (cx == 0 && cy == 0 || isV11MerchantChunk(cx, cy))) {
-                // Keep the origin plaza and merchant outposts free of new physical
-                // blockers. They still receive pass-through visual clutter.
+            if (hard && state().generatorVersion < 17
+                    && (cx == 0 && cy == 0 || isV11MerchantChunk(cx, cy))) {
+                // Legacy V16 kept these locations free of physical props by
+                // substituting pass-through clutter. V17 no longer creates
+                // pass-through decorations; its connectivity checks must approve
+                // every prop as a real blocker instead.
                 kind = v16NonBlockingFallbackKind(cx, cy, slot, anomaly);
                 hard = false;
             }
