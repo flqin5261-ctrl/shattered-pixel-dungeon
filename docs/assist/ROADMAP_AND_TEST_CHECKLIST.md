@@ -1582,3 +1582,42 @@ V15 地形分布发生变化，要验证 14 类新环境必须重新开始创建
 - [ ] Mob ecology / no-reward despawn 正常。
 - [ ] Streaming 仍只在 Hero.onMotionComplete 后发生。
 - [ ] fixed package/signature 可覆盖安装旧 Assist APK。
+
+# B17. 0.5.8 Spectator Flight / CC0 Props regression
+
+## B17.1 Spectator movement presentation
+- [ ] Enable Infinite World spectator mode and verify Hero uses a floating/idle glide rather than run animation.
+- [ ] Levitation particles remain stable during long movement and are not recreated/flickered every cell.
+- [ ] Movement is at least x8 even if the general Assist speed option is disabled.
+- [ ] If general Assist speed is set above x8, spectator mode respects the higher multiplier.
+- [ ] Visual tween keeps pace with logical Hero movement; no delayed sprite catching up to the real position.
+- [ ] Repeated 72-cell Streaming shifts still occur only after onMotionComplete and do not produce spinner/walk-in-place regressions.
+- [ ] Disabling spectator removes levitation and safely relocates Hero if currently inside invalid terrain.
+
+## B17.2 Spectator vision
+- [ ] Spectator FOV reaches approximately 20 cells in open terrain.
+- [ ] Walls still occlude normal line-of-sight rather than globally revealing the whole 168x168 map.
+- [ ] FOV/fog refresh stays correct immediately after Streaming.
+- [ ] Disabling spectator restores normal view distance without restarting the run.
+
+## B17.3 CC0 decoration rendering
+- [ ] CI fetch step verifies both Kenney PNG Git blob hashes.
+- [ ] Bush, mushrooms, sign, barrel and crate all appear in normal V15 exploration.
+- [ ] Backrooms-inspired districts visibly receive more decoration than ordinary chunks.
+- [ ] Props never replace doors, water, chests, traps, plants, merchants, mobs or the Hero.
+- [ ] Props do not block movement and do not alter pathfinding.
+- [ ] Props remain stable across Save/Load and 7x7 Streaming rebuilds.
+- [ ] Secret-door discovery/accent refresh does not permanently remove or duplicate decorations.
+
+## B17.4 Magnifier/examine
+- [ ] Bush -> 野生灌木 / Wild bush.
+- [ ] Mushrooms -> 蘑菇丛 / Mushroom cluster.
+- [ ] Sign -> 风化路牌 / Weathered sign.
+- [ ] Barrel -> 废弃木桶 / Discarded barrel.
+- [ ] Crate -> 空木箱 / Empty crate.
+- [ ] WndInfoCell shows the prop sprite and prop description rather than only the underlying floor.
+
+## B17.5 Deferred
+- [ ] Do not change monster stats/strength rules in 0.5.8.
+- [ ] After the spectator/visual pass is validated on device, design the Infinite World monster strength progression as the next separate task.
+
