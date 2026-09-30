@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.8",
-    "version_code": 954,
+    "version_name": "0.5.9",
+    "version_code": 955,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.8-stable",
-    "development_branch": "assist-0.5.8-spectator-props",
+    "stable_branch": "assist-0.5.9-stable",
+    "development_branch": "assist-0.5.9-environment-rich",
     "release_code_sha": "b7d31989353afbe5b2b86a6e73b13a0d73f70c20",
-    "world_generator_version": 15
+    "world_generator_version": 16
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -449,6 +449,34 @@
       "examine_support": "WndInfoCell sees the CustomTilemap image and localized name/description, so magnifier inspection identifies each prop.",
       "terrain_safety": "Props never mutate map[]/passability/water/doors and are excluded from occupied heaps/traps/plants/chars and common center crossing lanes.",
       "provenance_doc": "docs/assist/THIRD_PARTY_ASSETS.md"
+    },
+    "v16_environment_scenery": {
+      "catalog_size": 30,
+      "external_asset_sets": [
+        "Kenney Tiny Town 1.1",
+        "Kenney Tiny Dungeon 1.0"
+      ],
+      "license": "CC0 1.0",
+      "ordinary_chunk_density": "2-4 props",
+      "backrooms_chunk_density": "4-13 props depending on district",
+      "clustered_placement": true,
+      "zone_specific_prop_pools": true,
+      "noninteractive": true,
+      "physicality": {
+        "generator_v15_old_worlds": "expanded visual props only; bulky scenery remains pass-through for compatibility",
+        "generator_v16_new_worlds": "bulky scenery uses Terrain.CUSTOM_DECO solid cells; mushrooms/ferns/torches/rubble remain pass-through"
+      },
+      "hard_prop_safety": [
+        "skip origin plaza and merchant chunks for physical blockers",
+        "skip shared center crossing lanes",
+        "skip room-access cells",
+        "keep distance from chests",
+        "skip doors/transitions/wells/alchemy/pedestals",
+        "local connectivity test rejects blocker placement on chokepoints"
+      ],
+      "magnifier_support": true,
+      "collision_passthrough_in_spectator": true,
+      "new_world_required_for_physical_collision": true
     }
   },
   "hard_invariants": [
@@ -466,6 +494,13 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.9 V16 scenery: bulky trees/barrels/crates/furniture/rails use Terrain.CUSTOM_DECO and block ordinary Hero/mob pathing while remaining non-interactive.",
+    "0.5.9 V16 scenery safety: no physical decoration may sever a one-cell corridor, block a door, occupy a chest hotspot, break merchant access, or obstruct the common center crossing lanes.",
+    "0.5.9 scenery density: ordinary chunks should visibly contain about 2-4 props and Backrooms districts about 4-13 props, with small deterministic clusters rather than isolated single sprites.",
+    "0.5.9 regional styling: industrial, office, hotel, caves, suburbs, fields, city, poolrooms and Motion districts must draw from distinct prop pools.",
+    "0.5.9 legacy V15 compatibility: old V15 worlds gain the richer visual decoration catalog/density but do not gain new solid CUSTOM_DECO blockers.",
+    "0.5.9 spectator compatibility: Infinite spectator flight ignores the new physical scenery exactly as it ignores walls.",
+    "0.5.9 magnifier: all 30 prop kinds resolve to a localized object name/description and correct Kenney sprite.",
     "0.5.8 spectator: movement uses idle/levitating glide instead of run animation and both logical speed and PosTweener visual speed are at least x8.",
     "0.5.8 spectator: FOV radius expands to ShadowCaster.MAX_DISTANCE=20 only while Infinite World spectator mode is active and returns to normal immediately when disabled.",
     "0.5.8 CC0 props: bush/mushrooms/sign/barrel/crate render above existing accents without altering map collision or breaking Streaming.",
@@ -511,6 +546,10 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device verify V16 physical scenery feels substantial without making normal exploration frustrating or creating hidden chokepoints.",
+    "Use spectator QA to inspect high-density Level 9/10/11/94 districts and confirm clustered scenery never overlaps doors, merchants, loot, traps or critical roads.",
+    "Verify old V15 saves receive denser visual scenery without pathing changes, while newly started V16 worlds receive physical blockers.",
+    "After environment validation, begin the separately requested monster-strength/progression design discussion; do not mix monster-stat changes into 0.5.9.",
     "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
     "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
     "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
