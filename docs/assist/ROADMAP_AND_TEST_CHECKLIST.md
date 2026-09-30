@@ -1621,3 +1621,22 @@ V15 地形分布发生变化，要验证 14 类新环境必须重新开始创建
 - [ ] Do not change monster stats/strength rules in 0.5.8.
 - [ ] After the spectator/visual pass is validated on device, design the Infinite World monster strength progression as the next separate task.
 
+# B18. 0.5.9 Environment Decoration Regression
+
+- [ ] Ordinary V15 chunks generally show 4-7 props.
+- [ ] Backrooms-inspired chunks generally show 8-12 props.
+- [ ] Poolrooms stays cleaner at roughly 5-8 props.
+- [ ] Level 0/4 office environments visibly use furniture rather than natural props.
+- [ ] Level 1/2/3 industrial/service environments visibly use barrels/rubble/braziers/fences/fixtures.
+- [ ] Level 8 cave environment shows mushrooms/rock/rubble/crystal details.
+- [ ] Level 9/10/94 outdoor environments show trees/flowers/weeds/stumps/signs.
+- [ ] Level 11 city uses urban debris/sign/fence mix.
+- [ ] Furniture tends to appear beside walls instead of randomly in room centers.
+- [ ] Guaranteed center crossing lanes remain visually uncluttered.
+- [ ] No prop covers a heap, trap, plant, merchant, mob or Hero.
+- [ ] No prop changes Hero or mob collision/pathfinding.
+- [ ] All 23 prop types have magnifier names/descriptions.
+- [ ] The former misleading 0.5.8 crate/coffin mapping no longer appears as "crate".
+- [ ] Save/load and repeated Streaming rebuild decorations deterministically without multiplication.
+- [ ] 0.5.8 spectator flight/FOV remains unchanged.
+- [ ] Monster strength/stats remain unchanged in 0.5.9.
