@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.8",
-    "version_code": 954,
+    "version_name": "0.5.9",
+    "version_code": 955,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.8-stable",
-    "development_branch": "assist-0.5.8-spectator-props",
-    "release_code_sha": "b7d31989353afbe5b2b86a6e73b13a0d73f70c20",
-    "world_generator_version": 15
+    "stable_branch": "assist-0.5.9-stable",
+    "development_branch": "assist-0.5.9-solid-decor",
+    "release_code_sha": "74599183bdc01c675907f054df7ca59480bf26fa",
+    "world_generator_version": 16
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -449,6 +449,36 @@
       "examine_support": "WndInfoCell sees the CustomTilemap image and localized name/description, so magnifier inspection identifies each prop.",
       "terrain_safety": "Props never mutate map[]/passability/water/doors and are excluded from occupied heaps/traps/plants/chars and common center crossing lanes.",
       "provenance_doc": "docs/assist/THIRD_PARTY_ASSETS.md"
+    },
+    "v16_environment_setpieces": {
+      "enabled": true,
+      "generator_version": 16,
+      "normal_chunk_setpieces": "2-3",
+      "backrooms_chunk_setpieces": "4-5",
+      "visual_sources": [
+        "Kenney Tiny Town/Tiny Dungeon CC0 overlays from 0.5.8",
+        "Shattered Pixel Dungeon STATUE/STATUE_SP/REGION_DECO/REGION_DECO_ALT"
+      ],
+      "formations": [
+        "bush patch",
+        "mushroom patch",
+        "sign corner",
+        "barrel pair",
+        "crate pair",
+        "mixed supply pile",
+        "2x2 crate block",
+        "three-barrel row",
+        "statue pair",
+        "mixed statue corner",
+        "region-deco pair",
+        "region-deco corner"
+      ],
+      "collision_rule": "Selected sign/barrel/crate cells use Terrain.CUSTOM_DECO; statue/region variants use their native SOLID terrain.",
+      "interaction_rule": "Decoration is scenery-only: no pickup/open/loot/attack/script interaction.",
+      "connectivity_rule": "Any formation with SOLID parts may generate only if a complete one-cell passable ring surrounds the formation; center crossing lanes are excluded.",
+      "persistence_rule": "Each V16 set-piece slot stores anchor+style in InfiniteWorldState.objectStates. Generated solid scenery is excluded from terrainOverride snapshots and reconstructed from object state.",
+      "magnifier_rule": "Kenney overlay cells retain localized CustomTilemap name/desc; native statue/region terrain uses normal terrain inspection.",
+      "legacy_v15": "V15 worlds keep the 0.5.8 visual-only sparse decoration behavior."
     }
   },
   "hard_invariants": [
@@ -466,6 +496,11 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.9 V16 solid scenery: in normal movement, sign/barrel/crate/statue/region-deco set-pieces block Hero and Mob movement while spectator mode still phases through them.",
+    "0.5.9 V16 density: ordinary chunks contain roughly 2-3 set-pieces and Backrooms-inspired chunks roughly 4-5 when valid space exists.",
+    "0.5.9 V16 connectivity: solid set-pieces never seal one-cell corridors, shared gateways, merchant routes or the common center crossing lanes.",
+    "0.5.9 V16 persistence: set-piece style/anchor and collision survive Save/Load and repeated 7x7 Streaming without duplicating or drifting.",
+    "0.5.9 V16 non-interaction: barrels/crates/signs/statues are scenery only and never open, drop loot, trigger combat, or consume actions.",
     "0.5.8 spectator: movement uses idle/levitating glide instead of run animation and both logical speed and PosTweener visual speed are at least x8.",
     "0.5.8 spectator: FOV radius expands to ShadowCaster.MAX_DISTANCE=20 only while Infinite World spectator mode is active and returns to normal immediately when disabled.",
     "0.5.8 CC0 props: bush/mushrooms/sign/barrel/crate render above existing accents without altering map collision or breaking Streaming.",
@@ -511,10 +546,12 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device survey a fresh V16 world for decoration density, collision feel and route safety; tune counts only from map-testing feedback.",
+    "Use spectator QA mode to inspect set-piece placement inside all 14 Backrooms-inspired districts and merchant outposts.",
+    "After V16 environment dressing is validated, move to the separately requested Infinite World monster strength/progression design.",
     "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
     "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
     "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
-    "After 0.5.8 spectator/visual validation, discuss and design Infinite World monster strength/progression mechanics before changing mob stats.",
     "Real-device survey V15 with spectator QA mode: verify all 14 Backrooms-inspired districts can appear through ordinary exploration and automatically unlock their archive entries.",
     "Verify merchant frequency progression over a long new V15 run without any already-generated chunk changing merchant status.",
     "Collect the four expansion bags through different merchants and verify each merchant retargets slot 0 to a bag still missing at first encounter.",
