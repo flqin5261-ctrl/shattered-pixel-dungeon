@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -57,19 +58,22 @@ public class Belongings implements Iterable<Item> {
 			image = ItemSpriteSheet.BACKPACK;
 		}
 		public int capacity(){
-			// Assist Infinite World baseline is deliberately roomier than upstream.
-			int cap = 25;
+			// Restore the normal 20-slot baseline. Once Genesis Echo awakens,
+			// "Infinite Space" guarantees at least five empty backpack slots no
+			// matter how many items are already stored.
+			int cap = super.capacity();
 			Hero hero = owner instanceof Hero ? (Hero)owner : Dungeon.hero;
-			BreakthroughCertificate seal = BreakthroughCertificate.equipped(hero);
-			if (seal != null) cap += seal.effectiveBackpackBonus(hero);
 			for (Item item : items){
 				if (item instanceof Bag){
 					cap++;
 				}
 			}
-			if (Dungeon.hero != null && Dungeon.hero.belongings.secondWep != null){
+			if (hero != null && hero.belongings.secondWep != null){
 				//secondary weapons still occupy an inv. slot
 				cap--;
+			}
+			if (GenesisEcho.active(hero)) {
+				cap = Math.max(cap, items.size() + 5);
 			}
 			return cap;
 		}
