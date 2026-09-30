@@ -85,11 +85,11 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.7**
-- 当前 versionCode：**953**
-- 当前最新稳定分支：`assist-0.5.7-stable`
+- 当前最新稳定版本：**0.5.8**
+- 当前 versionCode：**954**
+- 当前最新稳定分支：`assist-0.5.8-stable`
 - 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.7-backrooms-merchants`
+- 当前对应开发分支：`assist-0.5.8-spectator-props`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -1569,3 +1569,46 @@ Infinite World Bag 定价 value×2（最低20）；普通货物保持原版 valu
 - V15 地形分布要新建 V15 世界才能体验。
 - V14 老存档继续保持 generatorVersion14，不会被重算成 V15。
 - 0.5.6 spectator QA、V14 merchant connectivity、dynamic accent、Water/VBO、唯一神器箱、Mob ecology 均不能回归。
+
+# 31. 0.5.8 — Spectator Flight QA + 可识别 CC0 环境装饰
+
+## 31.1 无界旁观测试模式
+0.5.8 把旁观模式从“高速穿墙走路”改成明确的 QA flight：
+- Hero.speed() 最低 x8。
+- CharSprite PosTweener 也最低 x8，画面位置与逻辑位置同步。
+- spectator 移动时不播放 run；保持 idle pose 滑行。
+- 使用原版 CharSprite.State.LEVITATING 作为悬浮表现。
+- 关闭模式时移除 LEVITATING，恢复 idle，并继续 settleHeroAfterSpectator() 安全落地。
+- FOV 只在 spectator 模式强制到 ShadowCaster.MAX_DISTANCE=20。
+- 普通玩法视野不改。
+- Streaming 时机完全不改：只能 Hero.onMotionComplete() 后 shift。
+
+## 31.2 新环境小物件
+第一批只加入 5 种 16x16 环境装饰：
+- 野生灌木
+- 蘑菇丛
+- 风化路牌
+- 废弃木桶
+- 空木箱
+
+来源：
+- Kenney Tiny Town 1.1 / Tiny Dungeon 1.0。
+- CC0 1.0。
+- 固定上游 commit e22e06e317be6c933b779ad7b055b6a6aeafa5e8。
+- CI 在 Gradle 前下载 PNG，并按 upstream Git blob SHA 验证；验证失败直接终止构建。
+- 详情见 docs/assist/THIRD_PARTY_ASSETS.md。
+
+## 31.3 装饰层技术规则
+- InfiniteWorldDecorationLayer 是 CustomTilemap visual overlay。
+- 不改 map[] / passable / solid / water / door / pathfinding，因此不需要 Generator V16。
+- 放置在 heaps/traps/plants/themed-room contents 生成之后，跳过已经被实际游戏对象占据的 cell。
+- Backrooms V15 district 每 Chunk 最多 2 个；普通 V15 Chunk 约 62% 概率 1 个。
+- 避开 chunk 中央常用通行十字带。
+- Secret-door accent refresh 与 Streaming rebuild 后都要重建装饰层。
+- name()/desc()/image() 接入 WndInfoCell，放大镜必须识别成对应物件，不能只显示 floor。
+- Bundle 只保存稀疏 prop cell/kind，不把整张 168x168 空数组写进存档。
+
+## 31.4 当前未做
+- 0.5.8 不修改怪物强度、等级、血量、攻击、防御、生成池或精英概率。
+- 用户明确要求先完成 spectator + environment visual pass，再单独讨论 monster strength mechanics。
+
