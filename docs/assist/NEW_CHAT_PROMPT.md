@@ -23,12 +23,12 @@
 
 当前已知基线：
 
-- 最新稳定版：0.5.0
-- versionCode：946
-- stable：`assist-0.5.0-stable`
+- 最新稳定版：0.5.1
+- versionCode：947
+- stable：`assist-0.5.1-stable`
 - 对应代码 release SHA：
-  `c01cabebd7e9c453c11b3dc0f886a1579d9543fd`
-- Infinite World Generator：V10
+  `e14bac5c266d6b0cad3189ace9dc7492967ac74b`
+- Infinite World Generator：V11
 - 包名：
   `com.shatteredpixel.shatteredpixeldungeon.assist`
 - 固定签名不能改
@@ -171,3 +171,16 @@
 - WORLD_GEN_VERSION 仍为 10，因此 0.5.0 不要求为怪物功能重开 V10 世界。
 
 下一步优先实机调整怪物数量、刷新间隔、消失距离和精英概率；这些稳定后再扩怪物种类，不要急着加 Boss。
+
+
+当前商人阶段：
+
+- 0.5.1 已加入固定世界商人据点，Generator V11。
+- 商人候选为 7-Chunk lattice，7×7 active window 同时最多一个。
+- 商店避开出生区、anomaly 和 V10 primary/secondary infinite roads。
+- 每店 6 个 FOR_SALE slot，购买后用 objectStates 永久记录，不自动补货。
+- InfiniteWorldShopkeeper 保存 shopChunkX/Y；Window shift 中单独 rebase/unload。
+- 商人不参与普通敌人的 40-cell despawn。
+- 敌人不会直接刷新在商人 8 格范围内。
+- 商人 flee 后调用 markInfiniteWorldMerchantGone，该据点永久关闭。
+- 要看到 V11 商店房必须重新开始 Infinite World。
