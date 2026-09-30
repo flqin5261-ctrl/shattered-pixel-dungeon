@@ -64,7 +64,7 @@ public class Gold extends Item {
 		Statistics.itemTypesDiscovered.add(getClass());
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
-		int gained = certificate == null ? quantity : Math.max(quantity, Math.round(quantity * certificate.goldMultiplier()));
+		int gained = certificate == null ? quantity : Math.max(quantity, Math.round(quantity * certificate.effectiveGoldMultiplier(hero)));
 
 		Dungeon.gold += gained;
 		Statistics.goldCollected += gained;
