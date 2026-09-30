@@ -4641,13 +4641,32 @@ public class InfiniteWorldLevel extends Level {
                     int anomaly = v9AnomalyType(cx, cy);
                     if (anomaly != 0) {
                         int alt;
-                        switch (anomaly) {
-                            case 1: alt = 3; break; // city
-                            case 2: alt = 0; break; // sewers
-                            case 3: alt = 4; break; // halls
-                            case 4: alt = 1; break; // prison
-                            case 5: alt = 2; break; // caves
-                            default:alt = 4; break; // halls
+                        if (state().generatorVersion >= 15) {
+                            switch (anomaly) {
+                                case 1:  alt = 4; break; // Level 0: yellow-hall approximation
+                                case 2:  alt = 1; break; // Level 1: concrete/storage
+                                case 3:  alt = 0; break; // Level 2: utility pipes
+                                case 4:  alt = 0; break; // Level 3: electrical/service
+                                case 5:  alt = 3; break; // Level 4: offices
+                                case 6:  alt = 4; break; // Level 5: hotel
+                                case 7:  alt = 2; break; // Level 6: dark concrete
+                                case 8:  alt = 0; break; // Level 7: ocean
+                                case 9:  alt = 2; break; // Level 8: caves
+                                case 10: alt = 3; break; // Level 9: suburbs
+                                case 11: alt = 2; break; // Level 10: fields
+                                case 12: alt = 3; break; // Level 11: city
+                                case 13: alt = 0; break; // Level 37: poolrooms
+                                default: alt = 3; break; // Level 94: toy-like town
+                            }
+                        } else {
+                            switch (anomaly) {
+                                case 1: alt = 3; break;
+                                case 2: alt = 0; break;
+                                case 3: alt = 4; break;
+                                case 4: alt = 1; break;
+                                case 5: alt = 2; break;
+                                default:alt = 4; break;
+                            }
                         }
 
                         InfiniteWorldAccentTilemap anomalyFloor =
