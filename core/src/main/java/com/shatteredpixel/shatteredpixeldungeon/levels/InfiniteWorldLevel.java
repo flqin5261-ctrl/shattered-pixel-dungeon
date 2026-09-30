@@ -198,6 +198,7 @@ public class InfiniteWorldLevel extends Level {
         baseWindow = generateBaseWindow(st.centerChunkX, st.centerChunkY);
         System.arraycopy(baseWindow, 0, map, 0, map.length);
         applyTerrainOverrides();
+        repairLegacyMerchantAccessInWindow();
         restoreExploration();
         rebuildAccentTiles();
 
@@ -965,6 +966,7 @@ public class InfiniteWorldLevel extends Level {
         baseWindow = generateBaseWindow(st.centerChunkX, st.centerChunkY);
         System.arraycopy(baseWindow, 0, map, 0, map.length);
         applyTerrainOverrides();
+        repairLegacyMerchantAccessInWindow();
 
         Arrays.fill(visited, false);
         Arrays.fill(mapped, false);
