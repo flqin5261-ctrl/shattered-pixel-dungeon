@@ -847,8 +847,14 @@ public abstract class Wand extends Item {
 			float turnsToCharge = (float) (BASE_CHARGE_DELAY
 					+ (SCALING_CHARGE_ADDITION * Math.pow(scalingFactor, missingCharges)));
 
-			if (Regeneration.regenOn())
-				partialCharge += (1f/turnsToCharge) * RingOfEnergy.wandChargeMultiplier(target);
+			if (Regeneration.regenOn()) {
+				float sealCharge = 1f;
+				if (target instanceof Hero) {
+					BreakthroughCertificate certificate = BreakthroughCertificate.equipped((Hero) target);
+					if (certificate != null) sealCharge = certificate.wandChargeMultiplier();
+				}
+				partialCharge += (1f/turnsToCharge) * RingOfEnergy.wandChargeMultiplier(target) * sealCharge;
+			}
 
 			for (Recharging bonus : target.buffs(Recharging.class)){
 				if (bonus != null && bonus.remainder() > 0f) {
