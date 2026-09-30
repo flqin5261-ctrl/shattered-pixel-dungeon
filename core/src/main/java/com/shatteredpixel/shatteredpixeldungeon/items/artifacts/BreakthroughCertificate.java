@@ -172,19 +172,6 @@ public class BreakthroughCertificate extends EquipableItem {
         }
     }
 
-    public int backpackBonus() {
-        switch (certificateLevel) {
-            case 60: return 16;
-            case 50: return 12;
-            case 40: return 8;
-            default:return 5;
-        }
-    }
-
-    public int effectiveBackpackBonus(Hero hero) {
-        return backpackBonus() * copies(hero);
-    }
-
     public int visionBonus() {
         switch (certificateLevel) {
             case 60: return 4;
@@ -510,7 +497,6 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((1f-hungerMultiplier())*100f),
                     Math.round((goldMultiplier()-1f)*100f),
                     Math.round((speedMultiplier()-1f)*100f),
-                    backpackBonus(),
                     visionBonus(),
                     searchDistanceBonus(),
                     Math.round(searchChanceBonus()*100f),
@@ -537,7 +523,6 @@ public class BreakthroughCertificate extends EquipableItem {
                 Math.round((1f-hungerMultiplier())*100f),
                 Math.round((goldMultiplier()-1f)*100f),
                 Math.round((speedMultiplier()-1f)*100f),
-                backpackBonus(),
                 visionBonus(),
                 searchDistanceBonus(),
                 Math.round(searchChanceBonus()*100f),
@@ -593,7 +578,6 @@ public class BreakthroughCertificate extends EquipableItem {
             if (buff != null) buff.detach();
             hero.updateHT(false);
             Dungeon.observe();
-            spillBackpackOverflow(hero);
             return true;
         }
         return false;
@@ -679,39 +663,6 @@ public class BreakthroughCertificate extends EquipableItem {
         }
     }
 
-    private static void spillBackpackOverflow(Hero hero) {
-        if (hero == null || Dungeon.level == null) return;
-
-        Bag backpack = hero.belongings.backpack;
-        int overflow = backpack.items.size() - backpack.capacity();
-        if (overflow <= 0) return;
-
-        // Prefer ordinary items first so progression-unique gear and special bags
-        // remain in the inventory whenever possible.
-        ArrayList<Item> candidates = new ArrayList<>();
-        for (Item item : backpack.items) {
-            if (item instanceof BreakthroughCertificate) continue;
-            if (!item.unique && !(item instanceof Bag)) candidates.add(item);
-        }
-        for (Item item : backpack.items) {
-            if (item instanceof BreakthroughCertificate || candidates.contains(item)) continue;
-            candidates.add(item);
-        }
-
-        for (Item item : candidates) {
-            if (overflow <= 0) break;
-            item.detachAll(backpack);
-            Dungeon.level.drop(item, hero.pos).sprite.drop();
-            overflow = backpack.items.size() - backpack.capacity();
-        }
-
-        if (overflow > 0) {
-            GLog.w("背包容量降低，仍有部分物品无法自动移出；请整理背包。");
-        } else {
-            GLog.i("破界装备已取下，超出容量的物品已安全放在角色身边。");
-        }
-    }
-
     public static BreakthroughCertificate equipped(Hero hero) {
         return hero == null ? null : hero.belongings.breakthroughCertificate();
     }
@@ -792,7 +743,6 @@ public class BreakthroughCertificate extends EquipableItem {
                         Math.round((1f-cert.hungerMultiplier())*100f),
                         Math.round((cert.goldMultiplier()-1f)*100f),
                         Math.round((cert.speedMultiplier()-1f)*100f),
-                        cert.backpackBonus(),
                         cert.visionBonus(),
                         cert.searchDistanceBonus(),
                         Math.round(cert.searchChanceBonus()*100f),
@@ -819,7 +769,6 @@ public class BreakthroughCertificate extends EquipableItem {
                         Math.round((1f-cert.hungerMultiplier())*100f),
                         Math.round((cert.goldMultiplier()-1f)*100f),
                         Math.round((cert.speedMultiplier()-1f)*100f),
-                        cert.backpackBonus(),
                         cert.visionBonus(),
                         cert.searchDistanceBonus(),
                         Math.round(cert.searchChanceBonus()*100f),
@@ -853,7 +802,6 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((1f-preview.hungerMultiplier())*100f),
                     Math.round((preview.goldMultiplier()-1f)*100f),
                     Math.round((preview.speedMultiplier()-1f)*100f),
-                    preview.backpackBonus(),
                     preview.visionBonus(),
                     preview.searchDistanceBonus(),
                     Math.round(preview.searchChanceBonus()*100f),
