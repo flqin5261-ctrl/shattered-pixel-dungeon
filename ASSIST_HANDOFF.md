@@ -88,7 +88,7 @@
 - 当前最新稳定版本：**0.5.9**
 - 当前 versionCode：**955**
 - 当前最新稳定分支：`assist-0.5.9-stable`
-- 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
+- 当前发布代码 SHA：`0aebdc70c2dbe0bef8b4016c98387c89bcc7af4b`
 - 当前对应开发分支：`assist-0.5.9-decoration-pass`
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
 
