@@ -1256,3 +1256,91 @@ ChampionEnemy.Blazing 的 `detach()` 自己会制造火焰。
 因此 0.5.0 Elite pool 明确不使用 Blazing。
 
 以后任何具有 onDetach 世界副作用的 Buff 都要做同样检查。
+
+# 36. 0.5.3/0.5.4：商店已被提示，但实际无正常可见通路；逻辑可走却仍显示墙
+
+## 用户实机表现
+
+用户在 V13 商人可发现性版本中实际遇到：
+- 系统提示附近出现商店，地图也能看到商店小房；
+- 商店周围已经探索出的路全部是死路，正常走法找不到入口；
+- 用炸弹尝试开路后，没有直接炸出预期道路，却把迷雾/隐藏区域中的道路暴露出来；
+- 最终发现一个隐藏房间，其右侧看起来仍是两层墙，但角色可以直接穿过；
+- 角色经过“墙”内部时会被墙贴图遮住，穿出后人物才重新可见。
+
+这说明同时存在逻辑连通与视觉同步两个独立问题。
+
+## 根因 A：Merchant Room 的连接可能被后生成主题房覆盖
+
+V7 themed room 原实现按 room index 逐个执行：
+1. 画房间实心 wall shell；
+2. 画室内；
+3. 放门；
+4. 从门外向 Chunk core 刻 corridor。
+
+Merchant Room 固定为 room index 0。
+
+问题是 room index 1/2 随后仍会画自己的 wall shell。
+如果后一个房间矩形刚好覆盖 room 0 早先刻出的 corridor，商店门虽然存在，但它通向 Chunk 主网络的路径会重新变成墙。
+
+此前“每个房间都会连 core”的局部推理并不能保证最终生成结果仍连通，因为生成顺序允许后层覆盖前层。
+
+## 根因 B：InfiniteWorldAccentTilemap 是静态 mesh
+
+历史文档第 25 条已经记录：
+- 逻辑 Terrain 经爆炸/发现秘密门变化；
+- base DungeonTerrainTilemap 会更新；
+- mixed-theme custom overlay 不会自动重建；
+- 旧墙视觉可能继续压在新的可通行地板上。
+
+这正好解释了：
+> “角色能穿墙，但在墙里面人物看不到。”
+
+并非碰撞允许穿真实墙，而是逻辑 map 已是 floor，屏幕仍在画旧 wall overlay。
+
+## 0.5.5 / V14 修复
+
+### Merchant Access Guarantee
+V14 在普通 Chunk 所有 themed rooms、V10 infinite network 等生成步骤全部完成后，再做最终商店连通性验证。
+
+规则：
+- Merchant Room 门外必须存在一条 PASSABLE 路径到四个 shared-edge gateway 至少一个；
+- 如果已连通，不改地形；
+- 如果断开，使用小型 BFS 在 Chunk 内寻找补路；
+- 补路优先避开其他 themed-room 矩形，避免直接贯穿秘密房/普通房；
+- 外边框除四个合法 gateway 外不允许被补路算法打穿；
+- 极端情况下仍提供 deterministic fallback corridor，保证商店绝不会永久孤立。
+
+### Legacy V11-V13 runtime repair
+旧世界不强制重生成整张地图。
+加载/Streaming active window 时：
+- 检查已有 merchant chunk；
+- 只对确实不连通的商店补路；
+- terrain repair 会通过原有 terrainOverrides 在后续 snapshot 持久化；
+- 已经被玩家正常打开/炸开的商店门如果仍 passable，不会被修复器强行恢复成关闭门。
+
+### Merchant discovery
+V13 的地图提示不再只 reveal 商店矩形。
+现在还会：
+- 找出商店到 chunk gateway 的实际 walkable path；
+- 将这条已验证通路标记 mapped；
+- SECRET_DOOR 因非 PASSABLE 不会被当作普通导航路径提前暴露。
+
+### Dynamic accent refresh
+InfiniteWorldAccentTilemap 增加运行时刷新：
+- GameScene.updateMap(cell) 会通知覆盖该 cell（含 1-cell stitching halo）的 floor/wall accent；
+- 对应小块 overlay 立即重算并同步上传；
+- Bomb 炸墙后不再保留旧墙视觉。
+
+SECRET_DOOR 被发现时，由于隐藏房原本根本没有 room-specific overlay：
+- InfiniteWorldLevel 会重建当前 window 的 accent 定义；
+- GameScene 重新挂载 custom floor/wall overlays；
+- 不再等下一次 Streaming 才出现正确房间视觉。
+
+## 回归原则
+
+以后新增任何 deterministic landmark（商店、Boss 房、任务房）时，不能只检查“房间生成了”：
+> 必须在最终所有 terrain pass 完成以后，对 landmark 与公共网络做真实 path connectivity 验证。
+
+视觉层也必须遵守：
+> 任何能在 runtime 改变 Terrain 的系统，都不能依赖只在 Streaming 时生成一次的静态 overlay 保持正确。
