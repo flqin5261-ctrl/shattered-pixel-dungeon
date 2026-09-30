@@ -1799,3 +1799,16 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Normal/locked chest bonus works; guaranteed CRYSTAL_CHEST still contains only its intended artifact behavior.
 - [ ] Artifact visible +11..+30 changes effective artifact level and recharge rate, not only the title text.
 - [ ] Wave 5 is easier than 0.5.12 but still harder than wave 4.
+
+
+# B23. 0.6.4 certificate HUD and formatting
+- [ ] Certificate item info lists each bonus on a separate readable line.
+- [ ] A distinct certificate/amulet buff icon appears directly below the top-left HP bar while equipped.
+- [ ] Compact mobile HUD shows 30/40/50/60 over the certificate badge.
+- [ ] Tapping the badge opens current bonuses and the complete next-tier preview.
+- [ ] lv60 badge reports maximum tier instead of previewing another level.
+- [ ] Accuracy bonus changes actual Hero attackSkill.
+- [ ] Evasion bonus changes actual Hero defenseSkill.
+- [ ] EXP bonus affects normal XP gains but does not inflate Assist QA +1-level actions.
+- [ ] Unequipping the certificate immediately removes the three new bonuses and all existing certificate bonuses.
+- [ ] Old 0.5.13 save loads under user-facing 0.6.4 without save migration loss.
