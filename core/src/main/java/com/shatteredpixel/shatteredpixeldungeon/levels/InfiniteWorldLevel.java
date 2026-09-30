@@ -1654,6 +1654,48 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    private long v15MerchantSiteKey(int cx, int cy) {
+        long world = encodeWorld((long)cx * CHUNK_SIZE + 1L, (long)cy * CHUNK_SIZE + 1L);
+        return world ^ 0x5A17B6C34D29E8F1L;
+    }
+
+    private boolean v15MerchantCandidateForTier(int cx, int cy, int tier) {
+        int baseX = (int)Math.floorMod(hash(0, 0, 25000), (long)MERCHANT_SPACING_CHUNKS_V15);
+        int baseY = (int)Math.floorMod(hash(0, 0, 25001), (long)MERCHANT_SPACING_CHUNKS_V15);
+
+        // Tier 0 already uses a denser 3x3 lattice than V14's 4x4 lattice.
+        if (Math.floorMod(cx - baseX, 3) == 0
+                && Math.floorMod(cy - baseY, 3) == 0) {
+            return true;
+        }
+
+        // Newly generated chunks gain extra independent sparse lattices as the
+        // run matures. The result is locked per chunk, so revisiting old terrain
+        // can never make a shop suddenly appear or disappear.
+        if (tier >= 1) {
+            int x = (int)Math.floorMod(hash(0, 0, 25010), 6L);
+            int y = (int)Math.floorMod(hash(0, 0, 25011), 6L);
+            if (Math.floorMod(cx - x, 6) == 0 && Math.floorMod(cy - y, 6) == 0) return true;
+        }
+        if (tier >= 2) {
+            int x = (int)Math.floorMod(hash(0, 0, 25012), 5L);
+            int y = (int)Math.floorMod(hash(0, 0, 25013), 5L);
+            if (Math.floorMod(cx - x, 5) == 0 && Math.floorMod(cy - y, 5) == 0) return true;
+        }
+        if (tier >= 3) {
+            int x = (int)Math.floorMod(hash(0, 0, 25014), 7L);
+            int y = (int)Math.floorMod(hash(0, 0, 25015), 7L);
+            if (Math.floorMod(cx - x, 7) == 0 && Math.floorMod(cy - y, 7) == 0) return true;
+        }
+        if (tier >= 4) {
+            int x = (int)Math.floorMod(hash(0, 0, 25016), 4L);
+            int y = (int)Math.floorMod(hash(0, 0, 25017), 4L);
+            if (Math.floorMod(cx - x, 4) == 0 && Math.floorMod(cy - y, 4) == 0) return true;
+        }
+
+        return false;
+    }
+
     private boolean isV11MerchantChunk(int cx, int cy) {
         if (state().generatorVersion < 11) return false;
         if (v9AnomalyType(cx, cy) != 0) return false;
@@ -1666,15 +1708,23 @@ public class InfiniteWorldLevel extends Level {
             return false;
         }
 
-        // V13 makes outposts substantially easier to encounter and pairs the denser
-        // lattice with an explicit nearby-outpost discovery hint. Older worlds keep
-        // their exact cadence for deterministic save compatibility.
-        int spacing = state().generatorVersion >= 15 ? MERCHANT_SPACING_CHUNKS_V15
-                : (state().generatorVersion >= 13 ? MERCHANT_SPACING_CHUNKS_V13
-                : (state().generatorVersion >= 12 ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS));
-        int startBuffer = state().generatorVersion >= 15 ? 1
-                : (state().generatorVersion >= 13 ? 2
-                : (state().generatorVersion >= 12 ? 3 : 4));
+        if (state().generatorVersion >= 15) {
+            if (Math.max(Math.abs(cx), Math.abs(cy)) <= 1) return false;
+
+            long siteKey = v15MerchantSiteKey(cx, cy);
+            int locked = state().objectState(siteKey);
+            if (locked == 1) return false;
+            if (locked == 2) return true;
+
+            boolean merchant = v15MerchantCandidateForTier(cx, cy, v15CurrentMerchantProgressTier());
+            state().setObjectState(siteKey, merchant ? 2 : 1);
+            return merchant;
+        }
+
+        int spacing = state().generatorVersion >= 13 ? MERCHANT_SPACING_CHUNKS_V13
+                : (state().generatorVersion >= 12 ? MERCHANT_SPACING_CHUNKS_V12 : MERCHANT_SPACING_CHUNKS);
+        int startBuffer = state().generatorVersion >= 13 ? 2
+                : (state().generatorVersion >= 12 ? 3 : 4);
         if (Math.max(Math.abs(cx), Math.abs(cy)) <= startBuffer) return false;
 
         int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)spacing);
@@ -1683,7 +1733,6 @@ public class InfiniteWorldLevel extends Level {
         return Math.floorMod(cx - offsetX, spacing) == 0
                 && Math.floorMod(cy - offsetY, spacing) == 0;
     }
-
 
     private void ensureV13MerchantDiscovery(Hero hero) {
         if (hero == null || state().generatorVersion < 13) return;
