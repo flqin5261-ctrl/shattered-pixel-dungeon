@@ -1783,3 +1783,19 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Any single trial contains at most one Slime.
 - [ ] Wave-1 Slime appears only occasionally (~25% of runs), so most runs have none.
 - [ ] Failure restoration, token reissue, clean retry arena and success unlocks are unchanged.
+
+
+# B22. 0.5.13 breakthrough certificate regression
+
+- [ ] Cheat-generate a wand inside the breakthrough arena, quickslot it, die, and confirm the shortcut icon is gone after rollback.
+- [ ] Pre-existing quickslotted items still point to usable restored items after rollback.
+- [ ] Artifact and certificate occupy separate slots simultaneously.
+- [ ] Unequip certificate: HP/STR/damage/speed/vision/shop/chest/hunger/regen/revive benefits stop.
+- [ ] Re-equip certificate: benefits return without duplicating the item or buff.
+- [ ] Certificate becomes lv40/lv50/lv60 at Hero 40/50/60.
+- [ ] Save/load preserves tier, revive charge and equipped state.
+- [ ] Normal FOV radius visibly expands by +1/+2/+3/+4 tiles at certificate tiers.
+- [ ] Charged totem revives once, grants brief invulnerability, consumes no Ankh, and resets charge.
+- [ ] Normal/locked chest bonus works; guaranteed CRYSTAL_CHEST still contains only its intended artifact behavior.
+- [ ] Artifact visible +11..+30 changes effective artifact level and recharge rate, not only the title text.
+- [ ] Wave 5 is easier than 0.5.12 but still harder than wave 4.
