@@ -211,6 +211,10 @@ public class Shopkeeper extends NPC {
 		} else {
 			price = item.value() * 5 * (Dungeon.depth / 5 + 1);
 		}
+		return breakthroughDiscount(price);
+	}
+
+	public static int breakthroughDiscount(int price){
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
 		if (certificate != null) {
 			price = Math.max(1, Math.round(price * certificate.shopPriceMultiplier()));
@@ -264,7 +268,7 @@ public class Shopkeeper extends NPC {
 				options[i++] = Messages.get(Shopkeeper.this, "sell");
 				options[i++] = Messages.get(Shopkeeper.this, "talk");
 				for (Item item : buybackItems){
-					options[i] = Messages.get(Heap.class, "for_sale", item.value(), Messages.titleCase(item.title()));
+					options[i] = Messages.get(Heap.class, "for_sale", breakthroughDiscount(item.value()), Messages.titleCase(item.title()));
 					if (options[i].length() > maxLen) options[i] = options[i].substring(0, maxLen-3) + "...";
 					i++;
 				}
@@ -281,11 +285,13 @@ public class Shopkeeper extends NPC {
 							GLog.i(Messages.get(Shopkeeper.this, "buyback"));
 							Item returned = buybackItems.remove(index-2);
 							if (SPDSettings.assistNoConsume()) {
-								Dungeon.gold += returned.value();
-								Statistics.goldCollected += returned.value();
+								int buybackPrice = breakthroughDiscount(returned.value());
+								Dungeon.gold += buybackPrice;
+								Statistics.goldCollected += buybackPrice;
 							} else {
-								Dungeon.gold -= returned.value();
-								Statistics.goldCollected -= returned.value();
+								int buybackPrice = breakthroughDiscount(returned.value());
+								Dungeon.gold -= buybackPrice;
+								Statistics.goldCollected -= buybackPrice;
 							}
 							if (returned instanceof MissileWeapon && returned.isUpgradable()){
 								Buff.affect(Dungeon.hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(((MissileWeapon) returned).setID, returned.level());
@@ -299,7 +305,7 @@ public class Shopkeeper extends NPC {
 					@Override
 					protected boolean enabled(int index) {
 						if (index > 1){
-							return Dungeon.gold >= buybackItems.get(index-2).value();
+							return Dungeon.gold >= breakthroughDiscount(buybackItems.get(index-2).value());
 						} else {
 							return super.enabled(index);
 						}
