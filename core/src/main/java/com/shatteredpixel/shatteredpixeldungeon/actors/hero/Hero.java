@@ -547,8 +547,7 @@ public class Hero extends Char {
 	@Override
 	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti) {
 		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti);
-		if (GenesisEcho.miracleLinked(this) && enemy != null && enemy.alignment == Alignment.ENEMY) {
-			GenesisEcho.forceSlay(this, enemy);
+		if (result && GenesisEcho.tryMiracleExecute(this, enemy)) {
 			result = true;
 		}
 		if (!(belongings.attackingWeapon() instanceof MissileWeapon)){
