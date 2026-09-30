@@ -762,6 +762,7 @@ public abstract class Wand extends Item {
 								new Callback() {
 									@Override
 									public void call() {
+										GenesisEcho.onUltraWandZap(curUser, target, shot.collisionPos);
 										curWand.wandUsed();
 									}
 								});
