@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
@@ -45,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CurrencyIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.watabou.noosa.ColorBlock;
 
 public class WndTradeItem extends WndInfoItem {
 
@@ -143,7 +145,30 @@ public class WndTradeItem extends WndInfoItem {
 
 		float pos = height;
 
+		final int basePrice = Shopkeeper.baseSellPrice(item);
 		final int price = Shopkeeper.sellPrice( item );
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
+		if (certificate != null && price < basePrice) {
+			RenderedTextBlock original = PixelScene.renderTextBlock(
+					Messages.get(this, "original_price", basePrice), 6);
+			original.hardlight(0x888888);
+			original.setPos(0, pos + GAP);
+			add(original);
+
+			ColorBlock strike = new ColorBlock(original.width(), 1f, 0xFF888888);
+			strike.x = original.left();
+			strike.y = original.top() + original.height()/2f;
+			add(strike);
+
+			RenderedTextBlock discount = PixelScene.renderTextBlock(
+					Messages.get(this, "seal_price", price,
+							Math.round((1f-certificate.shopPriceMultiplier())*100f)), 6);
+			discount.hardlight(CharSprite.POSITIVE);
+			discount.setPos(0, original.bottom() + 1);
+			add(discount);
+			pos = discount.bottom();
+		}
 
 		RedButton btnBuy = new RedButton( Messages.get(this, "buy", price) ) {
 			@Override
