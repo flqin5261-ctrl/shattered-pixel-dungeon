@@ -15,6 +15,8 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Random;
 
+import java.util.HashSet;
+
 public class GenesisEcho extends Buff {
 
     {
@@ -22,11 +24,14 @@ public class GenesisEcho extends Buff {
         announced = true;
         revivePersists = true;
 
-        // Core crowd-control immunity. These remain even when Miracle Echo is
-        // unequipped; the copied equipment bonuses are handled separately.
+        // Permanent control immunity: these remain active even when 奇迹·世界
+        // is unequipped. This is real Char immunity, not description-only text.
         immunities.add(Paralysis.class);
         immunities.add(Roots.class);
         immunities.add(Vertigo.class);
+        immunities.add(Blindness.class);
+        immunities.add(Daze.class);
+        immunities.add(Cripple.class);
         immunities.add(Charm.class);
         immunities.add(Terror.class);
         immunities.add(Amok.class);
@@ -35,6 +40,42 @@ public class GenesisEcho extends Buff {
         immunities.add(Slow.class);
         immunities.add(Chill.class);
         immunities.add(Frost.class);
+    }
+
+    @Override
+    public HashSet<Class> immunities() {
+        HashSet<Class> result = super.immunities();
+
+        Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+        if (miracleLinked(hero)) {
+            // 奇迹·世界 linked curse layer: damage-over-time and output/defense
+            // degrading states are blocked at Buff.attachTo()/Char.isImmune().
+            result.add(Burning.class);
+            result.add(Poison.class);
+            result.add(Bleeding.class);
+            result.add(Corrosion.class);
+            result.add(Ooze.class);
+            result.add(Weakness.class);
+            result.add(Vulnerable.class);
+            result.add(Degrade.class);
+            result.add(Hex.class);
+            result.add(Doom.class);
+        }
+
+        return result;
+    }
+
+    public static boolean blocksNegativeBuff(Hero hero, Buff buff) {
+        if (hero == null || buff == null || !miracleLinked(hero)) return false;
+
+        // This second gate catches harmful NEGATIVE buffs which are added by new
+        // content but are not yet in the explicit immunity set above. Hunger is
+        // neutral and is intentionally not classified as a curse.
+        return buff.type == buffType.NEGATIVE;
+    }
+
+    public static boolean damageImmune(Hero hero) {
+        return miracleLinked(hero);
     }
 
     @Override
@@ -107,7 +148,7 @@ public class GenesisEcho extends Buff {
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         if (first) {
-            GLog.p("奇迹·回响完成升格——常驻权能「创世回响」已经觉醒。");
+            GLog.p("奇迹·世界完成升格——常驻权能「创世回响」已经觉醒。");
         }
         return echo;
     }
@@ -127,7 +168,7 @@ public class GenesisEcho extends Buff {
     }
 
     // One normal equipment layer, plus a second identical layer while Genesis
-    // Echo is linked to the equipped level-60 Miracle Echo.
+    // Echo is linked to the equipped level-60 Miracle World.
     public static int sealCopies(Hero hero) {
         return miracleLinked(hero) ? 2 : 1;
     }
