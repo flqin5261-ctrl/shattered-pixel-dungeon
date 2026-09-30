@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -68,6 +69,9 @@ public class Buff extends Actor {
 	public boolean attachTo( Char target ) {
 
 		if (target.isImmune( getClass() )) {
+			if (target instanceof Hero && GenesisEcho.blocksByAuthority((Hero)target, getClass())) {
+				GenesisEcho.showImmunityFeedback((Hero)target, getClass());
+			}
 			return false;
 		}
 		
