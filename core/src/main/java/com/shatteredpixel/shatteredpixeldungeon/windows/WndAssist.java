@@ -72,6 +72,15 @@ public class WndAssist extends Window {
 
                 if (!value && Dungeon.level instanceof InfiniteWorldLevel) {
                     ((InfiniteWorldLevel)Dungeon.level).settleHeroAfterSpectator(Dungeon.hero);
+                    if (Dungeon.hero != null && Dungeon.hero.sprite != null) {
+                        Dungeon.hero.sprite.remove(
+                                com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite.State.LEVITATING);
+                        Dungeon.hero.sprite.idle();
+                    }
+                } else if (value && Dungeon.hero != null && Dungeon.hero.sprite != null) {
+                    Dungeon.hero.sprite.add(
+                            com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite.State.LEVITATING);
+                    Dungeon.hero.sprite.idle();
                 }
 
                 GameScene.setInfiniteSpectatorHeroLayer(value);
@@ -80,7 +89,7 @@ public class WndAssist extends Window {
                 }
 
                 GLog.p(value
-                        ? "无界旁观测试模式已开启：可穿墙悬浮，移动至少 ×4，怪物行动与自然刷新暂停。"
+                        ? "无界旁观测试模式已开启：悬浮穿墙、20格测试视野、移动至少 ×8，怪物行动与自然刷新暂停。"
                         : "无界旁观测试模式已关闭。");
             });
         }
