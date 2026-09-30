@@ -141,11 +141,13 @@ public class WndBag extends WndTabbed {
 				if (slot != null) slot.clickFromPane();
 			}
 		};
-		add(itemScroll); // ScrollPane must have a parent camera before setRect/layout.
-		itemScroll.setRect(0, TITLE_HEIGHT, windowWidth, viewportHeight);
+		add(itemScroll);
 
 		int windowHeight = TITLE_HEIGHT + viewportHeight;
+		// resize() recenters WndBag; lay out the ScrollPane only after the final
+		// window position is known so its content camera lines up with the slots.
 		resize( windowWidth, windowHeight );
+		itemScroll.setRect(0, TITLE_HEIGHT, windowWidth, viewportHeight);
 
 		int i = 1;
 		for (Bag b : Dungeon.hero.belongings.getBags()) {
