@@ -95,7 +95,7 @@ public final class InfiniteWorldProgression {
             // than dropping it into the streaming world and risking duplication.
             hero.belongings.backpack.items.add(token);
         }
-        GLog.p("你已达到30级。挑战信物已放入背包；只有完成十波突破试炼，等级上限才会提高到60级。");
+        GLog.p("你已达到30级。挑战信物已放入背包；只有完成五波突破试炼，等级上限才会提高到60级。");
     }
 
     public static void testLevelUp(Hero hero) {
@@ -188,6 +188,55 @@ public final class InfiniteWorldProgression {
         } else {
             GLog.i("测试：角色已升至当前阶段上限 " + hero.lvl + " 级。");
         }
+    }
+
+    public static void testCompleteBreakthrough(Hero hero) {
+        if (hero == null || !Dungeon.infiniteWorld) {
+            GLog.w("快速通关突破仅用于无界模式。");
+            return;
+        }
+
+        InfiniteWorldState st = state();
+
+        if (st.breakthroughCompleted) {
+            ensureBreakthroughCertificate(hero);
+            GLog.i("突破试炼已经完成，无需重复通关。");
+            return;
+        }
+
+        // If the cheat is used from inside the active arena, reuse the normal
+        // success path so snapshot restoration / quickslot rollback remain exact.
+        if (st.breakthroughTrialActive) {
+            finishBreakthroughTrial(true);
+            return;
+        }
+
+        // A restarted test save may still be below level 30. Bring it to the
+        // breakthrough gate first, then mark the gate complete without spawning
+        // the arena.
+        int guard = 0;
+        while (hero.lvl < PRE_BREAKTHROUGH_LEVEL_CAP && guard++ < 80) {
+            int before = hero.lvl;
+            hero.earnExp(hero.maxExp(), InfiniteWorldProgression.class);
+            if (hero.lvl <= before) break;
+        }
+
+        BreakthroughToken token = hero.belongings.getItem(BreakthroughToken.class);
+        if (token != null) {
+            token.detach(hero.belongings.backpack);
+        }
+
+        st.breakthroughTrialActive = false;
+        st.breakthroughWave = 0;
+        st.breakthroughCountdown = -1f;
+        st.breakthroughHeroSnapshot = null;
+        st.breakthroughQuickslotSnapshot = null;
+        st.breakthroughCompleted = true;
+
+        grantBreakthroughCertificate(hero);
+        hero.updateHT(true);
+        Dungeon.observe();
+        GLog.p("作弊测试：已直接完成30级突破试炼，并解锁60级成长。");
     }
 
     public static int gearScore(Hero hero) {
