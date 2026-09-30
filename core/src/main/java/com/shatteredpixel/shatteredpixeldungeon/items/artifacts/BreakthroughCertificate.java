@@ -383,8 +383,12 @@ public class BreakthroughCertificate extends EquipableItem {
     public static float adjustConsumableDuration(Char target, Class<? extends Buff> buffClass, float duration) {
         if (!(target instanceof Hero) || target != consumableBoostHero || consumableBoostDepth <= 0) return duration;
         if (isSupportedNegativeEffect(buffClass)) return duration;
-        BreakthroughCertificate cert = equipped((Hero)target);
-        return cert == null ? duration : duration * cert.effectiveConsumableDurationMultiplier((Hero)target);
+        Hero hero = (Hero)target;
+        if (GenesisEcho.ultraSpellcast(hero)) {
+            return Math.max(999f, duration);
+        }
+        BreakthroughCertificate cert = equipped(hero);
+        return cert == null ? duration : duration * cert.effectiveConsumableDurationMultiplier(hero);
     }
 
     public boolean reviveReady() {
