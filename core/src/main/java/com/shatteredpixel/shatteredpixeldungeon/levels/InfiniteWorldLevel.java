@@ -89,6 +89,17 @@ public class InfiniteWorldLevel extends Level {
 
     private boolean shifting;
 
+    // Runtime-only throttles for per-step Infinite World housekeeping.
+    private int lastProcessedHeroChunkX = Integer.MIN_VALUE;
+    private int lastProcessedHeroChunkY = Integer.MIN_VALUE;
+    private int lastPruneWorldX = Integer.MIN_VALUE;
+    private int lastPruneWorldY = Integer.MIN_VALUE;
+
+    // A long-range Genesis teleport may land inside the normal streaming trigger
+    // band. Give the player a small safe grace band so the next ordinary step
+    // does not immediately force a 7x7 window rebuild.
+    private boolean genesisTeleportGrace;
+
     // Infinite World ecology is deliberately sparse. The player should normally
     // see only a few enemies at a time, with exploration remaining the main loop.
     private static final int MOB_SPAWN_TARGET_CAP = 5;
@@ -610,22 +621,52 @@ public class InfiniteWorldLevel extends Level {
         st.heroWorldX = (st.centerChunkX - HALF_WINDOW) * CHUNK_SIZE + x;
         st.heroWorldY = (st.centerChunkY - HALF_WINDOW) * CHUNK_SIZE + y;
         st.heroWorldInitialized = true;
-        st.markChunkExplored(
-                Math.floorDiv(st.heroWorldX, CHUNK_SIZE),
-                Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
+
+        int heroChunkX = Math.floorDiv(st.heroWorldX, CHUNK_SIZE);
+        int heroChunkY = Math.floorDiv(st.heroWorldY, CHUNK_SIZE);
+        st.markChunkExplored(heroChunkX, heroChunkY);
 
         InfiniteWorldProgression.onHeroAtBreakthroughGate(hero);
         if (InfiniteWorldProgression.breakthroughCompleted()) {
             InfiniteWorldProgression.ensureBreakthroughCertificate(hero);
         }
 
-        if (state().generatorVersion >= 15) {
-            ensureV15BackroomsInfo(hero);
-        } else {
-            ensureV12AnomalyNoteNearby(hero);
+        boolean chunkChanged = heroChunkX != lastProcessedHeroChunkX
+                || heroChunkY != lastProcessedHeroChunkY;
+        if (chunkChanged) {
+            lastProcessedHeroChunkX = heroChunkX;
+            lastProcessedHeroChunkY = heroChunkY;
+
+            // These checks are chunk-scoped; running them on every tile step was
+            // wasted work and became especially noticeable after long teleports.
+            if (state().generatorVersion >= 15) {
+                ensureV15BackroomsInfo(hero);
+            } else {
+                ensureV12AnomalyNoteNearby(hero);
+            }
+            ensureV13MerchantDiscovery(hero);
         }
-        ensureV13MerchantDiscovery(hero);
-        pruneInfiniteWorldMobs();
+
+        // Mob pruning only needs coarse movement granularity. The hard cap is tiny,
+        // so checking every four world cells (or on a chunk change) preserves
+        // ecology behaviour while avoiding a full mob scan for every footstep.
+        if (chunkChanged
+                || lastPruneWorldX == Integer.MIN_VALUE
+                || Math.max(Math.abs(st.heroWorldX - lastPruneWorldX),
+                            Math.abs(st.heroWorldY - lastPruneWorldY)) >= 4) {
+            pruneInfiniteWorldMobs();
+            lastPruneWorldX = st.heroWorldX;
+            lastPruneWorldY = st.heroWorldY;
+        }
+    }
+
+    public void beginGenesisTeleportGrace(Hero hero) {
+        if (hero == null || Dungeon.level != this) return;
+        int x = hero.pos % width();
+        int y = hero.pos / width();
+
+        genesisTeleportGrace = (x < SHIFT_LOW || x >= SHIFT_HIGH
+                || y < SHIFT_LOW || y >= SHIFT_HIGH);
     }
 
 
@@ -952,13 +993,26 @@ public class InfiniteWorldLevel extends Level {
         int shiftX = 0;
         int shiftY = 0;
 
-        if (x < SHIFT_LOW) shiftX = -SHIFT_STEP;
-        else if (x >= SHIFT_HIGH) shiftX = SHIFT_STEP;
+        // After Genesis teleport, defer the expensive streaming rebuild until the
+        // hero is actually close to the hard map edge. This prevents the very next
+        // normal movement step from hitching after a long teleport.
+        int low = genesisTeleportGrace ? 8 : SHIFT_LOW;
+        int high = genesisTeleportGrace ? MAP_SIZE - 8 : SHIFT_HIGH;
 
-        if (y < SHIFT_LOW) shiftY = -SHIFT_STEP;
-        else if (y >= SHIFT_HIGH) shiftY = SHIFT_STEP;
+        if (x < low) shiftX = -SHIFT_STEP;
+        else if (x >= high) shiftX = SHIFT_STEP;
 
-        if (shiftX == 0 && shiftY == 0) return;
+        if (y < low) shiftY = -SHIFT_STEP;
+        else if (y >= high) shiftY = SHIFT_STEP;
+
+        if (shiftX == 0 && shiftY == 0) {
+            if (genesisTeleportGrace
+                    && x >= SHIFT_LOW && x < SHIFT_HIGH
+                    && y >= SHIFT_LOW && y < SHIFT_HIGH) {
+                genesisTeleportGrace = false;
+            }
+            return;
+        }
 
         shifting = true;
 
@@ -1017,6 +1071,7 @@ public class InfiniteWorldLevel extends Level {
 
         // We are already on the render thread via CharSprite.onComplete().
         GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
+        genesisTeleportGrace = false;
         shifting = false;
     }
 
