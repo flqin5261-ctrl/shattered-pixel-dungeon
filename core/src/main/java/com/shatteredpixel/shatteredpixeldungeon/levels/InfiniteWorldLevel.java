@@ -793,8 +793,12 @@ public class InfiniteWorldLevel extends Level {
         }
 
         boolean artifactPresent = false;
+        Class<?>[] artifactClasses = Generator.Category.ARTIFACT.classes;
+        Class<?> expected = st.artifactChestArtifactIndex >= 0
+                && st.artifactChestArtifactIndex < artifactClasses.length
+                ? artifactClasses[st.artifactChestArtifactIndex] : Artifact.class;
         for (Item item : heap.items) {
-            if (item instanceof Artifact) {
+            if (expected.isInstance(item)) {
                 artifactPresent = true;
                 break;
             }
