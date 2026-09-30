@@ -89,9 +89,11 @@ public class InfiniteWorldLevel extends Level {
     private InfiniteWorldMobEcology mobEcology;
 
     // Merchant outposts are intentionally much rarer than ordinary rooms.
-    // A 9-chunk lattice is wider than the 7x7 active window, guaranteeing that
-    // at most one travelling merchant can be active at once.
-    private static final int MERCHANT_SPACING_CHUNKS = 9;
+    // A 7-chunk lattice is just wider than the six-chunk coordinate span of the
+    // 7x7 active window, so at most one travelling merchant can be active at once.
+    // It is also dense enough that a long straight exploration route can eventually
+    // bring an outpost into the loaded window instead of missing every shop row.
+    private static final int MERCHANT_SPACING_CHUNKS = 7;
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
 
