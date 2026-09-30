@@ -52,7 +52,7 @@ public abstract class DamageWand extends Wand{
 	public int damageRoll(int lvl){
 		int dmg = Hero.heroDamageIntRange(min(lvl), max(lvl));
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
-		if (certificate != null) dmg = Math.round(dmg * certificate.damageMultiplier());
+		if (certificate != null) dmg = Math.round(dmg * certificate.effectiveDamageMultiplier(Dungeon.hero));
 		WandEmpower emp = Dungeon.hero.buff(WandEmpower.class);
 		if (emp != null){
 			dmg += emp.dmgBoost;
