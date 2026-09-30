@@ -944,6 +944,9 @@ public class Dungeon {
 
 	//default to recomputing based on max hero vision, in case vision just shrank/grew
 	public static void observe(){
+		Light light = hero.buff(Light.class);
+		int baseView = light == null ? level.viewDistance : Math.max(Light.DISTANCE, level.viewDistance);
+		hero.viewDistance = baseView + 2 * hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
 		int dist = Math.max(Dungeon.hero.viewDistance, 8);
 		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
 
