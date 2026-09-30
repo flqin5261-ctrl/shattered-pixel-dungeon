@@ -9,13 +9,13 @@
 
 # A. 当前项目状态
 
-当前最新稳定：
+当前开发候选：
 
-- 版本：0.5.1
-- versionCode：947
-- Generator：V11
-- stable：`assist-0.5.1-stable`
-- dev：`assist-0.5.1-merchants`
+- 版本：0.5.10
+- versionCode：956
+- Generator：V17
+- target stable：`assist-0.5.10-stable`
+- dev：`assist-0.5.10-solid-scenery`
 
 当前核心已经具备：
 
@@ -1673,3 +1673,38 @@ To test physical scenery, create a new V16 Infinite World. Existing V15 saves ar
 - [ ] Unique Artifact chest unchanged.
 - [ ] Water/VBO/Fog/Streaming fixes unchanged.
 - [ ] Monster strength remains unchanged in 0.5.9.
+
+
+# B19. 0.5.10 / Generator V17 — 全装饰实体 + 神器箱节奏
+
+必须使用新建 V17 世界测试装饰碰撞；旧 V16 存档用于兼容测试。
+
+## B19.1 保证神器水晶箱
+- [ ] action-value < 1000 时不会生成保证神器箱。
+- [ ] 达到 1000 后，箱子只能出现在 Hero 为中心的 3×3 范围内，即周围 8 个格之一。
+- [ ] Hero 周围没有合法格时，不允许把箱子放到更远位置；后续移动/行动后再重试。
+- [ ] 箱子为 CRYSTAL_CHEST，且内部只有应有的保证神器。
+- [ ] 箱子出现时立即获得一个当前深度 CrystalKey。
+- [ ] Streaming、Save/Load、开箱未取走神器、取走神器后均不得复制第二个保证箱。
+
+## B19.2 所有装饰必须实体
+- [ ] 30 类装饰逐类抽查，普通 Hero 均不能直接走进贴图所在格。
+- [ ] 蘑菇、蕨类、装饰火把、碎石在 V17 也必须阻挡普通移动。
+- [ ] Mob 寻路同样绕开所有装饰，不得出现 Hero 被挡但 Mob 穿过去。
+- [ ] 装饰仍无拾取/打开/使用交互。
+- [ ] spectator QA 仍可穿过所有装饰。
+
+## B19.3 防堵路
+- [ ] 中央保证通行十字带无实体装饰。
+- [ ] 普通门、隐藏门、transition、well、alchemy、pedestal 周围无堵塞。
+- [ ] 箱子/销售堆附近不会被装饰封死。
+- [ ] 商人房实际入口和对外通路可正常步行进入。
+- [ ] 一格宽通路不会被装饰截断。
+- [ ] 同一 Chunk 多个装饰不会组合成封闭墙。
+
+## B19.4 兼容与核心回归
+- [ ] 旧 V16 存档仍保持 mushrooms/fern/torch/rubble 可穿的 V16 行为，不被升级成 V17 实体。
+- [ ] 新 V17 世界所有装饰实体化。
+- [ ] Streaming 仍只在 Hero.onMotionComplete() 后执行。
+- [ ] Water/VBO/Fog、absolute world coordinate、merchant persistence、spectator x8/20-cell FOV 均无回归。
+- [ ] 本版没有修改怪物强度、血量、攻击、防御、生成池或精英概率。
