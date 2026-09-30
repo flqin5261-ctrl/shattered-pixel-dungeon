@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -347,8 +348,9 @@ public class BuffIndicator extends Component {
 			// Breakthrough certificate is a persistent progression badge directly
 			// under the HP bar. Show its 30/40/50/60 tier even in compact mobile UI.
 			boolean certificateBadge = buff instanceof BreakthroughCertificate.BreakthroughBlessing;
+			boolean genesisBadge = buff instanceof GenesisEcho;
 			//round up to the nearest pixel if <50% faded, otherwise round down
-			if ((!large && !certificateBadge) || buff.iconTextDisplay().isEmpty()) {
+			if ((!large && !certificateBadge && !genesisBadge) || buff.iconTextDisplay().isEmpty()) {
 				text.visible = false;
 				grey.visible = true;
 				float fadeHeight = GameMath.gate(0, buff.iconFadePercent(), 1) * icon.height();
