@@ -295,6 +295,20 @@ public enum Document {
 		INFINITE_WORLD_NOTES.pagesStates.put("Yellow_Maze",      debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Service_Tunnels",  debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Dark_Storage",     debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_0",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_1",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_2",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_3",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_4",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_5",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_6",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_7",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_8",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_9",          debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_10",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_11",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_37",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_94",         debug ? READ : NOT_FOUND);
 
 		INTROS.pagesStates.put("Dungeon",                       READ);
 		INTROS.pagesStates.put("Sewers",                        debug ? READ : NOT_FOUND);
