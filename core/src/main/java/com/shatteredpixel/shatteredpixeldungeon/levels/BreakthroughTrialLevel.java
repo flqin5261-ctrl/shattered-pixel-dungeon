@@ -27,8 +27,8 @@ public class BreakthroughTrialLevel extends Level {
 
     private static final int MAP_W = 49;
     private static final int MAP_H = 49;
-    private static final int TOTAL_WAVES = 10;
-    private static final int MOBS_PER_WAVE = 10;
+    private static final int TOTAL_WAVES = 5;
+    private static final int MOBS_PER_WAVE = 5;
     private static final float BETWEEN_WAVE_COUNTDOWN = 30f;
 
     {
@@ -167,7 +167,7 @@ public class BreakthroughTrialLevel extends Level {
             GameScene.add(mob);
         }
 
-        GLog.w("突破试炼 · 第 " + wave + "/10 波：10只敌人已经进入试炼场！");
+        GLog.w("突破试炼 · 第 " + wave + "/5 波：5只敌人已经进入试炼场！");
     }
 
     private int findWaveSpawnCell(ArrayList<Integer> used) {
@@ -199,87 +199,57 @@ public class BreakthroughTrialLevel extends Level {
     }
 
     private Mob mobForWave(int wave, int index) {
-        int roll = Random.Int(100);
-
-        if (wave <= 2) {
-            switch ((index + Random.Int(5)) % 5) {
-                case 0: return new Rat();
-                case 1: return new Snake();
-                case 2: return new Gnoll();
-                case 3: return new Crab();
-                default:return new Slime();
-            }
-        }
-
-        if (wave <= 4) {
-            switch ((index + Random.Int(5)) % 5) {
-                case 0: return new Crab();
-                case 1: return new Slime();
-                case 2: return new Skeleton();
-                case 3: return new DM100();
-                default:return new Bat();
-            }
-        }
-
-        if (wave <= 6) {
-            if (roll < 25) {
-                return Random.Int(2) == 0 ? new Warlock() : new Monk();
-            }
-            switch ((index + Random.Int(5)) % 5) {
-                case 0: return new Skeleton();
-                case 1: return new DM100();
-                case 2: return new Bat();
-                case 3: return new Brute();
-                default:return new Spinner();
-            }
-        }
-
-        if (wave <= 8) {
-            if (roll < 35) {
-                switch (Random.Int(3)) {
-                    case 0: return new Warlock();
-                    case 1: return new Monk();
-                    default:return new Golem();
+        // Five shorter waves. Slimes are deliberately rare because their defensive
+        // profile makes them disproportionately tedious in this arena: at most one
+        // Slime can appear in the entire trial, and only as the fifth slot of wave 1.
+        switch (wave) {
+            case 1:
+                switch (index) {
+                    case 0: return new Rat();
+                    case 1: return new Snake();
+                    case 2: return new Gnoll();
+                    case 3: return new Crab();
+                    default:return Random.Int(4) == 0 ? new Slime() : new Rat();
                 }
-            }
-            switch ((index + Random.Int(4)) % 4) {
-                case 0: return new Brute();
-                case 1: return new Spinner();
-                case 2: return new Bat();
-                default:return new DM100();
-            }
-        }
 
-        if (wave == 9) {
-            if (roll < 42) {
-                switch (Random.Int(5)) {
+            case 2:
+                switch (index) {
+                    case 0: return new Crab();
+                    case 1: return new Skeleton();
+                    case 2: return new DM100();
+                    case 3: return new Bat();
+                    default:return new Gnoll();
+                }
+
+            case 3:
+                switch (index) {
+                    case 0: return new Skeleton();
+                    case 1: return new DM100();
+                    case 2: return new Bat();
+                    case 3: return new Brute();
+                    default:return Random.Int(2) == 0 ? new Spinner() : new Warlock();
+                }
+
+            case 4:
+                switch (index) {
+                    case 0: return new Brute();
+                    case 1: return new Spinner();
+                    case 2: return new Bat();
+                    case 3: return Random.Int(2) == 0 ? new Warlock() : new Monk();
+                    default:return Random.Int(3) == 0 ? new Golem() : new DM100();
+                }
+
+            case 5:
+            default:
+                // Finale: three guaranteed late-game threats plus two mixed melee/
+                // control threats. Avoid five simultaneous long-range elites.
+                switch (index) {
                     case 0: return new Warlock();
                     case 1: return new Monk();
                     case 2: return new Golem();
-                    case 3: return new Succubus();
-                    default:return new Scorpio();
+                    case 3: return Random.Int(2) == 0 ? new Brute() : new Spinner();
+                    default:return Random.Int(2) == 0 ? new Succubus() : new Scorpio();
                 }
-            }
-            return index % 2 == 0 ? new Brute() : new Spinner();
-        }
-
-        // Wave 10 deliberately mixes five late-game threats with five mid-game
-        // enemies instead of ten late-game ranged enemies at once.
-        if (index % 2 == 0) {
-            switch ((index / 2) % 5) {
-                case 0: return new Warlock();
-                case 1: return new Monk();
-                case 2: return new Golem();
-                case 3: return new Succubus();
-                default:return new Scorpio();
-            }
-        }
-        switch ((index / 2) % 5) {
-            case 0: return new Brute();
-            case 1: return new Spinner();
-            case 2: return new Bat();
-            case 3: return new DM100();
-            default:return new Skeleton();
         }
     }
 
