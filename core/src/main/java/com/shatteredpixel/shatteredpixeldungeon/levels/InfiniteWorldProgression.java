@@ -88,9 +88,12 @@ public final class InfiniteWorldProgression {
 
         BreakthroughToken token = new BreakthroughToken();
         if (!token.collect(hero.belongings.backpack)) {
-            Dungeon.level.drop(token, hero.pos).sprite.drop();
+            // This progression-critical item must be in the backpack even if the
+            // ordinary capacity is full. Allow one temporary over-cap slot rather
+            // than dropping it into the streaming world and risking duplication.
+            hero.belongings.backpack.items.add(token);
         }
-        GLog.p("你已达到30级。挑战信物已经出现；只有完成十波突破试炼，等级上限才会提高到60级。");
+        GLog.p("你已达到30级。挑战信物已放入背包；只有完成十波突破试炼，等级上限才会提高到60级。");
     }
 
     public static void testLevelUp(Hero hero) {
