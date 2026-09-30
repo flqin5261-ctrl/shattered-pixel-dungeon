@@ -1851,3 +1851,21 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Seal slots are +5/+8/+12/+16; linked lv60 adds another copied +16.
 - [ ] Unequip an overfilled Miracle Echo and verify every overflow item appears at the Hero rather than vanishing.
 - [ ] Dynamic mobs do not scale from Miracle Echo, Genesis Echo, copied layer, or permanent kill growth.
+
+
+# B26. 0.6.7 Genesis authority regression
+
+- [ ] LV60 item is shown everywhere as 奇迹·世界.
+- [ ] No player-facing “奇迹·回响” remains.
+- [ ] No player-facing “60级经验加成已移除” line remains.
+- [ ] 创世回响 persists after 奇迹·世界 is unequipped.
+- [ ] Blindness/Daze/Paralysis/Roots/Vertigo/Cripple/Charm/Terror/Amok/Drowsy/Sleep/Slow/Chill/Frost cannot attach with 创世回响.
+- [ ] Forced teleport from trap/enemy fails; own Teleportation Scroll succeeds.
+- [ ] Direct instant-death source is blocked while ordinary lethal damage can still kill if 奇迹·世界 is not equipped.
+- [ ] Equip 奇迹·世界: ordinary damage, magic, trap, hunger and DoT damage all leave HP unchanged.
+- [ ] Equip 奇迹·世界: Burning/Poison/Bleeding/Corrosion/Ooze/Weakness/Vulnerable/Degrade/Hex and other NEGATIVE buffs cannot attach.
+- [ ] Unequip 奇迹·世界: damage immunity and curse immunity disappear immediately.
+- [ ] Seal/Miracle World no longer changes backpack capacity.
+- [ ] Genesis Echo Infinite Space always leaves at least five root-backpack slots free as item count increases.
+- [ ] WndUpgrade shows current permanent immunity before each reroll.
+- [ ] Existing 0.6.6 save upgrades cleanly without losing Genesis kill-growth data.
