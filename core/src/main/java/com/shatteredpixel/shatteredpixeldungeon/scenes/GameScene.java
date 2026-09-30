@@ -69,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -345,6 +346,10 @@ public class GameScene extends PixelScene {
 
 		add( emitters );
 		add( effects );
+
+		if (InfiniteWorldLevel.assistSpectatorActive()) {
+			effects.add(hero);
+		}
 
 		gases = new Group();
 		add( gases );
@@ -1479,6 +1484,19 @@ public class GameScene extends PixelScene {
 				if (cell < 0) accent.refresh();
 				else accent.refreshIfAffected(cell);
 			}
+		}
+	}
+
+	public static void setInfiniteSpectatorHeroLayer(boolean enabled) {
+		if (scene == null || scene.hero == null) return;
+
+		if (enabled && InfiniteWorldLevel.assistSpectatorActive()) {
+			// Effects render after raised terrain/walls but before fog. Reparenting
+			// only the Hero sprite keeps phasing movement visible without touching map data.
+			scene.effects.add(scene.hero);
+		} else {
+			scene.mobs.add(scene.hero);
+			scene.sortMobSprites();
 		}
 	}
 
