@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
@@ -78,6 +79,13 @@ public class BreakthroughCertificate extends EquipableItem {
             }
             Item.updateQuickslot();
         }
+
+        // Level 60 is the permanent endgame awakening. This is intentionally
+        // outside the 'next > certificateLevel' block so old lv60 saves also
+        // receive Genesis Echo once after updating.
+        if (hero.lvl >= 60 && certificateLevel >= 60 && Dungeon.infiniteWorld) {
+            GenesisEcho.unlock(hero);
+        }
     }
 
     public float healthMultiplier() {
@@ -127,7 +135,9 @@ public class BreakthroughCertificate extends EquipableItem {
 
     public float expMultiplier() {
         switch (certificateLevel) {
-            case 60: return 1.60f;
+            // At level 60 there is no further Hero level to gain, so the old
+            // +60% experience bonus is removed instead of wasting a stat line.
+            case 60: return 1.00f;
             case 50: return 1.40f;
             case 40: return 1.25f;
             default:return 1.15f;
@@ -269,6 +279,89 @@ public class BreakthroughCertificate extends EquipableItem {
         }
     }
 
+    private int copies(Hero hero) {
+        return certificateLevel >= 60 ? GenesisEcho.sealCopies(hero) : 1;
+    }
+
+    private float stackedMultiplier(float base, Hero hero) {
+        int copies = copies(hero);
+        float result = 1f;
+        for (int i = 0; i < copies; i++) result *= base;
+        return result;
+    }
+
+    public float effectiveHealthMultiplier(Hero hero) {
+        return stackedMultiplier(healthMultiplier(), hero);
+    }
+
+    public int effectiveStrengthBonus(Hero hero) {
+        return strengthBonus() * copies(hero);
+    }
+
+    public float effectiveDamageMultiplier(Hero hero) {
+        return stackedMultiplier(damageMultiplier(), hero);
+    }
+
+    public float effectiveAccuracyMultiplier(Hero hero) {
+        return stackedMultiplier(accuracyMultiplier(), hero);
+    }
+
+    public float effectiveEvasionMultiplier(Hero hero) {
+        return stackedMultiplier(evasionMultiplier(), hero);
+    }
+
+    public float effectiveExpMultiplier(Hero hero) {
+        return stackedMultiplier(expMultiplier(), hero);
+    }
+
+    public float effectiveHungerMultiplier(Hero hero) {
+        return stackedMultiplier(hungerMultiplier(), hero);
+    }
+
+    public float effectiveGoldMultiplier(Hero hero) {
+        return stackedMultiplier(goldMultiplier(), hero);
+    }
+
+    public float effectiveSpeedMultiplier(Hero hero) {
+        return stackedMultiplier(speedMultiplier(), hero);
+    }
+
+    public int effectiveVisionBonus(Hero hero) {
+        return visionBonus() * copies(hero);
+    }
+
+    public float effectiveShopPriceMultiplier(Hero hero) {
+        return stackedMultiplier(shopPriceMultiplier(), hero);
+    }
+
+    public float effectiveChestBonusChance(Hero hero) {
+        return Math.min(1f, chestBonusChance() * copies(hero));
+    }
+
+    public float effectiveDamageTakenMultiplier(Hero hero) {
+        return stackedMultiplier(damageTakenMultiplier(), hero);
+    }
+
+    public float effectiveNegativeEffectMultiplier(Hero hero) {
+        return stackedMultiplier(negativeEffectMultiplier(), hero);
+    }
+
+    public float effectiveWandChargeMultiplier(Hero hero) {
+        return stackedMultiplier(wandChargeMultiplier(), hero);
+    }
+
+    public float effectiveConsumableDurationMultiplier(Hero hero) {
+        return stackedMultiplier(consumableDurationMultiplier(), hero);
+    }
+
+    public int effectiveSearchDistanceBonus(Hero hero) {
+        return searchDistanceBonus() * copies(hero);
+    }
+
+    public float effectiveSearchChanceBonus(Hero hero) {
+        return Math.min(1f, searchChanceBonus() * copies(hero));
+    }
+
     public Class immunityClass() {
         ensureImmunity();
         return IMMUNITY_POOL[immunityIndex];
@@ -326,7 +419,7 @@ public class BreakthroughCertificate extends EquipableItem {
         if (!(target instanceof Hero) || target != consumableBoostHero || consumableBoostDepth <= 0) return duration;
         if (isSupportedNegativeEffect(buffClass)) return duration;
         BreakthroughCertificate cert = equipped((Hero)target);
-        return cert == null ? duration : duration * cert.consumableDurationMultiplier();
+        return cert == null ? duration : duration * cert.effectiveConsumableDurationMultiplier((Hero)target);
     }
 
     public boolean reviveReady() {
@@ -348,7 +441,7 @@ public class BreakthroughCertificate extends EquipableItem {
         while (regenProgress >= interval) {
             regenProgress -= interval;
             if (hero.isAlive() && hero.HP > 0 && hero.HP < hero.HT) {
-                int heal = Math.max(1, Math.round(hero.HT * 0.01f));
+                int heal = Math.max(1, Math.round(hero.HT * 0.01f)) * copies(hero);
                 hero.HP = Math.min(hero.HT, hero.HP + heal);
                 if (hero.sprite != null) hero.sprite.showStatus(0x00FF00, "+" + heal);
             }
@@ -374,6 +467,7 @@ public class BreakthroughCertificate extends EquipableItem {
 
     @Override
     public String name() {
+        if (certificateLevel >= 60) return Messages.get(this, "miracle_name");
         return Messages.get(this, "name", certificateLevel);
     }
 
