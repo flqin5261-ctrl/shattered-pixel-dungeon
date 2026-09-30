@@ -79,7 +79,8 @@ public class TalentsPane extends ScrollPane {
 			}
 			if (!Dungeon.infiniteWorld && tiersAvailable > 2 && Dungeon.hero.subClass == HeroSubClass.NONE){
 				tiersAvailable = 2;
-			} else if (tiersAvailable > 3 && Dungeon.hero.armorAbility == null){
+			} else if (tiersAvailable > 3 && Dungeon.hero.armorAbility == null
+					&& !GenesisEcho.miracleTalentMastery(Dungeon.hero)){
 				tiersAvailable = 3;
 			}
 		}
