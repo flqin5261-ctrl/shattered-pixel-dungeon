@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.6-stable",
     "development_branch": "assist-0.6.6-genesis-echo",
-    "release_code_sha": "a96e785dcb49e518b8f9efe0aa088e8dd4589825",
+    "release_code_sha": "cfd536e11bf10944a5eb5b51f54e13549acefd27",
     "world_generator_version": 17
   },
   "build": {
@@ -365,7 +365,8 @@
       "shop_ui": "buy window shows a grey struck-through original price and a green Seal discounted price",
       "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly",
       "backpack": "base backpack 25 slots; Seal adds +5/+8/+12/+16 at lv30/40/50/60; lv60 Genesis resonance copies the +16 layer while Miracle Echo is equipped",
-      "overflow_rule": "when Seal/Miracle Echo is unequipped and capacity shrinks, ordinary items are spilled first to the Hero cell; no overflow item is deleted"
+      "overflow_rule": "when Seal/Miracle Echo is unequipped and capacity shrinks, ordinary items are spilled first to the Hero cell; no overflow item is deleted",
+      "non_disposable": "Seal/Miracle Echo has no drop/throw action; doDrop/cast are hard-blocked; full-backpack unequip first spills another item so the Seal itself can never fall to the ground."
     },
     "genesis_echo": {
       "unlock": "automatically and permanently awakens when Hero reaches lv60 and the Seal becomes 奇迹·回响; legacy lv60 saves receive it through certificate sync",
