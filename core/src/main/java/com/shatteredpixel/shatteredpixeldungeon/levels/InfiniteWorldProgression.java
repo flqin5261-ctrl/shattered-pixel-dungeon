@@ -159,6 +159,26 @@ public final class InfiniteWorldProgression {
         return p;
     }
 
+    public static void testLevelToStageCap(Hero hero) {
+        if (hero == null) return;
+        int target = Dungeon.infiniteWorld
+                ? heroLevelCap(hero)
+                : Hero.MAX_LEVEL;
+        int guard = 0;
+        while (hero.lvl < target && guard++ < 80) {
+            int before = hero.lvl;
+            hero.earnExp(hero.maxExp(), InfiniteWorldProgression.class);
+            if (hero.lvl <= before) break;
+        }
+        if (Dungeon.infiniteWorld && hero.lvl >= PRE_BREAKTHROUGH_LEVEL_CAP
+                && !breakthroughCompleted()) {
+            issueBreakthroughToken(hero);
+            GLog.i("测试：已到30级突破门槛。");
+        } else {
+            GLog.i("测试：角色已升至当前阶段上限 " + hero.lvl + " 级。");
+        }
+    }
+
     public static int gearScore(Hero hero) {
         PowerProfile p = powerProfile(hero);
         float score = 0.30f * p.weapon
