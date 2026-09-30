@@ -1670,3 +1670,48 @@ V12 进入尚未收录的 anomaly 类型时，可在 Hero 附近补一张可见�
 - animated water backdrop / synchronous VBO flush；
 - 普通怪距离清除必须使用 despawnFromInfiniteWorld()；
 - applicationId、固定签名和 versionCode 单调递增。
+
+# V13 — 商人发现机制与六类 Liminal 不变量
+
+## 商人据点
+V13 仍然把 Merchant Outpost 视为 deterministic world structure，而不是运行时随机 NPC。
+
+生成：
+- V11 spacing=7；
+- V12 spacing=5；
+- V13 spacing=4；
+- V13 出生排除约 2 Chunk。
+旧 generatorVersion 必须继续使用各自旧公式。
+
+道路安全约束不变：
+- anomaly Chunk 不放普通商店；
+- Primary spine Chunk 不放商店；
+- Secondary infinite route Chunk 不放商店。
+原因仍是主题房先于 V10 route carve，不能让道路后处理切穿商店壳体。
+
+## 可发现性
+“loaded”不等于“player discovered”。
+V13 规定：
+- active window 中存在的 merchant room 可以直接写入 mapped；
+- FOR_SALE heaps 可设 seen；
+- 当未提示过的 outpost 距 Hero <=2 Chunk 时，只提示一次；
+- 提示状态必须使用该据点自己的 objectState key，不能使用全局一次性 boolean。
+
+该机制只揭示商店，不修改 Hero FOV，不传送 Hero，也不改变 Streaming 触发时机。
+
+## Anomaly V13
+V13 anomaly chance=28%，type count=6。
+V9-V11=8%/3 types，V12=15%/3 types，旧世界不可升级重算。
+
+新类型必须遵守：
+- 仍是 5×5 macro 共用一个 anomaly type；
+- shared edge contract 保留；
+- anomaly chunk 末尾仍接四边 gateway；
+- Generator V10+ 继续 carve infinite network；
+- 不能新增独立 Water renderer；
+- 大面积 WATER 仍只能走原版 animated water backdrop。
+
+## Field Notes
+Document.INFINITE_WORLD_NOTES 现有 6 页。
+每一个 anomaly type 必须映射唯一 page key。
+近身补偿只以 Document 页面是否已发现为停止条件，不能因为 anchor note 生成失败而永久失去该页面。
