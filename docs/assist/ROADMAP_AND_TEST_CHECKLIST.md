@@ -1453,3 +1453,66 @@ V10 的验收标准不是“所有路都无限”，而是：
 - [ ] V13 六类 Liminal 仍正常。
 - [ ] 400 action-value 唯一神器箱仍整局只有一个。
 - [ ] 0.5.4 指定物品作弊仍正常。
+
+# B15. 0.5.6 无界旁观测试模式回归
+
+## B15.1 开关与范围
+- [ ] 普通地牢 Assist 菜单不显示“无界旁观测试模式”。
+- [ ] Infinite World Assist 菜单显示该开关。
+- [ ] 0.5.5 V14 旧存档可直接开启，不要求重开。
+- [ ] 开关状态可正常持久化。
+
+## B15.2 穿墙与速度
+- [ ] 点击墙后方区域可自动穿越多格 WALL。
+- [ ] WALL_DECO / solid props / pit 区域可作为测试移动路径。
+- [ ] 不改变被穿过 terrain 的真实类型。
+- [ ] 不允许走出 active window 的最外层 frame。
+- [ ] 不与 Mob/NPC 占据同一格。
+- [ ] 未开普通速度作弊时，旁观模式仍至少约 ×4。
+- [ ] 普通 Assist speed > ×4 时使用更高倍率。
+- [ ] Root / Paralysis / Vertigo 不阻断测试移动。
+
+## B15.3 Streaming / Fog / World coords
+- [ ] 连续跨多个 SHIFT_LOW/HIGH 边界，Streaming 稳定。
+- [ ] Streaming 仍发生在 Hero movement tween 完成之后。
+- [ ] Hero 不原地踏步、不出现 spinner 卡死、不发生世界坐标跳变。
+- [ ] 飞过的区域正常驱散迷雾。
+- [ ] visited/mapped 在离开再回来后仍保持。
+- [ ] 墙内移动时仍有正常局部 FOV，但不能透视整个封闭结构。
+- [ ] Pool Hall / 大型 anomaly Streaming 不出现假水、黑块或旧贴图。
+
+## B15.4 怪物冻结
+- [ ] 开启模式前记录现有怪物位置。
+- [ ] 连续飞行几十/上百步后这些怪物不移动、不攻击、不改变追击状态。
+- [ ] 从怪物旁边穿过不会中断长路径移动。
+- [ ] 怪物在屏幕上仍可见。
+- [ ] 旁观期间 InfiniteWorldMobEcology 不生成新普通敌人。
+- [ ] 开箱、捡物、购买等消耗时间的动作也不会让怪物趁机行动。
+- [ ] 关闭模式后现有怪物恢复正常 Actor 行动。
+
+## B15.5 正常交互
+- [ ] 可正常靠近并打开普通箱、锁箱、水晶箱。
+- [ ] 可正常拾取 HEAP。
+- [ ] 可正常购买 FOR_SALE。
+- [ ] 可正常与 InfiniteWorldShopkeeper 交互。
+- [ ] 可正常用钥匙解锁。
+- [ ] 点击普通墙不被 Pickaxe Mine 动作抢走旁观穿墙意图。
+- [ ] 测试交互不破坏唯一神器箱生命周期。
+
+## B15.6 非物理与安全
+- [ ] 穿过 trap 不触发。
+- [ ] 穿过 chasm 不坠落。
+- [ ] 穿过 plant / web / damaging floor blob 不因 occupyCell 触发。
+- [ ] 旁观模式下 Hero 不受伤。
+- [ ] Hero 在墙格中仍清晰显示，不被 custom wall / raised wall 完全遮住。
+- [ ] 在墙中关闭模式时自动落到最近正常地板。
+- [ ] 在正常地板关闭模式时位置不变化。
+- [ ] 关闭后普通碰撞、陷阱、怪物、速度、Hero 渲染层全部恢复。
+
+## B15.7 核心回归
+- [ ] V14 merchant connectivity repair 仍正常。
+- [ ] Dynamic accent refresh 仍正常。
+- [ ] 六类 Liminal/Field Notes 正常。
+- [ ] 400 action-value 唯一神器箱仍整局仅一个。
+- [ ] 0.5.4 指定物品作弊正常。
+- [ ] fixed applicationId / stable signature 不变。
