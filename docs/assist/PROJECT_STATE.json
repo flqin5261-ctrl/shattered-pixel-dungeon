@@ -114,6 +114,16 @@
       "immune_to_enemy_distance_despawn": true,
       "local_enemy_spawn_exclusion_radius": 8,
       "requires_new_world_for_v11": true
+    },
+    "merchant_outposts": {
+      "spacing_chunks": 9,
+      "max_active_shopkeepers": 1,
+      "stock_slots": 6,
+      "persistent_stock": true,
+      "persistent_fled_state": true,
+      "excluded_from_enemy_despawn": true,
+      "enemy_spawn_exclusion_radius_cells": 8,
+      "avoids_primary_and_secondary_infinite_routes": true
     }
   },
   "current_content": {
@@ -215,24 +225,16 @@
     },
     "merchants": {
       "npc": "InfiniteWorldShopkeeper",
+      "room_theme_id": 10,
       "stock": [
-        "healing potion",
-        "small ration",
-        "random safe potion",
-        "random safe scroll",
-        "distance-tiered equipment",
-        "utility item"
+        "PotionOfHealing",
+        "SmallRation",
+        "random potion",
+        "safe scroll",
+        "one equipment item",
+        "one utility item"
       ],
-      "utility_pool": [
-        "Bomb",
-        "Torch",
-        "StoneOfBlink",
-        "Pickaxe",
-        "ScrollOfRemoveCurse"
-      ],
-      "forbidden_stock": [
-        "ScrollOfMagicMapping"
-      ]
+      "pricing": "original Shopkeeper/FOR_SALE/WndTradeItem logic"
     }
   },
   "hard_invariants": [
@@ -250,6 +252,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.1 merchant outposts: verify only one shopkeeper can be active in the 7x7 streaming window.",
+    "0.5.1 merchant stock: verify purchased items do not respawn after streaming or save/load.",
+    "0.5.1 merchant flee state: verify an attacked/fled merchant does not return after streaming.",
+    "0.5.1 streaming: verify shopkeeper rebases correctly and shop rooms are not cut by primary/secondary infinite routes.",
     "0.5.1 merchant outposts: verify a fresh Generator V11 world produces shops at a discoverable but sparse cadence.",
     "0.5.1 merchant stock: buy items, stream away/back and save/load; purchased sale heaps must not regenerate.",
     "0.5.1 merchant streaming: shopkeeper must rebase correctly if its outpost remains in the active 7x7 window and unload without fleeing when it leaves the window.",
