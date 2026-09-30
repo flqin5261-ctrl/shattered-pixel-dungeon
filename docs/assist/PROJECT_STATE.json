@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.1",
-    "version_code": 947,
+    "version_name": "0.5.2",
+    "version_code": 948,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.1-stable",
-    "development_branch": "assist-0.5.1-merchants",
-    "release_code_sha": "d9e0d06829d61674d4bb96a52f649cfea45fe90c",
-    "world_generator_version": 11
+    "stable_branch": "assist-0.5.2-stable",
+    "development_branch": "assist-0.5.2-discovery",
+    "release_code_sha": "bf27f1be1ad0ba23f9fa3eb5b65ff08c8e275fda",
+    "world_generator_version": 12
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -53,13 +53,15 @@
     "liminal_macro_regions": {
       "enabled": true,
       "macro_size_chunks": 5,
-      "approximate_region_chance_percent": 8,
+      "approximate_region_chance_percent": 15,
       "start_area_exclusion_chunks": 4,
       "types": [
         "repeating_offices",
         "pool_halls",
         "endless_hall"
-      ]
+      ],
+      "legacy_v9_v11_chance_percent": 8,
+      "v12_first_unread_note_near_hero": true
     },
     "multi_level_infinite_network": {
       "enabled": true,
@@ -90,9 +92,9 @@
     "merchants_enabled": true,
     "merchant_system": {
       "model": "deterministic persistent merchant outposts",
-      "spacing_chunks": 7,
-      "max_active_merchants": 1,
-      "start_area_exclusion_chunks": 4,
+      "spacing_chunks": 5,
+      "max_active_merchants": 4,
+      "start_area_exclusion_chunks": 3,
       "avoids_liminal_anomalies": true,
       "avoids_primary_and_secondary_infinite_roads": true,
       "stock_slots": 6,
@@ -100,30 +102,48 @@
       "bought_stock_persists": true,
       "merchant_flee_persists": true,
       "merchant_is_not_subject_to_enemy_distance_despawn": true,
-      "enemy_spawn_sanctuary_radius_cells": 8
+      "enemy_spawn_sanctuary_radius_cells": 8,
+      "legacy_v11_spacing_chunks": 7,
+      "note": "V12 intentionally relaxes the old one-merchant-per-window lattice so merchants are substantially easier to encounter; route/anomaly exclusions and stock persistence remain unchanged."
     },
     "merchants": {
       "enabled": true,
       "boss_related": false,
       "generation": "deterministic merchant outposts",
-      "spacing_chunks": 9,
-      "max_active_in_7x7_window": 1,
+      "spacing_chunks": 5,
+      "max_active_in_7x7_window": 4,
       "stock_slots": 6,
       "stock_persists_after_purchase": true,
       "merchant_flee_persists": true,
       "immune_to_enemy_distance_despawn": true,
       "local_enemy_spawn_exclusion_radius": 8,
-      "requires_new_world_for_v11": true
+      "requires_new_world_for_v11": false,
+      "requires_new_world_for_v12": true
     },
     "merchant_outposts": {
-      "spacing_chunks": 9,
-      "max_active_shopkeepers": 1,
+      "spacing_chunks": 5,
+      "max_active_shopkeepers": 4,
       "stock_slots": 6,
       "persistent_stock": true,
       "persistent_fled_state": true,
       "excluded_from_enemy_despawn": true,
       "enemy_spawn_exclusion_radius_cells": 8,
-      "avoids_primary_and_secondary_infinite_routes": true
+      "avoids_primary_and_secondary_infinite_routes": true,
+      "legacy_v11_spacing_chunks": 7
+    },
+    "guaranteed_artifact_chest": {
+      "enabled": true,
+      "generator_version": 12,
+      "action_value_threshold": 400,
+      "max_per_run": 1,
+      "spawn_distance_cells": "2-5, fallback 1-7",
+      "type": "CRYSTAL_CHEST",
+      "contents": "one artifact selected from the remaining Generator artifact deck when possible",
+      "gives_crystal_key": true,
+      "forced_discoverable": true,
+      "persistent_world_coordinates": true,
+      "lifecycle_states": "0 not spawned / 1 closed / 2 opened heap / 3 artifact taken",
+      "survives_streaming_and_save_load": true
     }
   },
   "current_content": {
@@ -235,6 +255,12 @@
         "one utility item"
       ],
       "pricing": "original Shopkeeper/FOR_SALE/WndTradeItem logic"
+    },
+    "v12_discovery_balance": {
+      "merchant_spacing_chunks": 5,
+      "liminal_macro_chance_percent": 15,
+      "anomaly_note_rule": "When entering an anomaly whose field-note page has not been collected, a visible InfiniteWorldNote is guaranteed near the hero; legacy anchor notes remain as deterministic world content.",
+      "artifact_chest_rule": "At 400 positive hero action-value, exactly one guaranteed crystal artifact chest is created near the hero and persisted by world coordinates/state."
     }
   },
   "hard_invariants": [
@@ -252,7 +278,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
-    "0.5.1 merchant outposts: verify only one shopkeeper can be active in the 7x7 streaming window.",
+    "0.5.2 V12 merchants: verify the denser 5-chunk lattice is clearly discoverable without making shops feel continuous; a 7x7 window can now contain more than one outpost.",
+    "0.5.2 V12 anomaly notes: entering each unread liminal type should place a visible note within a few cells; after collection, that page must not keep respawning.",
+    "0.5.2 V12 unique artifact chest: after 400 positive hero action-value, exactly one visible nearby CRYSTAL_CHEST should appear, grant a CrystalKey, contain one artifact, and never duplicate through streaming/save-load/revisits.",
+    "0.5.2 V12 artifact chest lifecycle: opening without taking the artifact must restore an ordinary heap after streaming/save-load; taking the artifact must permanently end the unique chest.",
     "0.5.1 merchant stock: verify purchased items do not respawn after streaming or save/load.",
     "0.5.1 merchant flee state: verify an attacked/fled merchant does not return after streaming.",
     "0.5.1 streaming: verify shopkeeper rebases correctly and shop rooms are not cut by primary/secondary infinite routes.",
@@ -272,16 +301,16 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
-    "Real-device test merchant frequency, pricing and stock balance.",
+    "Real-device test V12 merchant density and decide whether 5-chunk spacing is comfortable or too common.",
+    "Verify V12 liminal 15% macro frequency and the near-hero unread field-note guarantee for all three anomaly types.",
+    "Verify the 400-action unique artifact chest across spawn, open, pickup, streaming, save/load and revisit; the run must never create a second guaranteed artifact chest.",
+    "Keep merchant/anomaly/artifact guarantees secondary to exploration rather than turning them into repeated reward farms.",
     "Verify merchant/stock persistence through streaming, save/load and revisits.",
     "Keep merchants sparse and secondary to exploration.",
-    "Real-device test merchant encounter rate, stock usefulness, buying/selling, streaming and persistence before adding more merchant variants.",
-    "Tune merchant spacing or stock count only from playtest feedback; do not turn shops into another high-density loot source.",
     "Real-device tune 0.5.0 mob density, spawn interval, despawn radius and elite rarity before adding more enemy types.",
     "Verify monster rebase/despawn across Infinite World streaming, teleport, save/load and anomaly macro-regions.",
     "Only after normal/elite mob ecology is stable, consider additional biome-weighted enemy pools.",
     "Do not add bosses yet; user explicitly requested ordinary and rare elite enemies first.",
-    "Real-device test V9 infinite-backbone, anomaly-region streaming, field-note collection and the rebalanced loot/trap density.",
     "Continue adding upstream-inspired small/medium room templates only if the world still lacks variety; avoid re-inflating reward density.",
     "Implement local room/chunk accent-overlay refresh for discovered secret doors and destructible room terrain.",
     "Expand Infinite World field notes as new anomalous spaces are added.",
