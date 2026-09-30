@@ -25,7 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIcon;
-import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingListPane;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.Image;
 
@@ -33,13 +33,10 @@ public class WndInfoBuff extends Window {
 
 	private static final float GAP	= 2;
 
-	private static final int WIDTH_MIN = 120;
-	private static final int WIDTH_MAX = 160;
+	private static final int WIDTH = 120;
 
 	public WndInfoBuff(Buff buff){
 		super();
-
-		int width = Math.min(WIDTH_MAX, Math.max(WIDTH_MIN, PixelScene.uiCamera.width - 16));
 
 		IconTitle titlebar = new IconTitle();
 
@@ -47,42 +44,14 @@ public class WndInfoBuff extends Window {
 
 		titlebar.icon( buffIcon );
 		titlebar.label( Messages.titleCase(buff.name()), Window.TITLE_COLOR );
-		titlebar.setRect( 0, 0, width, 0 );
+		titlebar.setRect( 0, 0, WIDTH, 0 );
 		add( titlebar );
 
-		ScrollingListPane list = new ScrollingListPane();
-		list.setRect(0, 0, width, 1);
-		for (String line : buff.desc().split("\\n", -1)) {
-			list.addItem(new BuffLine(line));
-		}
+		RenderedTextBlock txtInfo = PixelScene.renderTextBlock(buff.desc(), 6);
+		txtInfo.maxWidth(WIDTH);
+		txtInfo.setPos(titlebar.left(), titlebar.bottom() + 2*GAP);
+		add( txtInfo );
 
-		float listY = titlebar.bottom() + 2*GAP;
-		int maxWindowHeight = Math.max(64, PixelScene.uiCamera.height - chrome.marginVer() - 6);
-		int listHeight = Math.max(24, Math.min((int)Math.ceil(list.content().height()),
-				(int)Math.floor(maxWindowHeight - listY - 2)));
-
-		list.setRect(0, listY, width, listHeight);
-		add(list);
-		resize(width, (int)Math.ceil(listY + listHeight + 2));
-	}
-
-	private static class BuffLine extends ScrollingListPane.ListItem {
-
-		private final boolean spacer;
-
-		BuffLine(String text) {
-			super(null, null, text == null ? "" : text);
-			spacer = text == null || text.length() == 0;
-			icon.visible = false;
-			iconLabel.visible = false;
-			line.visible = false;
-		}
-
-		@Override
-		protected void layout() {
-			label.maxWidth((int)width);
-			label.setPos(x, y + 1);
-			height = spacer ? 6 : Math.max(8, label.height() + 3);
-		}
+		resize( WIDTH, (int)txtInfo.bottom() + 2 );
 	}
 }
