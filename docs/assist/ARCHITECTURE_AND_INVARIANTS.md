@@ -1971,3 +1971,16 @@ Road and readability guarantees have priority over target prop count.
 - Revival must not interfere with breakthrough-trial failure interception; trial failure remains rollback, while certificate revival is for normal play after breakthrough.
 - Quickslot rollback must restore pre-trial layout, rebind to restored item objects, and clear unresolved placeholders. Trial-created item references must never survive rollback.
 - Crystal artifact chests are excluded from certificate chest-bonus injection.
+
+
+# 0.6.5 Boundary Seal invariants
+
+- User-facing item name is 破界之印. Internal class may remain BreakthroughCertificate for save compatibility; do not rename the Java class/package in-place.
+- The Seal remains its own Belongings slot and must never occupy Artifact/Misc/Ring.
+- Tier is derived from Hero milestones 30/40/50/60; ScrollOfUpgrade on the Seal must reroll immunity only, never increase tier or Item level.
+- Permanent immunity exists only through the equipped BreakthroughBlessing. Unequipping must remove it immediately.
+- Status resistance is tiered separately in Hero.resist and only applies to supported common negative-effect classes.
+- Percentage damage reduction excludes Hunger because hunger already has its own Seal reduction.
+- Consumable-duration boost uses a bounded synchronous context around Potion.drink / Scroll.doRead; it must never lengthen supported negative effects.
+- Secret sensing augments normal Hero.search and therefore still requires searchable/visible geometry; do not turn it into global map reveal.
+- Shopkeeper.baseSellPrice is the authoritative undiscounted value; purchase logic still uses Shopkeeper.sellPrice.
