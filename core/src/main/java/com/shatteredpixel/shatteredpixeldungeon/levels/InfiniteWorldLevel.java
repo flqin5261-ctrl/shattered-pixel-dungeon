@@ -1292,6 +1292,188 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    private boolean isV11MerchantChunk(int cx, int cy) {
+        if (state().generatorVersion < 11) return false;
+        if (v9AnomalyType(cx, cy) != 0) return false;
+
+        // Keep the immediate starting region free of commerce so the opening still
+        // feels like exploration rather than spawning next to a shop.
+        if (Math.max(Math.abs(cx), Math.abs(cy)) <= 4) return false;
+
+        int offsetX = (int)Math.floorMod(hash(0, 0, 25000), (long)MERCHANT_SPACING_CHUNKS);
+        int offsetY = (int)Math.floorMod(hash(0, 0, 25001), (long)MERCHANT_SPACING_CHUNKS);
+
+        return Math.floorMod(cx - offsetX, MERCHANT_SPACING_CHUNKS) == 0
+                && Math.floorMod(cy - offsetY, MERCHANT_SPACING_CHUNKS) == 0;
+    }
+
+    private long v11MerchantObjectKey(int cx, int cy, int salt) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        long wx = (long)cx * CHUNK_SIZE + (spec[0] + spec[2]) / 2;
+        long wy = (long)cy * CHUNK_SIZE + (spec[1] + spec[3]) / 2;
+        long world = encodeWorld(wx, wy);
+        long mix = 0x9E3779B97F4A7C15L * (salt + 0x632BE5AB);
+        return world ^ Long.rotateLeft(mix, salt & 31);
+    }
+
+    private boolean v11MerchantGone(int cx, int cy) {
+        return state().objectState(v11MerchantObjectKey(cx, cy, 0x63F0)) != 0;
+    }
+
+    public void markInfiniteWorldMerchantGone(int cx, int cy) {
+        if (!isV11MerchantChunk(cx, cy)) return;
+        state().setObjectState(v11MerchantObjectKey(cx, cy, 0x63F0), 1);
+    }
+
+    private int v11MerchantCell(int cx, int cy, int ox, int oy) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int lx = (spec[0] + spec[2]) / 2;
+        int ly = (spec[1] + spec[3]) / 2;
+        return ox + lx + (oy + ly) * width();
+    }
+
+    private int v11MerchantStockCell(int cx, int cy, int ox, int oy, int slot) {
+        int[] spec = v7RoomSpec(cx, cy, 0);
+        int centerX = (spec[0] + spec[2]) / 2;
+        int centerY = (spec[1] + spec[3]) / 2;
+
+        ArrayList<Integer> candidates = new ArrayList<>();
+        for (int ly = spec[1] + 1; ly <= spec[3] - 1; ly++) {
+            for (int lx = spec[0] + 1; lx <= spec[2] - 1; lx++) {
+                if (lx == centerX && ly == centerY) continue;
+                int cell = ox + lx + (oy + ly) * width();
+                if (cell < 0 || cell >= length()) continue;
+                if (solid[cell] || pit[cell]) continue;
+                candidates.add(cell);
+            }
+        }
+
+        if (candidates.isEmpty()) return -1;
+        int start = (int)Math.floorMod(hash(cx, cy, 25100), (long)candidates.size());
+        return candidates.get(Math.floorMod(start + slot, candidates.size()));
+    }
+
+    private Item v11MerchantStockItem(int cx, int cy, int slot) {
+        switch (slot) {
+            case 0:
+                return new PotionOfHealing();
+            case 1:
+                return new SmallRation();
+            case 2:
+                return v6RandomPotion(cx, cy, 25120);
+            case 3:
+                return v6SafeScroll(cx, cy, 25130);
+            case 4:
+                return v11MerchantEquipment(cx, cy);
+            default:
+                switch (range(cx, cy, 25150, 0, 4)) {
+                    case 0: return new Bomb();
+                    case 1: return new Torch();
+                    case 2: return new StoneOfBlink();
+                    case 3: return new Pickaxe();
+                    default:return new ScrollOfRemoveCurse();
+                }
+        }
+    }
+
+    private Item v11MerchantEquipment(int cx, int cy) {
+        int worldDistance = Math.max(Math.abs(cx), Math.abs(cy));
+        int tier = Math.min(4, Math.max(0, worldDistance / 12));
+
+        Random.pushGenerator(hash(cx, cy, 25140));
+        try {
+            Item item;
+            int kind = range(cx, cy, 25141, 0, 99);
+            if (kind < 46) item = Generator.randomWeapon(tier, true);
+            else if (kind < 78) item = Generator.randomArmor(tier);
+            else if (kind < 90) item = Generator.randomUsingDefaults(Generator.Category.WAND);
+            else item = Generator.randomUsingDefaults(Generator.Category.RING);
+
+            item.cursed = false;
+            item.cursedKnown = true;
+            if (item.isUpgradable()) {
+                item.level(0);
+                item.identify(false);
+            }
+            return item;
+        } finally {
+            Random.popGenerator();
+        }
+    }
+
+    private void generateV11MerchantStock(int cx, int cy, int ox, int oy) {
+        if (!isV11MerchantChunk(cx, cy) || v11MerchantGone(cx, cy)) return;
+
+        for (int slot = 0; slot < MERCHANT_STOCK_SLOTS; slot++) {
+            int cell = v11MerchantStockCell(cx, cy, ox, oy, slot);
+            if (cell < 0) continue;
+
+            long key = v6ObjectKey(cell, 0x6300 + slot);
+            if (state().objectState(key) != 0) continue;
+            if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+
+            Heap heap = new Heap();
+            heap.pos = cell;
+            heap.seen = mapped[cell] || visited[cell];
+            heap.type = Heap.Type.FOR_SALE;
+            heap.drop(v11MerchantStockItem(cx, cy, slot));
+            heaps.put(cell, heap);
+        }
+    }
+
+    private void snapshotV11MerchantStock(int cx, int cy, int ox, int oy) {
+        if (!isV11MerchantChunk(cx, cy)) return;
+
+        for (int slot = 0; slot < MERCHANT_STOCK_SLOTS; slot++) {
+            int cell = v11MerchantStockCell(cx, cy, ox, oy, slot);
+            if (cell < 0) continue;
+
+            long key = v6ObjectKey(cell, 0x6300 + slot);
+            if (state().objectState(key) != 0) continue;
+
+            Heap heap = heaps.get(cell);
+            if (heap == null || heap.type != Heap.Type.FOR_SALE) {
+                state().setObjectState(key, 1);
+            }
+        }
+    }
+
+    private InfiniteWorldShopkeeper findV11Shopkeeper(int cx, int cy) {
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob instanceof InfiniteWorldShopkeeper) {
+                InfiniteWorldShopkeeper shop = (InfiniteWorldShopkeeper)mob;
+                if (shop.shopChunkX() == cx && shop.shopChunkY() == cy) return shop;
+            }
+        }
+        return null;
+    }
+
+    private void ensureV11Shopkeeper(boolean addToScene) {
+        if (state().generatorVersion < 11) return;
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                if (!isV11MerchantChunk(cx, cy) || v11MerchantGone(cx, cy)) return;
+                if (findV11Shopkeeper(cx, cy) != null) return;
+
+                int cell = v11MerchantCell(cx, cy, ox, oy);
+                Char occupant = Actor.findChar(cell);
+                if (occupant instanceof Mob && occupant.alignment == Char.Alignment.ENEMY) {
+                    ((Mob)occupant).despawnFromInfiniteWorld();
+                } else if (occupant != null) {
+                    return;
+                }
+
+                InfiniteWorldShopkeeper shop = new InfiniteWorldShopkeeper(cx, cy);
+                shop.pos = cell;
+
+                if (addToScene) GameScene.add(shop);
+                else mobs.add(shop);
+            }
+        });
+    }
+
     private int v7RoomCount(int cx, int cy) {
         return 2 + (Math.floorMod(hash(cx, cy, 20500), 100L) < 38 ? 1 : 0);
     }
