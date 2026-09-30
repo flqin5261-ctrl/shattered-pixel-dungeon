@@ -184,3 +184,15 @@
 - 敌人不会直接刷新在商人 8 格范围内。
 - 商人 flee 后调用 markInfiniteWorldMerchantGone，该据点永久关闭。
 - 要看到 V11 商店房必须重新开始 Infinite World。
+
+
+当前商人阶段：
+
+- 0.5.1 已加入稀有流浪商人商店房。
+- Generator V11；旧 V10 世界不会自动出现商店，测试商人需要重新开始。
+- 商店 9-Chunk spacing，7×7 active window 最多一个商人。
+- 每店默认 6 件商品；买走后通过 objectStates 持久化，不会切窗补货。
+- 商人逃跑状态持久化。
+- 商人不参与普通怪 40-cell despawn。
+- 商店周围 8 格禁止自然刷怪。
+- 商店避开 Primary/Secondary 无限道路。
