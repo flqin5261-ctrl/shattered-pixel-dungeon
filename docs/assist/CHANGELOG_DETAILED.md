@@ -2476,3 +2476,22 @@ Certificate UI:
 - Tier text 30/40/50/60 is visible on the badge even in compact mobile UI.
 - Clicking the badge shows current bonuses, totem charge, and a complete next-tier preview.
 - Added real accuracy, evasion and experience-gain bonuses at all four tiers.
+
+
+# 0.6.5 — Boundary Seal Expansion
+
+Version:
+- versionName: 0.6.5
+- versionCode: 961
+- dev: assist-0.6.5-breakthrough-polish
+- target stable: assist-0.6.5-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Changes:
+- Added WndAssist one-click breakthrough completion for accidental restart/testing.
+- Renamed Breakthrough Certificate user-facing text to 破界之印 / Seal of Boundary Breaking.
+- Increased STR, evasion, XP gain, movement and Undying Totem charge rate.
+- Added percentage damage reduction, tiered common-debuff resistance, wand recharge, positive potion/scroll duration and secret trap/door sensing.
+- Added one persisted random permanent debuff immunity while equipped.
+- Scroll of Upgrade can reroll the Seal immunity to another supported effect without changing Seal tier.
+- Shop buy window now shows struck-through original price plus discounted Seal price.
