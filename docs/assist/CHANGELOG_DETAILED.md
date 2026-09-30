@@ -2557,3 +2557,27 @@ Changes:
 - Normal dungeon progression keeps its upstream Boss-item requirements.
 - Infinite World talent lock text now describes the actual level/milestone flow instead of falsely saying to defeat the second/fourth Boss.
 - Removed redundant player-facing Miracle World/Genesis Echo implementation notes, including the dynamic-monster-scaling sentence; the underlying scaling exclusion remains unchanged.
+
+# 0.6.9 — Genesis Talent Authority
+
+Version:
+- versionName: 0.6.9
+- versionCode: 965
+- dev: assist-0.6.9-genesis-talents
+- target stable: assist-0.6.9-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Changes:
+- Removed the Seal/Miracle World's old random permanent-immunity roll and its Scroll of Upgrade reroll UI. Genesis Echo is now the sole authority for true endgame immunities.
+- Added real-time immunity feedback for blocked control/debuff/curse, forced teleport, instant death and linked damage immunity.
+- Expanded Infinite World talents from four tiers to six normal progression tiers, then added a Genesis-only seventh tier.
+- Tier 5: Ascendant Vitality (+10% HP/rank, 3), Ascendant Force (+10% normal attack damage/rank, 3), Ascendant Focus (+15% accuracy/rank, 3), Ascendant Reflex (+15% evasion/rank, 3).
+- Tier 6: Transcendent Strength (+2 STR/rank, 4), Speed (+15%/rank, 4), Vision (+2 tiles/rank, 3), Guard (-8% incoming damage/rank, 3), Regeneration (~0.25% max HP per positive action-value/rank, 3).
+- While Miracle World is equipped with Genesis Echo active, every initialized tier-1-through-tier-6 talent is evaluated at max rank; unequipping immediately restores stored allocations.
+- Miracle World linkage now also executes any hostile target that survives a valid normal Hero weapon attack, including targets that attempt to survive through special death mechanics.
+- Tier 7 appears only with Genesis Echo and grants exactly one one-rank authority at a time. The choice is resettable without affecting tiers 1-6.
+- Genesis Reach: visible enemies can be clicked for forced execution, and revealed heaps/chests can be remotely collected/opened.
+- Genesis Teleport: double-tap any visited standable cell to teleport there without range limit or cooldown; ordinary single-tap movement is delayed only by the 0.28s double-tap window.
+- Genesis Overcast: wand hits execute hostile targets; positive potion/scroll effects are raised to at least 999 action-value.
+- Genesis Fortune: chest contents burst around the Hero in a 9x9 area, add at least ten extra generated items with uncapped continuation, force stackables to at least quantity 10, and set generated/contained weapon/armor/ring/wand equipment to +120.
+- The selected tier-7 authority is represented by a persistent visible buff beneath the HP UI and remains active after Miracle World is unequipped.
