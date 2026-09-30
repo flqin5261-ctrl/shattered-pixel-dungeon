@@ -1854,7 +1854,7 @@ V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每
 ## External decoration invariants
 - Kenney Tiny Town/Tiny Dungeon props are CC0, 16x16 and fetched from a pinned upstream commit by scripts/fetch-assist-cc0-assets.sh.
 - The build must fail if either downloaded PNG does not match its recorded Git blob SHA.
-- InfiniteWorldDecorationLayer is visual-only. Never use these props to change map[], solid/passable arrays, water, doors, pathfinding or object-state gameplay.
+- Generator V15 legacy worlds keep InfiniteWorldDecorationLayer visual-only. Do not retroactively change their map[]/collision. Generator V16+ physical rules are defined below.
 - Decoration placement must run after generated heaps/traps/plants/themed-room objects so props do not cover gameplay objects.
 - Props must remain inspectable: custom tile image(), name() and desc() must keep working through WndInfoCell.
 - Decoration overlays are appended after broad InfiniteWorldAccentTilemap floor overlays so magnifier selection resolves to the prop, not the reskinned floor.
@@ -1881,9 +1881,33 @@ If a V16 physical cell no longer contains CUSTOM_DECO because of a terrain overr
 Soft props may be suppressed when a real Heap, Trap, Plant or Char occupies their cell.
 
 ## Connectivity safety
-Never place solid scenery on the central crossing band, room-access reservations, doors/transitions/wells/alchemy/pedestals, chest cells/vicinity, merchant chunks, the origin plaza, or local articulation/chokepoints.
+Never place solid scenery on the central crossing band, room-access reservations, doors/transitions/wells/alchemy/pedestals, chest cells/vicinity, or local articulation/chokepoints.
+For V16, origin/merchant chunks may still use the legacy pass-through fallback. V17 removes that fallback: props may exist there only when each real blocker passes the same room-access and local-connectivity safety checks.
 The local safety test must account for already selected hard scenery from the same chunk so several individually safe props cannot combine into a blockade.
 
 ## Density
 High density is visual/environmental, not permission to fill navigation space.
 Road and readability guarantees have priority over target prop count.
+
+
+# V17 all-solid scenery and artifact pacing invariants
+
+## All visible props are real blockers
+- New Generator V17 worlds treat every InfiniteWorldDecorationLayer kind as physical.
+- There are no V17 pass-through decoration kinds, including mushrooms, fern, decorative torches and rubble.
+- Physical representation remains Terrain.CUSTOM_DECO; do not use invisible actors or Hero-only collision hacks.
+- Ordinary Hero and Mob pathfinding must agree on the same solid terrain.
+- Infinite spectator mode remains the only intended movement mode that can phase through these props.
+
+## Version compatibility
+- Generator V15 remains visual-only.
+- Generator V16 retains its original mixed rule: bulky props are solid while mushrooms/fern/torch/rubble are pass-through.
+- Generator V17 uses all-solid props.
+- Never reinterpret an old save's generatorVersion as V17; otherwise old routes can become blocked after update.
+
+## Guaranteed artifact chest V17 pacing
+- The single guaranteed artifact chest threshold is 1000 positive Infinite World Hero action-value.
+- It may spawn only in the Hero-centered 3x3 cell neighbourhood, excluding the Hero cell itself.
+- If all eight adjacent cells are invalid, spawning is deferred until a later positive Hero action; do not widen the radius.
+- Creation grants one current-depth CrystalKey through the existing Notes/KeyRecord path.
+- Artifact chest lifecycle/persistence remains 0 not spawned / 1 closed / 2 opened heap / 3 artifact taken.
