@@ -294,6 +294,9 @@ public abstract class Mob extends Char {
 		this.assistAccuracyScale = Math.max(0.1f, accuracyScale);
 		this.assistDefenseScale = Math.max(0.1f, defenseScale);
 		this.assistLootScale = Math.max(0f, lootScale);
+		// Keep post-30 progression moving at a reasonable pace. This is a floor,
+		// so naturally valuable monsters still retain their higher base EXP.
+		EXP = Math.max(EXP, 4 + this.assistDynamicLevel / 3);
 		// Infinite World can progress to level 60 after the breakthrough.
 		maxLvl = Math.max(maxLvl, 59);
 	}
