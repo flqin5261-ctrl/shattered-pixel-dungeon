@@ -1368,6 +1368,17 @@ public abstract class Level implements Bundlable {
 				blocking = Dungeon.level.losBlocking;
 			}
 
+			if (c == Dungeon.hero && InfiniteWorldLevel.assistSpectatorActive()
+					&& blocking[c.pos]) {
+				// Standing inside a wall while phasing must not make the source tile
+				// itself opaque. Neighboring real walls still block sight normally.
+				if (blocking == Dungeon.level.losBlocking) {
+					System.arraycopy(Dungeon.level.losBlocking, 0, modifiableBlocking, 0, modifiableBlocking.length);
+					blocking = modifiableBlocking;
+				}
+				blocking[c.pos] = false;
+			}
+
 			float viewDist = c.viewDistance;
 			if (c instanceof Hero){
 				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
