@@ -1159,6 +1159,14 @@ public abstract class Level implements Bundlable {
 	}
 	
 	public void occupyCell( Char ch ){
+		// Infinite World spectator QA mode is intentionally non-physical while
+		// travelling: walls, chasms, traps, plants and floor blobs must not trigger
+		// just because the tester phases through their cells. Manual interactions
+		// (opening chests, picking up items, trading, etc.) remain unchanged.
+		if (ch == Dungeon.hero && InfiniteWorldLevel.assistSpectatorActive()) {
+			return;
+		}
+
 		if (!ch.isImmune(Web.class) && Blob.volumeAt(ch.pos, Web.class) > 0){
 			blobs.get(Web.class).clear(ch.pos);
 			Web.affectChar( ch );
