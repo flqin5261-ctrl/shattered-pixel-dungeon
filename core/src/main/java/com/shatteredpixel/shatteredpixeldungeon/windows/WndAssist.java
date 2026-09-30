@@ -98,6 +98,7 @@ public class WndAssist extends Window {
         addUpgradeRow();
         if (Dungeon.infiniteWorld) {
             addLevelTestRow();
+            addBreakthroughTestRow();
         }
         addSpeedRow();
         addItemGrantRow();
@@ -223,6 +224,19 @@ public class WndAssist extends Window {
         stageCap.setRect(levelUp.right() + GAP, y, half, BTN_H);
 
         pos = levelUp.bottom();
+    }
+
+    private void addBreakthroughTestRow() {
+        RedButton clear = new RedButton("测试：快速通关突破", 8) {
+            @Override
+            protected void onClick() {
+                if (Dungeon.hero == null) return;
+                InfiniteWorldProgression.testCompleteBreakthrough(Dungeon.hero);
+            }
+        };
+        add(clear);
+        clear.setRect(0, pos + GAP, WIDTH, BTN_H);
+        pos = clear.bottom();
     }
 
     private void addSpeedRow() {
