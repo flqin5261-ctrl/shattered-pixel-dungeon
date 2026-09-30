@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class InfiniteWorldState implements Bundlable {
 
-    public static final int WORLD_GEN_VERSION = 11;
+    public static final int WORLD_GEN_VERSION = 12;
 
     public int generatorVersion = WORLD_GEN_VERSION;
     public int centerChunkX = 0;
@@ -21,6 +21,16 @@ public class InfiniteWorldState implements Bundlable {
     public int heroWorldX = 12;
     public int heroWorldY = 12;
     public boolean heroWorldInitialized = false;
+
+    // V12 progression state. heroActionValue counts positive Hero spend/spendConstant
+    // time while inside Infinite World. The guaranteed artifact chest is a single
+    // world object with an explicit lifecycle so Streaming and Save/Load cannot clone it.
+    public float heroActionValue = 0f;
+    public int artifactChestWorldX = 0;
+    public int artifactChestWorldY = 0;
+    public int artifactChestArtifactIndex = -1;
+    // 0 = not spawned, 1 = closed crystal chest, 2 = opened heap, 3 = artifact taken.
+    public int artifactChestState = 0;
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
@@ -176,6 +186,11 @@ public class InfiniteWorldState implements Bundlable {
     private static final String HERO_WX = "hero_world_x";
     private static final String HERO_WY = "hero_world_y";
     private static final String HERO_WORLD_INIT = "hero_world_init";
+    private static final String HERO_ACTION_VALUE = "hero_action_value";
+    private static final String ARTIFACT_CHEST_WX = "artifact_chest_wx";
+    private static final String ARTIFACT_CHEST_WY = "artifact_chest_wy";
+    private static final String ARTIFACT_CHEST_INDEX = "artifact_chest_index";
+    private static final String ARTIFACT_CHEST_STATE = "artifact_chest_state";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -200,6 +215,11 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(HERO_WX, heroWorldX);
         bundle.put(HERO_WY, heroWorldY);
         bundle.put(HERO_WORLD_INIT, heroWorldInitialized);
+        bundle.put(HERO_ACTION_VALUE, heroActionValue);
+        bundle.put(ARTIFACT_CHEST_WX, artifactChestWorldX);
+        bundle.put(ARTIFACT_CHEST_WY, artifactChestWorldY);
+        bundle.put(ARTIFACT_CHEST_INDEX, artifactChestArtifactIndex);
+        bundle.put(ARTIFACT_CHEST_STATE, artifactChestState);
 
         long[] terrainKeys = new long[terrainOverrides.size()];
         int[] terrainValues = new int[terrainOverrides.size()];
@@ -263,6 +283,11 @@ public class InfiniteWorldState implements Bundlable {
         heroWorldX = bundle.contains(HERO_WX) ? bundle.getInt(HERO_WX) : 12;
         heroWorldY = bundle.contains(HERO_WY) ? bundle.getInt(HERO_WY) : 12;
         heroWorldInitialized = bundle.contains(HERO_WORLD_INIT) && bundle.getBoolean(HERO_WORLD_INIT);
+        heroActionValue = bundle.contains(HERO_ACTION_VALUE) ? bundle.getFloat(HERO_ACTION_VALUE) : 0f;
+        artifactChestWorldX = bundle.contains(ARTIFACT_CHEST_WX) ? bundle.getInt(ARTIFACT_CHEST_WX) : 0;
+        artifactChestWorldY = bundle.contains(ARTIFACT_CHEST_WY) ? bundle.getInt(ARTIFACT_CHEST_WY) : 0;
+        artifactChestArtifactIndex = bundle.contains(ARTIFACT_CHEST_INDEX) ? bundle.getInt(ARTIFACT_CHEST_INDEX) : -1;
+        artifactChestState = bundle.contains(ARTIFACT_CHEST_STATE) ? bundle.getInt(ARTIFACT_CHEST_STATE) : 0;
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
