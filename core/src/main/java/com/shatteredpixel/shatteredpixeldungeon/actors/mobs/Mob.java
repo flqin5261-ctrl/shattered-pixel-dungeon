@@ -131,6 +131,15 @@ public abstract class Mob extends Char {
 	
 	public int EXP = 1;
 	public int maxLvl = Hero.MAX_LEVEL-1;
+
+	// Assist Infinite World dynamic-strength snapshot. Values are locked when a
+	// monster is created so an already-visible enemy never changes stats because
+	// the Hero swapped equipment in front of it.
+	private int assistDynamicLevel = 0;
+	private float assistDamageScale = 1f;
+	private float assistAccuracyScale = 1f;
+	private float assistDefenseScale = 1f;
+	private float assistLootScale = 1f;
 	
 	protected Char enemy;
 	protected int enemyID = -1; //used for save/restore
@@ -154,6 +163,11 @@ public abstract class Mob extends Char {
 	private static final String SEEN	= "seen";
 	private static final String TARGET	= "target";
 	private static final String MAX_LVL	= "max_lvl";
+	private static final String ASSIST_DYNAMIC_LEVEL = "assist_dynamic_level";
+	private static final String ASSIST_DAMAGE_SCALE = "assist_damage_scale";
+	private static final String ASSIST_ACCURACY_SCALE = "assist_accuracy_scale";
+	private static final String ASSIST_DEFENSE_SCALE = "assist_defense_scale";
+	private static final String ASSIST_LOOT_SCALE = "assist_loot_scale";
 
 	private static final String ENEMY_ID	= "enemy_id";
 
@@ -186,6 +200,11 @@ public abstract class Mob extends Char {
 		bundle.put( SEEN, enemySeen );
 		bundle.put( TARGET, target );
 		bundle.put( MAX_LVL, maxLvl );
+		bundle.put(ASSIST_DYNAMIC_LEVEL, assistDynamicLevel);
+		bundle.put(ASSIST_DAMAGE_SCALE, assistDamageScale);
+		bundle.put(ASSIST_ACCURACY_SCALE, assistAccuracyScale);
+		bundle.put(ASSIST_DEFENSE_SCALE, assistDefenseScale);
+		bundle.put(ASSIST_LOOT_SCALE, assistLootScale);
 
 		if (enemy != null) {
 			bundle.put(ENEMY_ID, enemy.id() );
@@ -238,6 +257,16 @@ public abstract class Mob extends Char {
 		target = bundle.getInt( TARGET );
 
 		maxLvl = bundle.getInt(MAX_LVL);
+		assistDynamicLevel = bundle.contains(ASSIST_DYNAMIC_LEVEL)
+				? bundle.getInt(ASSIST_DYNAMIC_LEVEL) : 0;
+		assistDamageScale = bundle.contains(ASSIST_DAMAGE_SCALE)
+				? bundle.getFloat(ASSIST_DAMAGE_SCALE) : 1f;
+		assistAccuracyScale = bundle.contains(ASSIST_ACCURACY_SCALE)
+				? bundle.getFloat(ASSIST_ACCURACY_SCALE) : 1f;
+		assistDefenseScale = bundle.contains(ASSIST_DEFENSE_SCALE)
+				? bundle.getFloat(ASSIST_DEFENSE_SCALE) : 1f;
+		assistLootScale = bundle.contains(ASSIST_LOOT_SCALE)
+				? bundle.getFloat(ASSIST_LOOT_SCALE) : 1f;
 
 		if (bundle.contains(ENEMY_ID)) {
 			enemyID = bundle.getInt(ENEMY_ID);
@@ -252,6 +281,41 @@ public abstract class Mob extends Char {
 	//mobs need to remember their targets after every actor is added
 	public void restoreEnemy(){
 		if (enemyID != -1 && enemy == null) enemy = (Char)Actor.findById(enemyID);
+	}
+
+	public void applyAssistDynamicScaling(int dynamicLevel, float healthScale,
+										 float damageScale, float accuracyScale,
+										 float defenseScale, float lootScale) {
+		float hpPercent = HT > 0 ? HP / (float)HT : 1f;
+		HT = Math.max(1, Math.round(HT * Math.max(0.1f, healthScale)));
+		HP = Math.max(1, Math.min(HT, Math.round(HT * hpPercent)));
+		this.assistDynamicLevel = Math.max(1, dynamicLevel);
+		this.assistDamageScale = Math.max(0.1f, damageScale);
+		this.assistAccuracyScale = Math.max(0.1f, accuracyScale);
+		this.assistDefenseScale = Math.max(0.1f, defenseScale);
+		this.assistLootScale = Math.max(0f, lootScale);
+		// Infinite World can progress to level 60 after the breakthrough.
+		maxLvl = Math.max(maxLvl, 59);
+	}
+
+	public int assistDynamicLevel() {
+		return assistDynamicLevel;
+	}
+
+	public float assistDamageScale() {
+		return assistDamageScale;
+	}
+
+	public float assistAccuracyScale() {
+		return assistAccuracyScale;
+	}
+
+	public float assistDefenseScale() {
+		return assistDefenseScale;
+	}
+
+	public float assistLootScale() {
+		return assistLootScale;
 	}
 	
 	public CharSprite sprite() {
@@ -1087,7 +1151,7 @@ public abstract class Mob extends Char {
 
 		dropBonus += ShardOfOblivion.lootChanceMultiplier()-1f;
 
-		return lootChance * dropBonus;
+		return Math.min(1f, lootChance * dropBonus * assistLootScale);
 	}
 	
 	public void rollToDropLoot(){
@@ -1186,6 +1250,9 @@ public abstract class Mob extends Char {
 
 	public String info(){
 		String desc = description();
+		if (assistDynamicLevel > 0) {
+			desc += "\n\n" + Messages.get(Mob.class, "assist_dynamic_level", assistDynamicLevel);
+		}
 
 		for (Buff b : buffs(ChampionEnemy.class)){
 			desc += "\n\n_" + Messages.titleCase(b.name()) + "_\n" + b.desc();
