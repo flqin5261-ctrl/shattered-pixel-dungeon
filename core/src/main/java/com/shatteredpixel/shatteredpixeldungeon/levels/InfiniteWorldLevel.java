@@ -240,7 +240,11 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     public Mob createMob() {
-        return createInfiniteWorldMob();
+        Mob mob = createInfiniteWorldMob();
+        if (Dungeon.hero != null) {
+            InfiniteWorldProgression.applyDynamicScaling(mob, Dungeon.hero);
+        }
+        return mob;
     }
 
     @Override
@@ -300,7 +304,7 @@ public class InfiniteWorldLevel extends Level {
         if (Dungeon.hero == null || !Dungeon.hero.isAlive()) return false;
         if (activeEnemyCount() >= MOB_SPAWN_TARGET_CAP) return false;
 
-        Mob mob = createInfiniteWorldMob();
+        Mob mob = createMob();
         int cell = findInfiniteWorldMobSpawnCell(mob);
         if (cell < 0) return false;
 
@@ -314,16 +318,41 @@ public class InfiniteWorldLevel extends Level {
 
     private Mob createInfiniteWorldMob() {
         int heroLevel = Dungeon.hero == null ? 1 : Dungeon.hero.lvl;
+        int dynamicLevel = Dungeon.hero == null ? heroLevel
+                : InfiniteWorldProgression.dynamicMonsterLevel(Dungeon.hero);
         int worldChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
         int worldChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
         int worldDistance = Math.max(Math.abs(worldChunkX), Math.abs(worldChunkY));
 
         int tier = 0;
-        if (heroLevel >= 4 || worldDistance >= 10) tier = 1;
-        if (heroLevel >= 9 || worldDistance >= 24) tier = 2;
+        if (dynamicLevel >= 7 || heroLevel >= 4 || worldDistance >= 10) tier = 1;
+        if (dynamicLevel >= 16 || heroLevel >= 9 || worldDistance >= 24) tier = 2;
+        if (dynamicLevel >= 30) tier = 3;
+        if (dynamicLevel >= 45) tier = 4;
 
         int roll = Random.Int(100);
-        if (tier >= 2 && roll < 20) {
+
+        if (tier >= 4 && roll < 45) {
+            switch (Random.Int(5)) {
+                case 0: return new Golem();
+                case 1: return new Succubus();
+                case 2: return new Scorpio();
+                case 3: return new Warlock();
+                default:return new Monk();
+            }
+        }
+
+        if (tier >= 3 && roll < 38) {
+            switch (Random.Int(5)) {
+                case 0: return new Warlock();
+                case 1: return new Monk();
+                case 2: return new Golem();
+                case 3: return new Spinner();
+                default:return new Brute();
+            }
+        }
+
+        if (tier >= 2 && roll < 28) {
             switch (Random.Int(5)) {
                 case 0: return new Warlock();
                 case 1: return new Monk();
@@ -333,7 +362,7 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        if (tier >= 1 && roll < 55) {
+        if (tier >= 1 && roll < 58) {
             switch (Random.Int(5)) {
                 case 0: return new Skeleton();
                 case 1: return new DM100();
