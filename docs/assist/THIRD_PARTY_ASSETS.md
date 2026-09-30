@@ -34,3 +34,46 @@ Used 16×16 sprites in 0.5.8:
 These sprites are used only as sparse non-collision Infinite World decoration
 overlays. They do not replace Shattered Pixel Dungeon's terrain, water, doors,
 items, creatures or gameplay objects.
+
+## Assist 0.5.9 expanded scenery usage
+
+The same pinned CC0 atlases are reused; no additional external pack is introduced.
+
+Tiny Town indices used:
+- 4 green pine
+- 5 round green tree
+- 10 amber pine
+- 11 round amber tree
+- 17 fern
+- 29 mushrooms
+- 57 sealed wooden crate
+- 59 fence post
+- 71 wooden post
+- 81 fence section
+- 83 weathered sign
+- 95 warning marker
+- 105 rock
+- 106 fallen log
+- 107 barrel
+- 130 empty tub
+- 131 water trough
+
+Tiny Dungeon indices used:
+- 29 torch
+- 42 rubble
+- 63 bookshelf
+- 64 stone cross
+- 65 gravestone
+- 66 old casket
+- 72 table
+- 73 stool
+- 74 stone basin
+- 75 cupboard
+- 79 iron railing
+- 120 cold firepit
+- 122 weapon display
+
+0.5.9 separates pass-through ground clutter from bulky physical scenery. In
+Generator V16 worlds, bulky scenery is backed by the game's native
+`Terrain.CUSTOM_DECO` solid terrain while the Kenney sprite remains a
+`CustomTilemap` visual. These props remain non-interactive.
