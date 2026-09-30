@@ -1360,3 +1360,16 @@ Generator V11 新增稀有、固定世界坐标的商人据点。
 - 普通敌人不会直接刷新在商人 8 格范围内。
 
 0.5.1 改变了基础房间主题，因此 WORLD_GEN_VERSION 从 10 升到 11。要看到新商店房必须重新开始 Infinite World；旧 V10 世界继续使用旧地形公式。
+
+
+# 24. 0.5.1 — 商人据点
+
+- Generator V11
+- 新增稀有固定商店房和 `InfiniteWorldShopkeeper`
+- 商店使用原版 FOR_SALE / WndTradeItem 买卖系统
+- 每个 active window 最多一个商人
+- 商店库存固定 6 格，买走后不刷新
+- 商人被攻击逃跑后不会 streaming 复活
+- 商人不受普通怪物距离 despawn
+- 普通怪不会在商人约 8 格内自然刷新
+- 商店不会生成在 V10 primary/secondary infinite route 上
