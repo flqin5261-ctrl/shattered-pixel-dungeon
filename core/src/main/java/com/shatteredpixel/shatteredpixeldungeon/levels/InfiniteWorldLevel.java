@@ -615,6 +615,9 @@ public class InfiniteWorldLevel extends Level {
                 Math.floorDiv(st.heroWorldY, CHUNK_SIZE));
 
         InfiniteWorldProgression.onHeroAtBreakthroughGate(hero);
+        if (InfiniteWorldProgression.breakthroughCompleted()) {
+            InfiniteWorldProgression.ensureBreakthroughCertificate(hero);
+        }
 
         if (state().generatorVersion >= 15) {
             ensureV15BackroomsInfo(hero);
