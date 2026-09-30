@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.12",
-    "version_code": 958,
+    "version_name": "0.5.13",
+    "version_code": 959,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.12-stable",
-    "development_branch": "assist-0.5.12-short-trial",
-    "release_code_sha": "d96240f8b8e365088f85a34965df0852caa6767e",
+    "stable_branch": "assist-0.5.13-stable",
+    "development_branch": "assist-0.5.13-breakthrough-certificate",
+    "release_code_sha": "be27e59c9c56b622de7aea5d0c7f7799c35dc356",
     "world_generator_version": 17
   },
   "build": {
@@ -248,12 +248,81 @@
       "failure": "non-lethal; pre-trial Hero/inventory/gold/energy snapshot is restored and a new token is issued",
       "success": "returns to the prior Infinite World position and unlocks level 60 / +120 equipment / +30 artifact progression",
       "aid": "arena contains scattered healing, food and utility scroll/potion supplies",
-      "slime_rule": "Slime can appear only in wave 1 slot 5, at 25% probability; therefore at most one Slime can appear in an entire trial, and waves 2-5 contain none."
+      "slime_rule": "Slime can appear only in wave 1 slot 5, at 25% probability; therefore at most one Slime can appear in an entire trial, and waves 2-5 contain none.",
+      "quickslot_restore": "pre-trial quickslot is snapshotted as placeholders; on success/failure it is reset and rebound to restored belongings, then unresolved trial-only placeholders are cleared",
+      "wave5_tuning": "reduced from compressed old-finale spike to HP 1.40x, damage 1.28x, accuracy/defense 1.13x and +7 threat-level bonus"
     },
     "infinite_world_intro": {
       "custom": true,
       "replaces_original_sewers_story": true,
       "theme": "one persistent boundless stitched world of ordinary, ruined and Backrooms-inspired regions whose danger adapts to the Hero"
+    },
+    "breakthrough_certificate": {
+      "slot": "independent sixth equipment slot beside artifact; does not consume artifact/ring/misc slots",
+      "grant": "automatically created and equipped on first successful level-30 breakthrough; legacy completed saves receive one on Infinite World movement if missing",
+      "tiers": [
+        30,
+        40,
+        50,
+        60
+      ],
+      "tier_stats": {
+        "30": {
+          "hp": "+10%",
+          "str": "+1",
+          "damage": "+5%",
+          "hunger": "-15%",
+          "gold": "+10%",
+          "speed": "+3%",
+          "vision": "+1",
+          "shop": "-8%",
+          "chest_bonus": "8%",
+          "regen": "~1% max HP / 18 action-value",
+          "revive": "300 action-value charge, revive at 30% HP"
+        },
+        "40": {
+          "hp": "+15%",
+          "str": "+2",
+          "damage": "+8%",
+          "hunger": "-22%",
+          "gold": "+15%",
+          "speed": "+5%",
+          "vision": "+2",
+          "shop": "-12%",
+          "chest_bonus": "12%",
+          "regen": "~1% / 15",
+          "revive": "260 charge, 36% HP"
+        },
+        "50": {
+          "hp": "+22%",
+          "str": "+3",
+          "damage": "+12%",
+          "hunger": "-30%",
+          "gold": "+22%",
+          "speed": "+7%",
+          "vision": "+3",
+          "shop": "-16%",
+          "chest_bonus": "17%",
+          "regen": "~1% / 12",
+          "revive": "220 charge, 42% HP"
+        },
+        "60": {
+          "hp": "+30%",
+          "str": "+4",
+          "damage": "+16%",
+          "hunger": "-38%",
+          "gold": "+30%",
+          "speed": "+10%",
+          "vision": "+4",
+          "shop": "-20%",
+          "chest_bonus": "25%",
+          "regen": "~1% / 10",
+          "revive": "180 charge, 50% HP"
+        }
+      },
+      "unequip": "all bonuses stop immediately",
+      "chest_rule": "extra supply roll applies only to normal and locked chests; unique crystal artifact chests are never modified",
+      "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability"
     }
   },
   "current_content": {
@@ -549,6 +618,12 @@
       "dynamic_mob_scaling": true,
       "cheat_test_button": "Infinite World Assist menu has both +1 Hero level and one-click current-stage-cap buttons; both respect the level-30 gate.",
       "breakthrough_token_delivery": "Token is forced into the Hero backpack even if normal capacity is full, using one temporary over-cap slot rather than dropping into the streaming world."
+    },
+    "v17_artifact_overlevel_real_effects": {
+      "visible_cap": 30,
+      "effective_level": "Artifact.level()/buffedLvl() includes the post-+10 overlevel, so artifact formulas reading level receive real scaling",
+      "recharge": "post-+10 levels add +2.5% artifact recharge efficiency per visible level above +10, reaching +50% at +30",
+      "info": "artifact info explicitly displays effective internal level and recharge bonus when overleveled"
     }
   },
   "hard_invariants": [
@@ -566,6 +641,13 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.13 quickslot rollback: put a trial-only cheated wand in quickslot, fail the trial, and verify both the wand and its shortcut icon disappear; pre-trial shortcuts must rebind to restored real items.",
+    "0.5.13 certificate slot: Artifact + BreakthroughCertificate can be equipped simultaneously; unequipping certificate removes all certificate bonuses immediately.",
+    "0.5.13 certificate tiers: reaching Hero 40/50/60 upgrades certificate name and stat package automatically.",
+    "0.5.13 revive: charge percentage persists through save/load; charged certificate revives without consuming an Ankh, then resets to 0%.",
+    "0.5.13 vision: certificate increases normal Hero FOV/visited reveal radius, not spectator-only vision.",
+    "0.5.13 chest bonus: only CHEST/LOCKED_CHEST can receive extra supply; CRYSTAL_CHEST remains untouched.",
+    "0.5.13 artifact +11..+30: inspect artifact info and verify effective level plus recharge efficiency increase real behavior.",
     "0.5.12 short breakthrough trial: exactly 5 waves and 5 enemies per wave.",
     "0.5.12 slime rule: at most one Slime can appear in the entire breakthrough trial, only in wave 1, with 25% chance; waves 2-5 never spawn Slime.",
     "0.5.12 compressed difficulty: wave 5 should still feel like a real breakthrough fight despite the shorter 25-enemy total.",
@@ -635,6 +717,9 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device verify the ghost quickslot regression fix by creating and quickslotting a trial-only wand before intentional trial death.",
+    "Real-device verify BreakthroughCertificate lv30 bonuses, then use QA level controls to check lv40/lv50/lv60 transitions and removal behavior.",
+    "Retune certificate percentages only after combat/exploration feedback; keep the independent slot architecture stable.",
     "Real-device run the new 5x5 breakthrough trial and tune only if wave 5 is either trivial or excessively lethal.",
     "Confirm Slime frequency is no longer annoying: most runs should contain zero Slimes, and no run can contain more than one.",
     "Real-device test fresh Infinite World start gold and custom story.",
