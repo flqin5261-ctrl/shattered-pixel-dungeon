@@ -824,11 +824,17 @@ public class Hero extends Char {
 	@Override
 	public void spend( float time ) {
 		super.spend(time);
+		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
+		}
 	}
 
 	@Override
 	public void spendConstant(float time) {
 		super.spendConstant(time);
+		if (time > 0f && Dungeon.level instanceof InfiniteWorldLevel) {
+			((InfiniteWorldLevel)Dungeon.level).recordHeroAction(time);
+		}
 	}
 
 	public void spendAndNextConstant(float time ) {
