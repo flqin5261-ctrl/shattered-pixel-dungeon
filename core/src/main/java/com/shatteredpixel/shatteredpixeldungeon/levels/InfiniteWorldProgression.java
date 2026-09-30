@@ -6,8 +6,12 @@ package com.shatteredpixel.shatteredpixeldungeon.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.KingsCrown;
+import com.shatteredpixel.shatteredpixeldungeon.items.TengusMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
@@ -77,11 +81,40 @@ public final class InfiniteWorldProgression {
     }
 
     public static void onHeroAtBreakthroughGate(Hero hero) {
+        ensureTalentMilestones(hero);
         if (!Dungeon.infiniteWorld || hero == null || hero.lvl < PRE_BREAKTHROUGH_LEVEL_CAP
                 || breakthroughCompleted() || state().breakthroughTrialActive) {
             return;
         }
         issueBreakthroughToken(hero);
+    }
+
+    public static void ensureTalentMilestones(Hero hero) {
+        if (!Dungeon.infiniteWorld || hero == null) return;
+
+        int tier3Level = Talent.tierLevelThresholds[3] - 1;
+        if (hero.lvl >= tier3Level
+                && hero.subClass == HeroSubClass.NONE
+                && hero.belongings.getItem(TengusMask.class) == null) {
+            grantProgressionItem(hero, new TengusMask());
+            GLog.p("达到" + tier3Level + "级：天狗面具已放入背包。使用它选择职业专精，可补全第3层专精天赋。");
+        }
+
+        int tier4Level = Talent.tierLevelThresholds[4] - 1;
+        if (hero.lvl >= tier4Level
+                && hero.armorAbility == null
+                && hero.belongings.getItem(KingsCrown.class) == null) {
+            grantProgressionItem(hero, new KingsCrown());
+            GLog.p("达到" + tier4Level + "级：矮人国王的王冠已放入背包。使用它选择护甲技能，可解锁第4层天赋。");
+        }
+    }
+
+    private static void grantProgressionItem(Hero hero, Item item) {
+        if (!item.collect(hero.belongings.backpack)) {
+            // These selectors replace boss-drop gates in Infinite World, so they
+            // must never be lost merely because the ordinary backpack is full.
+            hero.belongings.backpack.items.add(item);
+        }
     }
 
     public static void issueBreakthroughToken(Hero hero) {
