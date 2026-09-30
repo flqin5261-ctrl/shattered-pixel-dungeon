@@ -5,12 +5,18 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Random;
@@ -72,6 +78,38 @@ public class GenesisEcho extends Buff {
         // content but are not yet in the explicit immunity set above. Hunger is
         // neutral and is intentionally not classified as a curse.
         return buff.type == buffType.NEGATIVE;
+    }
+
+    public static boolean blocksByAuthority(Hero hero, Class<?> cls) {
+        if (hero == null || cls == null || !active(hero)) return false;
+        return controlClass(cls) || (miracleLinked(hero) && curseClass(cls));
+    }
+
+    public static void showImmunityFeedback(Hero hero, Class<?> cls) {
+        if (hero == null || cls == null || !active(hero)) return;
+        String text;
+        if (Burning.class.isAssignableFrom(cls)) text = "灼烧免疫";
+        else if (Poison.class.isAssignableFrom(cls)) text = "中毒免疫";
+        else if (Bleeding.class.isAssignableFrom(cls)) text = "流血免疫";
+        else if (Corrosion.class.isAssignableFrom(cls)) text = "腐蚀免疫";
+        else if (Ooze.class.isAssignableFrom(cls)) text = "黏液免疫";
+        else if (Paralysis.class.isAssignableFrom(cls)) text = "麻痹免疫";
+        else if (Roots.class.isAssignableFrom(cls)) text = "束缚免疫";
+        else if (Blindness.class.isAssignableFrom(cls)) text = "致盲免疫";
+        else if (Vertigo.class.isAssignableFrom(cls)) text = "混乱免疫";
+        else if (Cripple.class.isAssignableFrom(cls)) text = "残废免疫";
+        else if (Charm.class.isAssignableFrom(cls)) text = "魅惑免疫";
+        else if (Terror.class.isAssignableFrom(cls)) text = "恐惧免疫";
+        else if (Amok.class.isAssignableFrom(cls)) text = "狂乱免疫";
+        else if (Slow.class.isAssignableFrom(cls)) text = "迟缓免疫";
+        else if (Chill.class.isAssignableFrom(cls) || Frost.class.isAssignableFrom(cls)) text = "寒冷免疫";
+        else if (Weakness.class.isAssignableFrom(cls)) text = "虚弱免疫";
+        else if (Vulnerable.class.isAssignableFrom(cls)) text = "易伤免疫";
+        else if (Degrade.class.isAssignableFrom(cls)) text = "降级免疫";
+        else if (Hex.class.isAssignableFrom(cls) || Doom.class.isAssignableFrom(cls)) text = "诅咒免疫";
+        else text = "负面状态免疫";
+        GLog.p(text);
+        if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
     }
 
     public static boolean damageImmune(Hero hero) {
@@ -204,7 +242,10 @@ public class GenesisEcho extends Buff {
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
         }
-        if (st.genesisEchoUnlocked) cleanseBlockedEffects(hero);
+        if (st.genesisEchoUnlocked) {
+            cleanseBlockedEffects(hero);
+            syncTier7Buff(hero);
+        }
     }
 
     public static boolean miracleLinked(Hero hero) {
@@ -217,6 +258,135 @@ public class GenesisEcho extends Buff {
     // Echo is linked to the equipped level-60 Miracle World.
     public static int sealCopies(Hero hero) {
         return miracleLinked(hero) ? 2 : 1;
+    }
+
+    public static boolean miracleTalentMastery(Hero hero) {
+        return miracleLinked(hero);
+    }
+
+    public static Talent selectedTier7(Hero hero) {
+        if (hero == null || !active(hero) || hero.talents.size() < 7) return null;
+        for (java.util.Map.Entry<Talent, Integer> e : hero.talents.get(6).entrySet()) {
+            if (e.getValue() != null && e.getValue() > 0) return e.getKey();
+        }
+        return null;
+    }
+
+    public static boolean hasTier7(Hero hero, Talent talent) {
+        return talent != null && talent == selectedTier7(hero);
+    }
+
+    public static boolean ultraReach(Hero hero) {
+        return hasTier7(hero, Talent.GENESIS_REACH);
+    }
+
+    public static boolean ultraTeleport(Hero hero) {
+        return hasTier7(hero, Talent.GENESIS_TELEPORT);
+    }
+
+    public static boolean ultraSpellcast(Hero hero) {
+        return hasTier7(hero, Talent.GENESIS_SPELLCAST);
+    }
+
+    public static boolean ultraFortune(Hero hero) {
+        return hasTier7(hero, Talent.GENESIS_FORTUNE);
+    }
+
+    public static void syncTier7Buff(Hero hero) {
+        if (hero == null) return;
+        Talent selected = selectedTier7(hero);
+        GenesisTalentAuthority buff = hero.buff(GenesisTalentAuthority.class);
+        if (selected == null) {
+            if (buff != null) buff.detach();
+        } else if (buff == null) {
+            Buff.affect(hero, GenesisTalentAuthority.class);
+        }
+    }
+
+    public static void forceSlay(Hero hero, Char enemy) {
+        if (hero == null || enemy == null || enemy == hero || !enemy.isAlive()) return;
+        if (enemy.alignment == Char.Alignment.ALLY) return;
+        enemy.deathMarked = false;
+        enemy.HP = 0;
+        enemy.die(hero);
+        if (enemy.isAlive()) {
+            enemy.deathMarked = false;
+            enemy.destroy();
+            if (enemy.sprite != null) enemy.sprite.die();
+        }
+        GLog.p("秒杀：" + enemy.name());
+    }
+
+    public static boolean teleportToVisited(Hero hero, int cell) {
+        if (!ultraTeleport(hero) || Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()) return false;
+        if (!Dungeon.level.visited[cell]) {
+            GLog.w("该位置仍被迷雾遮蔽，无法进行超距离传送。");
+            return false;
+        }
+        if ((!Dungeon.level.passable[cell] && !Dungeon.level.avoid[cell])
+                || (Actor.findChar(cell) != null && Actor.findChar(cell) != hero)) {
+            GLog.w("该位置无法落脚。");
+            return false;
+        }
+
+        ScrollOfTeleportation.appear(hero, cell);
+        Dungeon.level.occupyCell(hero);
+        if (Dungeon.level instanceof InfiniteWorldLevel) {
+            ((InfiniteWorldLevel)Dungeon.level).recordHeroMove(hero);
+        }
+        Dungeon.observe();
+        GameScene.updateFog();
+        hero.interrupt();
+        GLog.p("超距离传送");
+        return true;
+    }
+
+    public static void onUltraWandZap(Hero hero, int aimedCell, int collisionCell) {
+        if (!ultraSpellcast(hero)) return;
+        Char target = Actor.findChar(aimedCell);
+        if (target == null) target = Actor.findChar(collisionCell);
+        if (target != null && target != hero && target.alignment != Char.Alignment.ALLY) {
+            forceSlay(hero, target);
+        }
+    }
+
+    public static class GenesisTalentAuthority extends Buff {
+        {
+            type = buffType.POSITIVE;
+            announced = true;
+            revivePersists = true;
+        }
+
+        @Override
+        public boolean act() {
+            spend(TICK);
+            return true;
+        }
+
+        @Override
+        public int icon() {
+            return BuffIndicator.AMULET;
+        }
+
+        @Override
+        public String iconTextDisplay() {
+            return "VII";
+        }
+
+        @Override
+        public String name() {
+            Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+            Talent t = selectedTier7(hero);
+            return t == null ? "创世权能" : t.title();
+        }
+
+        @Override
+        public String desc() {
+            Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+            Talent t = selectedTier7(hero);
+            if (t == null) return "当前没有选择第七层创世天赋。";
+            return t.desc();
+        }
     }
 
     public static boolean blocksInstantDeath(Hero hero, Object cause, boolean fromDamagePipeline) {
