@@ -114,49 +114,76 @@ public final class InfiniteWorldProgression {
         hero.earnExp(hero.maxExp(), InfiniteWorldProgression.class);
     }
 
-    public static int gearScore(Hero hero) {
-        if (hero == null) return 0;
+    private static class PowerProfile {
+        int weapon;
+        int armor;
+        int wand;
+        int ring1;
+        int ring2;
+        int artifactVisible;
+        int artifactCount;
+    }
 
-        int weapon = 0;
-        int armor = 0;
-        int wand = 0;
-        int ring1 = 0;
-        int ring2 = 0;
-        int artifactVisible = 0;
-        int artifactCount = 0;
+    private static PowerProfile powerProfile(Hero hero) {
+        PowerProfile p = new PowerProfile();
+        if (hero == null) return p;
 
         for (Item item : hero.belongings) {
             if (item == null) continue;
-            int lvl = Math.max(0, Math.min(POST_BREAKTHROUGH_EQUIPMENT_CAP, item.trueLevel()));
-            if (item instanceof Weapon) {
-                weapon = Math.max(weapon, lvl);
-            } else if (item instanceof Armor) {
-                armor = Math.max(armor, lvl);
-            } else if (item instanceof Wand) {
-                wand = Math.max(wand, lvl);
-            } else if (item instanceof Ring) {
-                if (lvl >= ring1) {
-                    ring2 = ring1;
-                    ring1 = lvl;
-                } else if (lvl > ring2) {
-                    ring2 = lvl;
-                }
-            } else if (item instanceof Artifact) {
-                artifactCount++;
-                artifactVisible = Math.max(artifactVisible,
+
+            if (item instanceof Artifact) {
+                p.artifactCount++;
+                p.artifactVisible = Math.max(p.artifactVisible,
                         Math.min(POST_BREAKTHROUGH_ARTIFACT_CAP,
                                 Math.max(0, ((Artifact)item).buffedVisiblyUpgraded())));
+                continue;
+            }
+
+            int lvl = Math.max(0,
+                    Math.min(POST_BREAKTHROUGH_EQUIPMENT_CAP, item.trueLevel()));
+            if (item instanceof Weapon) {
+                p.weapon = Math.max(p.weapon, lvl);
+            } else if (item instanceof Armor) {
+                p.armor = Math.max(p.armor, lvl);
+            } else if (item instanceof Wand) {
+                p.wand = Math.max(p.wand, lvl);
+            } else if (item instanceof Ring) {
+                if (lvl >= p.ring1) {
+                    p.ring2 = p.ring1;
+                    p.ring1 = lvl;
+                } else if (lvl > p.ring2) {
+                    p.ring2 = lvl;
+                }
             }
         }
+        return p;
+    }
 
-        float score = 0.30f * weapon
-                + 0.30f * armor
-                + 0.18f * wand
-                + 0.12f * (ring1 + ring2)
-                + 0.30f * artifactVisible
-                + 1.5f * artifactCount;
-
+    public static int gearScore(Hero hero) {
+        PowerProfile p = powerProfile(hero);
+        float score = 0.30f * p.weapon
+                + 0.30f * p.armor
+                + 0.18f * p.wand
+                + 0.12f * (p.ring1 + p.ring2)
+                + 0.30f * p.artifactVisible
+                + 1.5f * p.artifactCount;
         return Math.max(0, Math.round(score));
+    }
+
+    private static float offensiveUpgradeScore(Hero hero) {
+        PowerProfile p = powerProfile(hero);
+        return Math.max(p.weapon, 0.85f * p.wand)
+                + 0.20f * (p.ring1 + p.ring2)
+                + 0.45f * p.artifactVisible
+                + p.artifactCount;
+    }
+
+    private static float defensiveUpgradeScore(Hero hero) {
+        PowerProfile p = powerProfile(hero);
+        return p.armor
+                + 0.20f * (p.ring1 + p.ring2)
+                + 0.35f * p.artifactVisible
+                + 0.75f * p.artifactCount;
     }
 
     public static int dynamicMonsterLevel(Hero hero) {
@@ -191,19 +218,26 @@ public final class InfiniteWorldProgression {
         if (mob == null || hero == null) return;
 
         int gear = gearScore(hero);
+        float offense = Math.min(160f, offensiveUpgradeScore(hero));
+        float defense = Math.min(160f, defensiveUpgradeScore(hero));
         int dynamicLevel = clamp(dynamicMonsterLevel(hero) + levelBonus, 1,
                 POST_BREAKTHROUGH_LEVEL_CAP);
 
-        float healthScale = clamp(0.95f + 0.028f * (hero.lvl - 1) + 0.010f * gear,
-                0.95f, 4.25f) * healthWave;
-        float damageScale = clamp(0.95f + 0.018f * (hero.lvl - 1) + 0.0065f * gear,
-                0.95f, 2.80f) * damageWave;
-        float accuracyScale = clamp(1.00f + 0.006f * (hero.lvl - 1) + 0.0025f * gear,
-                1.00f, 1.65f) * accuracyWave;
-        float defenseScale = clamp(1.00f + 0.005f * (hero.lvl - 1) + 0.0022f * gear,
-                1.00f, 1.60f) * defenseWave;
-        float lootScale = clamp(1.00f + 0.005f * hero.lvl + 0.003f * gear,
-                1.00f, 1.90f) * lootWave;
+        // Equipment levels in this mode can reach +50/+120, far beyond upstream
+        // balance. HP therefore answers offensive upgrades aggressively, while
+        // damage answers defensive upgrades separately. A glass-cannon weapon does
+        // not make enemies hit 20x harder, and heavy armor does not turn every mob
+        // into a giant HP sponge.
+        float healthScale = clamp(0.95f + 0.025f * (hero.lvl - 1) + 0.16f * offense,
+                0.95f, 30.0f) * healthWave;
+        float damageScale = clamp(0.95f + 0.018f * (hero.lvl - 1) + 0.12f * defense,
+                0.95f, 24.0f) * damageWave;
+        float accuracyScale = clamp(1.00f + 0.006f * (hero.lvl - 1) + 0.0030f * gear,
+                1.00f, 1.85f) * accuracyWave;
+        float defenseScale = clamp(1.00f + 0.005f * (hero.lvl - 1) + 0.0027f * gear,
+                1.00f, 1.75f) * defenseWave;
+        float lootScale = clamp(1.00f + 0.007f * hero.lvl + 0.004f * gear,
+                1.00f, 2.25f) * lootWave;
 
         mob.applyAssistDynamicScaling(dynamicLevel, healthScale, damageScale,
                 accuracyScale, defenseScale, lootScale);
