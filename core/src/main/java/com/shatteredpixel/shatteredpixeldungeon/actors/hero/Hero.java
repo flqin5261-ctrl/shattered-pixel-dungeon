@@ -595,7 +595,7 @@ public class Hero extends Char {
 			evasion *= 3;
 		}
 		
-		if (paralysed > 0) {
+		if (paralysed > 0 && !InfiniteWorldLevel.assistSpectatorActive()) {
 			evasion /= 2;
 		}
 
@@ -1648,7 +1648,7 @@ public class Hero extends Char {
 
 	@Override
 	public void damage( int dmg, Object src ) {
-		if (SPDSettings.assistInvincible()) return;
+		if (SPDSettings.assistInvincible() || InfiniteWorldLevel.assistSpectatorActive()) return;
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null) {
 			return;
