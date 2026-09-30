@@ -1812,3 +1812,22 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] EXP bonus affects normal XP gains but does not inflate Assist QA +1-level actions.
 - [ ] Unequipping the certificate immediately removes the three new bonuses and all existing certificate bonuses.
 - [ ] Old 0.5.13 save loads under user-facing 0.6.4 without save migration loss.
+
+
+# B24. 0.6.5 Boundary Seal expansion
+
+- [ ] “测试：快速通关突破” from a fresh restarted run raises to the gate, completes breakthrough, grants exactly one Seal and never enters the arena.
+- [ ] The same button inside the arena exits through the normal success restore path.
+- [ ] STR is +2/+4/+6/+8 at LV30/40/50/60.
+- [ ] Evasion is +10/+16/+24/+32%.
+- [ ] XP is +15/+25/+40/+60%.
+- [ ] Movement is +8/+12/+18/+25%.
+- [ ] Damage reduction is 8/12/16/20% and does not double-reduce hunger damage.
+- [ ] Supported negative status duration/effect is reduced 15/25/35/50%.
+- [ ] Natural wand recharge improves 20/35/55/80%.
+- [ ] Positive potion/scroll timed buffs last 20/35/55/80% longer.
+- [ ] Passive trap/secret-door search radius and chance rise at each tier.
+- [ ] Seal displays one random permanent immunity and it persists over save/load.
+- [ ] ScrollOfUpgrade rerolls to a different immunity and does not raise Seal tier.
+- [ ] Unequipping Seal immediately removes immunity, DR, resistance, sensing and all other Seal effects.
+- [ ] Shop buy UI shows struck-through original price and green discounted price on Android portrait layout.
