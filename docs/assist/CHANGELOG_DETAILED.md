@@ -2581,3 +2581,12 @@ Changes:
 - Genesis Overcast: wand hits execute hostile targets; positive potion/scroll effects are raised to at least 999 action-value.
 - Genesis Fortune: chest contents burst around the Hero in a 9x9 area, add at least ten extra generated items with uncapped continuation, force stackables to at least quantity 10, and set generated/contained weapon/armor/ring/wand equipment to +120.
 - The selected tier-7 authority is represented by a persistent visible buff beneath the HP UI and remains active after Miracle World is unequipped.
+
+# 0.6.10 — Scrollable Long UI
+
+- Reworked WndInfoBuff so long buff descriptions use a screen-bounded vertical ScrollPane instead of expanding the window beyond the display.
+- Buff-info width now adapts between 120 and 160 UI units based on the phone UI width.
+- Removed Infinite Space backpack pagination.
+- WndBag now lays every equipment slot, carried item and free slot into one vertically scrollable item grid.
+- Genesis Echo Infinite Space still guarantees at least five empty root-backpack slots; they simply appear at the bottom of the scrolling grid.
+- Bag tabs and item selection/right-click behavior remain intact.
