@@ -39,6 +39,7 @@ on:
       - assist-0.5.13-breakthrough-certificate
       - assist-0.6.4-certificate-ui
       - assist-0.6.5-breakthrough-polish
+      - assist-0.6.6-genesis-echo
   workflow_dispatch:
 
 permissions:
