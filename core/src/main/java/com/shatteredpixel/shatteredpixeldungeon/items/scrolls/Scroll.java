@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.ItemStatusHandler;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
@@ -185,7 +186,12 @@ public abstract class Scroll extends Item {
 					&& !(this instanceof ScrollOfRemoveCurse || this instanceof ScrollOfAntiMagic)){
 				GLog.n( Messages.get(this, "cursed") );
 			} else {
-				doRead();
+				BreakthroughCertificate.beginConsumableBoost(hero);
+				try {
+					doRead();
+				} finally {
+					BreakthroughCertificate.endConsumableBoost(hero);
+				}
 			}
 			
 		}
