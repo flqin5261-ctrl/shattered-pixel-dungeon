@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.6",
-    "version_code": 952,
+    "version_name": "0.5.7",
+    "version_code": 953,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.6-stable",
-    "development_branch": "assist-0.5.6-spectator-test",
-    "release_code_sha": "dd68b81f5be265818e33216bb99321d34c0964b4",
-    "world_generator_version": 14
+    "stable_branch": "assist-0.5.7-stable",
+    "development_branch": "assist-0.5.7-backrooms-merchants",
+    "release_code_sha": "17ccc4f6dfd27ccb1766f2b70b52541e57a55070",
+    "world_generator_version": 15
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -51,22 +51,30 @@
       "purpose": "Guarantees that the origin-connected world component has routes extending infinitely in all cardinal directions while ordinary side branches may dead-end."
     },
     "liminal_macro_regions": {
-      "enabled": true,
-      "macro_size_chunks": 5,
-      "approximate_region_chance_percent": 28,
-      "start_area_exclusion_chunks": 4,
+      "macro_size_chunks": 4,
+      "approximate_region_chance_percent": 42,
       "types": [
-        "repeating_offices",
-        "pool_halls",
-        "endless_hall",
-        "yellow_maze",
-        "service_tunnels",
-        "dark_storage"
+        "Level_0_Threshold",
+        "Level_1_Habitable_Zone",
+        "Level_2_Abandoned_Utility_Halls",
+        "Level_3_Electrical_Station",
+        "Level_4_Abandoned_Office",
+        "Level_5_Terror_Hotel",
+        "Level_6_Lights_Out",
+        "Level_7_Thalassophobia",
+        "Level_8_Cave_Systems",
+        "Level_9_The_Suburbs",
+        "Level_10_Bumper_Crop",
+        "Level_11_The_City_That_Never_Sleeps",
+        "Level_37_Sublimity_Poolrooms",
+        "Level_94_Motion"
       ],
-      "legacy_v9_v11_chance_percent": 8,
-      "v12_first_unread_note_near_hero": true,
-      "legacy_v12_chance_percent": 15,
-      "v13_first_unread_note_near_hero": true
+      "normal_world_integration": true,
+      "special_entry_required": false,
+      "special_transition_items_required": false,
+      "start_buffer_chunks": 2,
+      "info_unlock": "Entering a V15 district automatically finds its Infinite World archive page; no physical note is generated.",
+      "legacy_behavior": "V9-V14 keep their old deterministic anomaly probabilities/types and physical field-note behavior."
     },
     "multi_level_infinite_network": {
       "enabled": true,
@@ -117,7 +125,38 @@
       "access_guarantee_version": 14,
       "legacy_v11_v13_runtime_repair": true,
       "discovery_maps_verified_access_path": true,
-      "access_rule": "Shop entrance must have a passable route to at least one shared chunk-edge gateway after all themed rooms and infinite-road passes are complete."
+      "access_rule": "Shop entrance must have a passable route to at least one shared chunk-edge gateway after all themed rooms and infinite-road passes are complete.",
+      "v15_base_lattice_chunks": 3,
+      "v15_start_area_exclusion_chunks": 1,
+      "v15_progressive_density": true,
+      "v15_site_locking": "Merchant/no-merchant status is frozen in objectStates when a chunk is first generated so later progression never rewrites old terrain.",
+      "progress_tiers": {
+        "hero_level": [
+          4,
+          7,
+          11,
+          15
+        ],
+        "hero_action_value": [
+          300,
+          800,
+          1600,
+          2800
+        ],
+        "rule": "tier=max(level tier, action-value tier)"
+      },
+      "stock_tier_lock": "Each merchant locks its stock tier when the Hero first comes within 2 chunks.",
+      "guaranteed_missing_bag": [
+        "VelvetPouch",
+        "ScrollHolder",
+        "PotionBandolier",
+        "MagicalHolster"
+      ],
+      "bag_rule": "Until all four are owned, every newly encountered merchant dedicates slot 0 to one currently missing bag.",
+      "bag_infinite_world_price_multiplier": 2,
+      "standard_shop_price_multiplier": 5,
+      "equipment_rule": "Tier 0 restricts equipment to basic weapon/armor; wands/rings and +1 equipment become increasingly available later.",
+      "artifacts_in_stock": false
     },
     "merchants": {
       "enabled": true,
@@ -350,6 +389,43 @@
       "hero_render_layer": "temporarily rendered above raised terrain/walls so the hero remains visible while inside walls",
       "exit_safety": "if disabled while inside invalid terrain, Hero is moved to nearest normal standable cell",
       "new_world_required": false
+    },
+    "v15_backrooms_archive": {
+      "no_physical_notes": true,
+      "auto_unlock_on_entry": true,
+      "levels": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "37",
+        "94"
+      ],
+      "visual_strategy": "Built-in sewers/prison/caves/city/halls textures are recombined with distinct deterministic terrain layouts; no external wiki imagery is copied.",
+      "ordinary_exploration": true
+    },
+    "v15_merchant_progression": {
+      "base_density": "3-chunk deterministic lattice plus additional sparse lattices unlocked for newly generated chunks at progress tiers 1-4.",
+      "terrain_stability": "Each chunk's merchant-site result is persisted on first generation.",
+      "stock_slots": 6,
+      "progression_sources": [
+        "Hero level",
+        "InfiniteWorldState.heroActionValue"
+      ],
+      "mandatory_bags": [
+        "VelvetPouch",
+        "ScrollHolder",
+        "PotionBandolier",
+        "MagicalHolster"
+      ]
     }
   },
   "hard_invariants": [
@@ -367,6 +443,12 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.7 V15 Backrooms archive: entering each of the 14 district types automatically unlocks exactly its matching archive page without spawning an InfiniteWorldNote.",
+    "0.5.7 V15 terrain: all 14 district layouts remain connected to shared chunk gateways and V10 infinite routes, with no isolated islands except intentionally water-surrounded visual islands that remain traversable by normal water.",
+    "0.5.7 V15 merchant density: base 3x3 lattice is already denser than V14, and newly generated chunks gain additional persisted candidate lattices as level/action tier rises.",
+    "0.5.7 V15 merchant stock: early shops contain affordable/basic goods; later shops progressively introduce wands, rings, transmutation and occasional +1 equipment.",
+    "0.5.7 V15 bag guarantee: every newly encountered merchant before collection of all four expansion bags offers one bag the Hero does not currently own; consumed shop slots must never regenerate.",
+    "0.5.7 V15 shop pricing: Infinite World Bag offers use x2 item-value pricing while ordinary shop pricing remains x5.",
     "0.5.6 spectator: long-click/key movement can phase through WALL/WALL_DECO/solid terrain without changing Level.map and still streams at normal thresholds.",
     "0.5.6 spectator: existing mobs remain visually present but never move, detect, attack, or interrupt Hero; InfiniteWorldMobEcology never spawns enemies while active.",
     "0.5.6 spectator: chest opening, pickup, FOR_SALE purchase and other manual interactions still work even with frozen enemies visible.",
@@ -401,6 +483,10 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device survey V15 with spectator QA mode: verify all 14 Backrooms-inspired districts can appear through ordinary exploration and automatically unlock their archive entries.",
+    "Verify merchant frequency progression over a long new V15 run without any already-generated chunk changing merchant status.",
+    "Collect the four expansion bags through different merchants and verify each merchant retargets slot 0 to a bag still missing at first encounter.",
+    "Tune V15 42% district share or progressive merchant lattices only from real-device density feedback.",
     "Real-device stress-test Infinite spectator mode across repeated 7x7 streaming shifts, wall interiors, anomaly regions and merchant outposts.",
     "Verify monster actor freeze and ecology pause remain exact during movement and during time-spending interactions such as opening chests and trading.",
     "Real-device reproduce the historical merchant-isolated-room scenario and verify V14/legacy repair provides a visible, walkable route without bombs.",
