@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WandEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.noosa.audio.Sample;
 
@@ -50,6 +51,8 @@ public abstract class DamageWand extends Wand{
 
 	public int damageRoll(int lvl){
 		int dmg = Hero.heroDamageIntRange(min(lvl), max(lvl));
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
+		if (certificate != null) dmg = Math.round(dmg * certificate.damageMultiplier());
 		WandEmpower emp = Dungeon.hero.buff(WandEmpower.class);
 		if (emp != null){
 			dmg += emp.dmgBoost;
