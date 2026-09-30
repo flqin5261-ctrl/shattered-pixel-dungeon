@@ -2160,3 +2160,73 @@ Assist 菜单在 Infinite World 中新增“无界旁观测试模式”，用于
 - 正常格关闭时不移动 Hero。
 
 本版没有改变世界生成公式，所以 WORLD_GEN_VERSION 保持 V14，0.5.5 V14 存档可直接继续。
+
+# 0.5.7 / Generator V15 — 14 类 Backrooms 环境 + 自动档案 + 成长型商人
+
+版本：
+- versionName: 0.5.7
+- versionCode: 953
+- dev: assist-0.5.7-backrooms-merchants
+- stable: assist-0.5.7-stable
+- WORLD_GEN_VERSION: 15
+
+## V15 Backrooms 环境成为正常世界的一部分
+V15 暂不实现特殊 noclip 入口、独立层级切换或专用转层道具。14 类 Backrooms-inspired district 直接作为 Infinite World 的普通地形宏区，通过正常探索即可遇到。
+- macro 从旧 5×5 调整为 V15 4×4 Chunk。
+- V15 特殊环境宏区概率约 42%。
+- 出生缓冲缩到 2 Chunk；开局附近仍保留普通地牢学习区。
+- 所有 V15 特殊区最终仍刻四边 shared gateway，并继续叠加 V10 infinite network。
+- 不复制网络图片；视觉使用原版 sewers/prison/caves/city/halls 五套材质，通过不同结构与材质映射重组。
+
+首批 14 类：
+1. Level 0 — Threshold：黄墙式重复迷宫。
+2. Level 1 — Habitable Zone：混凝土/仓储/服务厅。
+3. Level 2 — Abandoned Utility Halls：狭窄检修/管线走廊。
+4. Level 3 — Electrical Station：密集设备与维护网格。
+5. Level 4 — Abandoned Office：宽办公区与重复隔断。
+6. Level 5 — Terror Hotel：旅馆主廊与重复客房。
+7. Level 6 — Lights Out：狭窄、低可读性的暗廊结构。
+8. Level 7 — Thalassophobia：大面积水域与少量干燥岛。
+9. Level 8 — Cave Systems：不规则岩洞与曲折连接。
+10. Level 9 — The Suburbs：街道与小型住宅块。
+11. Level 10 — Bumper Crop：高草田野与农路。
+12. Level 11 — The City That Never Sleeps：城市街网与建筑块。
+13. Level 37 — Sublimity / Poolrooms：池厅、水面与宽通道。
+14. Level 94 — Motion：草地、小镇、房屋与道路。
+
+## 不再生成层级纸条
+- V15 `generateV9AnomalyNotes()` / snapshot 对新世界停用。
+- Hero 第一次进入某种 V15 环境时直接 `Document.INFINITE_WORLD_NOTES.findPage()`。
+- 首次解锁输出本地化提示并闪烁 Journal。
+- 老 V9-V14 save 仍保留旧六类 Field Note 行为和旧 deterministic 生成公式。
+
+## V15 商人出现频率成长
+- 基础 merchant lattice 从 V14 4 Chunk 提高到 3 Chunk。
+- 出生排除从 2 Chunk 缩到 1 Chunk。
+- 进度 tier 由 `max(Hero 等级 tier, heroActionValue tier)` 决定。
+- Level thresholds: 4 / 7 / 11 / 15。
+- action thresholds: 300 / 800 / 1600 / 2800。
+- Tier 1-4 会为之后首次生成的 Chunk 逐步开放额外稀疏商人格点。
+- 每个 Chunk 第一次生成时把 merchant / no-merchant 结果锁进 objectStates，旧区域不会因为升级突然变成商店或失去商店。
+
+## V15 商人库存成长
+- 商人第一次进入 Hero 2 Chunk 范围时锁定自身库存 tier。
+- Tier 0 只允许基础武器/护甲和基础生存/工具品，装备槽不出 Wand/Ring。
+- Tier 上升后逐渐允许 Wand、Ring、Transmutation 等更稀有货物。
+- Tier 3/4 才有 25% / 45% 概率出现 +1 可升级装备。
+- 商人不出售 Artifact。
+
+## 必备扩展背包保证
+当前原版四种扩展包：VelvetPouch、ScrollHolder、PotionBandolier、MagicalHolster。
+- Hero 未全部拥有前，每一个新遇到的 V15 商人 slot 0 必须出售一个当前缺失的 Bag。
+- 如果商店预加载后 Hero 从别处获得了原计划出售的 Bag，真正接近该商人时会重新挑选仍缺失的 Bag。
+- 已购买/消耗的 slot 不恢复，不会用同一个商人无限刷 Bag。
+- Infinite World Bag 售价改为 item value ×2（最低 20），而普通商品继续沿用原版 ×5 贪婪定价。
+
+## 保持不变
+- V14 Merchant connectivity guarantee / legacy repair。
+- 0.5.6 无界旁观测试模式。
+- Streaming 只能 Hero.onMotionComplete 后发生。
+- VBO/Water/Fog 修复。
+- 唯一神器水晶箱。
+- 怪物生态和无奖励超距 despawn。
