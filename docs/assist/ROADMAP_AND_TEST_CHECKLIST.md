@@ -1909,3 +1909,19 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Genesis Fortune: test normal, locked and crystal chests; output scatters across the 9x9 Hero-centred area, creates at least 10 extra items, stackables are >=10, and Weapon/Armor/Ring/Wand items are +120.
 - [ ] Fortune burst with few nearby passable cells does not lose items; items may reuse valid cells but must remain obtainable.
 - [ ] Save/load preserves tiers 5/6 allocations, selected tier-7 authority and its visible Buff.
+
+# B30. 0.6.13 safe scroll and Genesis wand AOE
+
+- [ ] 直接载入0.6.12之前的旧 Infinite World 存档，点击背包不闪退。
+- [ ] 点击普通 Buff、创世回响、第7层创世权能 Buff 均不闪退。
+- [ ] 创世回响长说明能够从第一行连续滑到最后一行。
+- [ ] 无限空间背包不出现分页按钮，物品超过一屏时可以连续上下滑动。
+- [ ] 滚动到底部能看到至少5个空槽。
+- [ ] 背包滚动后点击任意物品仍能正常打开 WndUseItem；物品选择器仍可选中物品。
+- [ ] 选择“超极限施法”，把法杖放入快捷栏；单击一次仍进入正常方向/目标选择。
+- [ ] 在0.35秒内双击同一快捷栏法杖，不出现方向选择，直接对当前屏幕所有可见敌人发动AOE。
+- [ ] 将画面缩小后双击同一法杖，覆盖怪物数量/地图范围随屏幕实际可见范围扩大。
+- [ ] 屏幕外怪物不受AOE；友军不受AOE。
+- [ ] 机制怪被AOE命中后仍能被 Genesis forceSlay 终结。
+- [ ] 一次全屏AOE只扣一次法杖正常施法充能，并只消耗一次普通施法行动时间。
+- [ ] 法杖无充能或角色处于 MagicImmune 时，双击AOE按正常法杖规则失败，不免费执行。
