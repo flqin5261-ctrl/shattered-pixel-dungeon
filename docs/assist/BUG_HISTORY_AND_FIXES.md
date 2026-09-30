@@ -1356,3 +1356,27 @@ This was not a source-code/compiler failure:
 - an earlier 0.5.11 source state had already compiled successfully.
 
 Rule for future triage: inspect the failing step/log before reverting code. A wrapper/network reset should be retried or superseded by a later push; do not treat it as evidence that gameplay code is invalid.
+
+# Infinite World 高等级仍只显示前两层天赋
+
+## 症状
+Hero 在 Infinite World 已经达到很高等级（包括60级），天赋窗口仍可能只显示第1、2层，并继续提示“升到12级并使用第二个Boss的掉落物以解锁更多天赋”。
+
+## 原因
+Infinite World 已移除原版 Boss 进度，但天赋系统仍保留三处原版门槛：
+- TalentsPane 在 subClass == NONE 时把可见层数硬截断到2层。
+- Hero.talentPointsAvailable / bonusTalentPoints 在没有职业专精时把第3层天赋点直接置0。
+- 没有任何 Infinite World 机制替代天狗面具与矮人国王王冠，因此角色即使等级远超12/20，也无法正常完成职业专精与护甲技能选择。
+
+这不是单纯的提示文字错误，而是 UI 可见性、天赋点可用性和进度道具三处同时没有适配 Infinite World。
+
+## 修复
+0.6.8 起：
+- Infinite World 的第3层角色本体天赋按等级开放，不再受 subClass == NONE 的整层硬锁。
+- 12级且未选专精时自动发放天狗面具，让玩家自行选择原版职业专精并补全对应第3层专精天赋。
+- 20级且没有护甲技能时自动发放矮人国王的王冠，让玩家自行选择护甲技能并初始化第4层天赋。
+- 高等级旧存档进入 Infinite World 时也执行补发检查。
+- 普通模式仍保留原版 Boss 门槛。
+
+## 回归要求
+不要通过“60级直接把所有天赋点塞满”来修这个问题。等级负责开放层级与产生可用天赋点，职业专精和护甲技能仍应由玩家选择，以保留原角色构筑逻辑。
