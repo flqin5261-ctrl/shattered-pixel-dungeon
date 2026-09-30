@@ -2538,3 +2538,22 @@ Changes:
 - Added Genesis Echo “Infinite Space”: root backpack capacity always grows to keep at least five free slots.
 - Removed player-facing text about the lv60 EXP bonus being removed.
 - Upgrade window now displays the Seal's current permanent immunity for rapid rerolls.
+
+# 0.6.8 — Infinite World Talent Progression
+
+Version:
+- versionName: 0.6.8
+- versionCode: 964
+- dev: assist-0.6.8-talent-progression
+- target stable: assist-0.6.8-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Changes:
+- Fixed Infinite World level-60 saves still showing only the first two talent tiers because upstream subclass/armor-ability Boss gates remained active.
+- Tier-3 base class talents now become available by level in Infinite World even before a subclass has been chosen.
+- At level 12, Infinite World grants a Tengu's Mask once when the Hero still has no subclass; the player chooses the subclass normally and its tier-3 talents are then initialized.
+- At level 20, Infinite World grants a King's Crown once when the Hero still has no armor ability; choosing an armor ability initializes tier-4 talents.
+- Existing high-level Infinite World saves are repaired by the same milestone check on world entry/refresh.
+- Normal dungeon progression keeps its upstream Boss-item requirements.
+- Infinite World talent lock text now describes the actual level/milestone flow instead of falsely saying to defeat the second/fourth Boss.
+- Removed redundant player-facing Miracle World/Genesis Echo implementation notes, including the dynamic-monster-scaling sentence; the underlying scaling exclusion remains unchanged.
