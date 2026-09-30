@@ -8,13 +8,13 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.9",
-    "version_code": 955,
+    "version_name": "0.5.10",
+    "version_code": 956,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.9-stable",
-    "development_branch": "assist-0.5.9-environment-rich",
-    "release_code_sha": "4a987553a9705db2dd05b645c77681e9f0a6aaf8",
-    "world_generator_version": 16
+    "stable_branch": "assist-0.5.10-stable",
+    "development_branch": "assist-0.5.10-solid-scenery",
+    "release_code_sha": "a86b3bcf8a0c8fcd1df549d5b195b0a65e6a7838",
+    "world_generator_version": 17
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -191,16 +191,17 @@
     "guaranteed_artifact_chest": {
       "enabled": true,
       "generator_version": 12,
-      "action_value_threshold": 400,
+      "action_value_threshold": 1000,
       "max_per_run": 1,
-      "spawn_distance_cells": "2-5, fallback 1-7",
+      "spawn_distance_cells": "Hero-centered 3x3 neighbourhood: one of the 8 adjacent cells; if none is valid, retry on the next positive Hero action",
       "type": "CRYSTAL_CHEST",
       "contents": "one artifact selected from the remaining Generator artifact deck when possible",
       "gives_crystal_key": true,
       "forced_discoverable": true,
       "persistent_world_coordinates": true,
       "lifecycle_states": "0 not spawned / 1 closed / 2 opened heap / 3 artifact taken",
-      "survives_streaming_and_save_load": true
+      "survives_streaming_and_save_load": true,
+      "rule_version": 17
     },
     "dynamic_accent_overlay_refresh": {
       "enabled": true,
@@ -464,19 +465,32 @@
       "noninteractive": true,
       "physicality": {
         "generator_v15_old_worlds": "expanded visual props only; bulky scenery remains pass-through for compatibility",
-        "generator_v16_new_worlds": "bulky scenery uses Terrain.CUSTOM_DECO solid cells; mushrooms/ferns/torches/rubble remain pass-through"
+        "generator_v16_new_worlds": "bulky scenery uses Terrain.CUSTOM_DECO solid cells; mushrooms/ferns/torches/rubble remain pass-through",
+        "generator_v17_new_worlds": "all 30 visible scenery kinds use Terrain.CUSTOM_DECO solid cells; none are pass-through"
       },
       "hard_prop_safety": [
-        "skip origin plaza and merchant chunks for physical blockers",
+        "all V17 props are real blockers; there are no pass-through decoration fallbacks",
         "skip shared center crossing lanes",
         "skip room-access cells",
         "keep distance from chests",
         "skip doors/transitions/wells/alchemy/pedestals",
-        "local connectivity test rejects blocker placement on chokepoints"
+        "local connectivity test rejects blocker placement on chokepoints and accounts for already selected blockers"
       ],
       "magnifier_support": true,
       "collision_passthrough_in_spectator": true,
       "new_world_required_for_physical_collision": true
+    },
+    "v17_solid_scenery_and_artifact_pacing": {
+      "all_scenery_physical": true,
+      "scenery_catalog_size": 30,
+      "terrain_representation": "Terrain.CUSTOM_DECO",
+      "ordinary_hero_and_mob_collision": true,
+      "spectator_can_phase": true,
+      "legacy_v16_rule": "V16 saves retain the old pass-through exceptions for mushrooms, ferns, decorative torches and rubble.",
+      "artifact_action_threshold": 1000,
+      "artifact_spawn_area": "Hero-centered 3x3 cell neighbourhood, excluding Hero cell",
+      "artifact_key": "one CrystalKey is added when the guaranteed chest appears",
+      "monster_strength_changes": false
     }
   },
   "hard_invariants": [
@@ -494,6 +508,10 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.10 V17 artifact chest: no guaranteed artifact chest before 1000 positive Hero action-value; at/after 1000 it appears only in one valid cell of the Hero-centered 3x3 neighbourhood and grants one CrystalKey.",
+    "0.5.10 V17 solid scenery: every one of the 30 decoration kinds blocks ordinary Hero and Mob movement; none remain pass-through.",
+    "0.5.10 V17 scenery safety: all-solid placement must still preserve center crossing lanes, doors, chest vicinity, room access, merchant access and local connectivity.",
+    "0.5.10 compatibility: V16 saves retain V16 pass-through exceptions while fresh V17 worlds use all-solid scenery.",
     "0.5.9 V16 scenery: bulky trees/barrels/crates/furniture/rails use Terrain.CUSTOM_DECO and block ordinary Hero/mob pathing while remaining non-interactive.",
     "0.5.9 V16 scenery safety: no physical decoration may sever a one-cell corridor, block a door, occupy a chest hotspot, break merchant access, or obstruct the common center crossing lanes.",
     "0.5.9 scenery density: ordinary chunks should visibly contain about 2-4 props and Backrooms districts about 4-13 props, with small deterministic clusters rather than isolated single sprites.",
@@ -546,10 +564,12 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device verify the 1000-action guaranteed artifact chest appears inside the Hero-centered 3x3 neighbourhood and immediately provides a CrystalKey.",
+    "Real-device verify all 30 V17 scenery kinds are solid to normal Hero/Mob pathing without creating blocked merchant rooms, doors or one-cell corridors.",
+    "Only after 0.5.10 scenery/artifact pacing is accepted, resume the separate monster-strength/progression design discussion.",
     "Real-device verify V16 physical scenery feels substantial without making normal exploration frustrating or creating hidden chokepoints.",
     "Use spectator QA to inspect high-density Level 9/10/11/94 districts and confirm clustered scenery never overlaps doors, merchants, loot, traps or critical roads.",
     "Verify old V15 saves receive denser visual scenery without pathing changes, while newly started V16 worlds receive physical blockers.",
-    "After environment validation, begin the separately requested monster-strength/progression design discussion; do not mix monster-stat changes into 0.5.9.",
     "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
     "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
     "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
