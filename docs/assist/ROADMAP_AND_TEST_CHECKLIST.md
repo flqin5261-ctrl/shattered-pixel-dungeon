@@ -1621,3 +1621,55 @@ V15 地形分布发生变化，要验证 14 类新环境必须重新开始创建
 - [ ] Do not change monster stats/strength rules in 0.5.8.
 - [ ] After the spectator/visual pass is validated on device, design the Infinite World monster strength progression as the next separate task.
 
+# B18. 0.5.9 / Generator V16 scenery regression
+
+To test physical scenery, create a new V16 Infinite World. Existing V15 saves are for visual-only backward-compatibility testing.
+
+## B18.1 Catalog / magnifier
+- [ ] Trees, fern, mushrooms, fence pieces, signs, rocks, logs, barrels, crate, tub/trough all render correctly.
+- [ ] Casket, torch, rubble, bookshelf, stone cross, gravestone, table, stool, basin, cabinet, iron rail, firepit and weapon display render correctly.
+- [ ] Magnifier shows matching localized name/description for every prop.
+
+## B18.2 Density and grouping
+- [ ] Ordinary chunks visibly contain about 2-4 decorations.
+- [ ] Backrooms districts are noticeably richer than ordinary terrain.
+- [ ] Level 10 and Level 94 can reach the highest density without becoming unreadable.
+- [ ] Compatible items form small clusters rather than a uniform grid.
+- [ ] Groups remain stable across Streaming and Save/Load.
+
+## B18.3 Physical props
+- [ ] Normal Hero cannot walk through bulky trees, barrels, crates, furniture, signs, rails, rocks, logs or tubs.
+- [ ] Normal mobs path around solid scenery.
+- [ ] Mushrooms, fern, rubble and decorative torches remain pass-through.
+- [ ] Physical props have no pickup/open/use action.
+- [ ] Infinite spectator mode phases through all physical scenery.
+
+## B18.4 Connectivity
+- [ ] No prop blocks merchant access.
+- [ ] No prop blocks normal or secret doors.
+- [ ] No prop blocks central crossing lanes.
+- [ ] No prop replaces a chest, sale heap, trap, plant, NPC or Hero.
+- [ ] One-cell corridors remain traversable.
+- [ ] Clusters cannot combine into a complete local wall.
+- [ ] V10 primary/secondary infinite network remains usable.
+
+## B18.5 District identity
+- [ ] Levels 1-3 read as industrial/service.
+- [ ] Levels 4-5 use indoor furniture.
+- [ ] Level 6 remains sparse/eerie.
+- [ ] Level 7 keeps water/open-space dominance.
+- [ ] Level 8 reads as caves.
+- [ ] Level 9 reads as suburban.
+- [ ] Level 10 reads as fields/nature.
+- [ ] Level 11 reads as urban.
+- [ ] Level 37 remains relatively clean/pool-like.
+- [ ] Level 94 reads as a decorated toy-like town.
+
+## B18.6 Compatibility/core regressions
+- [ ] Existing V15 save gains richer visuals but no new physical blocking.
+- [ ] New V16 save uses physical scenery.
+- [ ] Spectator x8 glide and 20-cell FOV unchanged.
+- [ ] Merchant progression/bag guarantee unchanged.
+- [ ] Unique Artifact chest unchanged.
+- [ ] Water/VBO/Fog/Streaming fixes unchanged.
+- [ ] Monster strength remains unchanged in 0.5.9.
