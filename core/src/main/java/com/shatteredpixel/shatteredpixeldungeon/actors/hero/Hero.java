@@ -737,13 +737,19 @@ public class Hero extends Char {
 
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
 
-		if (SPDSettings.assistSpeed()) {
-			float assistSpeed = SPDSettings.assistSpeedMultiplier();
-			speed *= assistSpeed;
+		float assistMoveMultiplier = SPDSettings.assistSpeed()
+				? SPDSettings.assistSpeedMultiplier() : 1f;
+		if (InfiniteWorldLevel.assistSpectatorActive()) {
+			// QA spectator mode is intentionally fast even when the normal Assist
+			// speed toggle is off. A separately configured higher speed still wins.
+			assistMoveMultiplier = Math.max(4f, assistMoveMultiplier);
+		}
+		if (assistMoveMultiplier != 1f) {
+			speed *= assistMoveMultiplier;
 
 			float sprintSpeed = 1f;
 			if (momentum != null && momentum.freerunning()) sprintSpeed = 1.5f;
-			((HeroSprite)sprite).sprint(sprintSpeed * assistSpeed);
+			((HeroSprite)sprite).sprint(sprintSpeed * assistMoveMultiplier);
 		}
 		
 		return speed;
@@ -1731,6 +1737,7 @@ public class Hero extends Char {
 	
 	public void checkVisibleMobs() {
 		ArrayList<Mob> visible = new ArrayList<>();
+		boolean spectatorTest = InfiniteWorldLevel.assistSpectatorActive();
 
 		boolean newMob = false;
 
@@ -1742,7 +1749,7 @@ public class Hero extends Char {
 
 			if (fieldOfView[ m.pos ] && m.alignment == Alignment.ENEMY) {
 				visible.add(m);
-				if (!visibleEnemies.contains( m )) {
+				if (!spectatorTest && !visibleEnemies.contains( m )) {
 					newMob = true;
 				}
 
@@ -1765,7 +1772,7 @@ public class Hero extends Char {
 		}
 
 		Char lastTarget = QuickSlotButton.lastTarget;
-		if (target != null && (lastTarget == null ||
+		if (!spectatorTest && target != null && (lastTarget == null ||
 							!lastTarget.isAlive() || !lastTarget.isActive() ||
 							lastTarget.alignment == Alignment.ALLY ||
 							!fieldOfView[lastTarget.pos])){
@@ -1827,7 +1834,9 @@ public class Hero extends Char {
 		if (target == pos)
 			return false;
 
-		if (rooted) {
+		final boolean spectatorTest = InfiniteWorldLevel.assistSpectatorActive();
+
+		if (rooted && !spectatorTest) {
 			PixelScene.shake( 1, 1f );
 			return false;
 		}
@@ -1839,10 +1848,13 @@ public class Hero extends Char {
 			path = null;
 
 			if (Actor.findChar( target ) == null) {
-				if (Dungeon.level.passable[target] || Dungeon.level.avoid[target]) {
+				if (spectatorTest
+						? Dungeon.level.insideMap(target)
+						: (Dungeon.level.passable[target] || Dungeon.level.avoid[target])) {
 					step = target;
 				}
-				if (walkingToVisibleTrapInFog
+				if (!spectatorTest
+						&& walkingToVisibleTrapInFog
 						&& Dungeon.level.traps.get(target) != null
 						&& Dungeon.level.traps.get(target).visible
 						&& Dungeon.level.traps.get(target).active){
@@ -1858,7 +1870,11 @@ public class Hero extends Char {
 			else if (path.getLast() != target)
 				newPath = true;
 			else {
-				if (!Dungeon.level.passable[path.get(0)] || Actor.findChar(path.get(0)) != null) {
+				int next = path.get(0);
+				if ((spectatorTest
+						? !Dungeon.level.insideMap(next)
+						: !Dungeon.level.passable[next])
+						|| Actor.findChar(next) != null) {
 					newPath = true;
 				}
 			}
@@ -1866,15 +1882,32 @@ public class Hero extends Char {
 			if (newPath) {
 
 				int len = Dungeon.level.length();
-				boolean[] p = Dungeon.level.passable;
-				boolean[] v = Dungeon.level.visited;
-				boolean[] m = Dungeon.level.mapped;
 				boolean[] passable = new boolean[len];
-				for (int i = 0; i < len; i++) {
-					passable[i] = p[i] && (v[i] || m[i]);
+
+				if (spectatorTest) {
+					// Spectator QA pathing treats every interior terrain cell as
+					// traversable, but does not mutate the real collision map.
+					for (int i = 0; i < len; i++) {
+						passable[i] = Dungeon.level.insideMap(i);
+					}
+					for (Char ch : Actor.chars()) {
+						if (ch != this && ch.pos >= 0 && ch.pos < len) {
+							passable[ch.pos] = false;
+						}
+					}
+					passable[pos] = true;
+				} else {
+					boolean[] p = Dungeon.level.passable;
+					boolean[] v = Dungeon.level.visited;
+					boolean[] m = Dungeon.level.mapped;
+					for (int i = 0; i < len; i++) {
+						passable[i] = p[i] && (v[i] || m[i]);
+					}
 				}
 
-				PathFinder.Path newpath = Dungeon.findPath(this, target, passable, fieldOfView, true);
+				PathFinder.Path newpath = spectatorTest
+						? PathFinder.find(pos, target, passable)
+						: Dungeon.findPath(this, target, passable, fieldOfView, true);
 				if (newpath != null && path != null && newpath.size() > 2*path.size()){
 					path = null;
 				} else {
@@ -1895,7 +1928,8 @@ public class Hero extends Char {
 				delay = 0;
 			}
 
-			if (Dungeon.level.pit[step] && !Dungeon.level.solid[step]
+			if (!spectatorTest
+					&& Dungeon.level.pit[step] && !Dungeon.level.solid[step]
 					&& (!flying || buff(Levitation.class) != null && buff(Levitation.class).detachesWithinDelay(delay / speed()))){
 				if (!Chasm.jumpConfirmed){
 					Chasm.heroJump(this);
@@ -1931,9 +1965,8 @@ public class Hero extends Char {
 			return false;
 			
 		}
-
 	}
-	
+
 	public boolean handle( int cell ) {
 		
 		if (cell == -1) {
@@ -2357,7 +2390,7 @@ public class Hero extends Char {
 			((InfiniteWorldLevel) Dungeon.level).recordHeroMove(this);
 		}
 		
-		if (!flying && travelling) {
+		if (!InfiniteWorldLevel.assistSpectatorActive() && !flying && travelling) {
 			if (Dungeon.level.water[pos]) {
 				Sample.INSTANCE.play( Assets.Sounds.WATER, 1, Random.Float( 0.8f, 1.25f ) );
 			} else if (Dungeon.level.map[pos] == Terrain.EMPTY_SP) {
