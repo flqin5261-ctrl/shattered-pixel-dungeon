@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.5.8",
-    "version_code": 954,
+    "version_name": "0.5.9",
+    "version_code": 955,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.5.8-stable",
-    "development_branch": "assist-0.5.8-spectator-props",
-    "release_code_sha": "b7d31989353afbe5b2b86a6e73b13a0d73f70c20",
+    "stable_branch": "assist-0.5.9-stable",
+    "development_branch": "assist-0.5.9-decoration-pass",
+    "release_code_sha": "43b3360ff214f54790b6a8039fe540b94c1bd541",
     "world_generator_version": 15
   },
   "build": {
@@ -434,21 +434,41 @@
     "v15_environment_props": {
       "enabled": true,
       "gameplay_collision": false,
+      "interaction": false,
       "generator_version_bump_required": false,
       "source_license": "Kenney Tiny Town 1.1 + Tiny Dungeon 1.0, CC0 1.0",
-      "source_upstream_commit": "e22e06e317be6c933b779ad7b055b6a6aeafa5e8",
-      "build_fetch_script": "scripts/fetch-assist-cc0-assets.sh",
-      "sprites": [
-        "Tiny Town bush index 5",
-        "Tiny Town mushrooms index 29",
-        "Tiny Town sign index 83",
-        "Tiny Town barrel index 107",
-        "Tiny Dungeon crate index 66"
+      "categories": 23,
+      "ordinary_chunk_count": "4-7",
+      "liminal_chunk_count": "8-12",
+      "poolrooms_chunk_count": "5-8",
+      "placement_style": "Region-specific pools; furniture/fixtures prefer cells adjacent to walls; common 4-cell-wide center crossing lanes stay clear.",
+      "categories_list": [
+        "weeds",
+        "flowers",
+        "green tree",
+        "slender tree",
+        "autumn tree",
+        "mushrooms",
+        "stone patch",
+        "sign",
+        "rock",
+        "stump",
+        "barrel",
+        "rubble",
+        "brazier",
+        "arcane brazier",
+        "pedestal",
+        "sarcophagus",
+        "crystal ornament",
+        "table",
+        "stool",
+        "shelf",
+        "armor display",
+        "fence",
+        "vase"
       ],
-      "placement": "Deterministic sparse overlays after normal heaps/traps/plants/merchant stock are created; V15 anomaly chunks receive two props and ordinary chunks receive one with ~62% chance.",
-      "examine_support": "WndInfoCell sees the CustomTilemap image and localized name/description, so magnifier inspection identifies each prop.",
-      "terrain_safety": "Props never mutate map[]/passability/water/doors and are excluded from occupied heaps/traps/plants/chars and common center crossing lanes.",
-      "provenance_doc": "docs/assist/THIRD_PARTY_ASSETS.md"
+      "magnifier_support": true,
+      "collision_rule": "Visual-only CustomTilemap overlay; no map/passable/solid/pathfinding mutation."
     }
   },
   "hard_invariants": [
@@ -466,6 +486,11 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.5.9 decorations: ordinary V15 chunks visibly contain about 4-7 props and Backrooms districts about 8-12 without cluttering the guaranteed center crossing lanes.",
+    "0.5.9 decorations: all 23 prop kinds render from the intended Kenney sprite indices; old 0.5.8 crate/coffin mismatch is gone.",
+    "0.5.9 decorations: office/hotel/industrial/cave/suburb/field/city/poolroom/town districts use visibly different regional prop pools.",
+    "0.5.9 decorations: furniture and fixtures preferentially hug walls but fall back safely if no suitable wall-adjacent floor exists.",
+    "0.5.9 decorations remain non-interactive and non-collision; Hero/mob pathfinding and merchant connectivity are unchanged.",
     "0.5.8 spectator: movement uses idle/levitating glide instead of run animation and both logical speed and PosTweener visual speed are at least x8.",
     "0.5.8 spectator: FOV radius expands to ShadowCaster.MAX_DISTANCE=20 only while Infinite World spectator mode is active and returns to normal immediately when disabled.",
     "0.5.8 CC0 props: bush/mushrooms/sign/barrel/crate render above existing accents without altering map collision or breaking Streaming.",
@@ -511,10 +536,11 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device survey 0.5.9 visual density across ordinary V15 terrain and all 14 Backrooms-inspired districts.",
+    "After decoration density is accepted, discuss Infinite World monster strength/progression mechanics without changing them in 0.5.9.",
     "Real-device stress-test 0.5.8 spectator glide at x8 through repeated 7x7 streaming shifts; verify the hero never visually walks, lags behind, or becomes hidden under raised walls.",
     "Verify 20-cell spectator vision/fog updates correctly before and after Streaming and returns to normal range when spectator mode is disabled.",
     "Survey V15 decoration density and check magnifier text for bush, mushrooms, sign, barrel and crate; reduce or redistribute only if the map feels cluttered.",
-    "After 0.5.8 spectator/visual validation, discuss and design Infinite World monster strength/progression mechanics before changing mob stats.",
     "Real-device survey V15 with spectator QA mode: verify all 14 Backrooms-inspired districts can appear through ordinary exploration and automatically unlock their archive entries.",
     "Verify merchant frequency progression over a long new V15 run without any already-generated chunk changing merchant status.",
     "Collect the four expansion bags through different merchants and verify each merchant retargets slot 0 to a bag still missing at first encounter.",
