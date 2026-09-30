@@ -1773,3 +1773,14 @@ Infinite World 新增固定世界坐标的流浪商人据点，不把商人当�
 - 商人是 NEUTRAL NPC，不参与 0.5.0 的 40 格敌人 despawn。
 - 普通生态刷怪不会在商人 8 格范围内直接生成。
 - 暂不做 Boss 商店、特殊货币或多商人同时存在。
+
+
+## 0.5.1 Build
+
+- GitHub Actions run：36652519842
+- artifact ID：11071242855
+- artifact name：ShatteredPD-Assist-Base
+- build head：`e14bac5c266d6b0cad3189ace9dc7492967ac74b`
+- result：success
+- ZIP SHA-256：`ab8a78facc9447d287b5b3627173d6b459dc7e05f1deb13d19ac7a816bb2b003`
+- APK SHA-256：`4baab2a0ce442d9e52cddf0fa4f0750cdc47e926fa8cf5c36cdd5cfa2d1fe177`
