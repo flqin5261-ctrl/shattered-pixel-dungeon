@@ -76,7 +76,7 @@ public class TalentsPane extends ScrollPane {
 					&& Dungeon.hero.lvl+1 >= Talent.tierLevelThresholds[tiersAvailable+1]){
 				tiersAvailable++;
 			}
-			if (tiersAvailable > 2 && Dungeon.hero.subClass == HeroSubClass.NONE){
+			if (!Dungeon.infiniteWorld && tiersAvailable > 2 && Dungeon.hero.subClass == HeroSubClass.NONE){
 				tiersAvailable = 2;
 			} else if (tiersAvailable > 3 && Dungeon.hero.armorAbility == null){
 				tiersAvailable = 3;
@@ -107,10 +107,15 @@ public class TalentsPane extends ScrollPane {
 			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier2"), 6);
 			content.add(blockText);
 		} else if (tiersAvailable == 2) {
-			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier3"), 6);
+			String key = Dungeon.infiniteWorld ? "unlock_tier3_infinite" : "unlock_tier3";
+			blockText = PixelScene.renderTextBlock(Messages.get(this, key), 6);
 			content.add(blockText);
 		} else if (tiersAvailable == 3) {
-			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier4"), 6);
+			String key = Dungeon.infiniteWorld
+					&& Dungeon.hero.lvl >= Talent.tierLevelThresholds[4]-1
+					&& Dungeon.hero.armorAbility == null
+					? "choose_tier4_infinite" : (Dungeon.infiniteWorld ? "unlock_tier4_infinite" : "unlock_tier4");
+			blockText = PixelScene.renderTextBlock(Messages.get(this, key), 6);
 			content.add(blockText);
 		} else {
 			blockText = null;
