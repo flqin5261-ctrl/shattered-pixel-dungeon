@@ -3077,6 +3077,9 @@ public class InfiniteWorldLevel extends Level {
                 } else {
                     carveV9InfiniteBackbone(out, cx, cy, ox, oy);
                 }
+                if (state().generatorVersion >= 16) {
+                    applyV16PhysicalScenery(out, cx, cy, ox, oy, anomaly);
+                }
                 return;
             }
         }
@@ -3251,6 +3254,10 @@ public class InfiniteWorldLevel extends Level {
         // so the shop must be validated only after every room/road layer is complete.
         if (state().generatorVersion >= 14 && isV11MerchantChunk(cx, cy)) {
             ensureMerchantAccessInChunk(out, cx, cy, ox, oy);
+        }
+
+        if (state().generatorVersion >= 16) {
+            applyV16PhysicalScenery(out, cx, cy, ox, oy, 0);
         }
     }
 
@@ -5086,8 +5093,29 @@ public class InfiniteWorldLevel extends Level {
     }
 
 
+    private static class V16DecorationPlacement {
+        final int cell;
+        final int kind;
+
+        V16DecorationPlacement(int cell, int kind) {
+            this.cell = cell;
+            this.kind = kind;
+        }
+    }
+
+    private void applyV16PhysicalScenery(int[] terrain, int cx, int cy, int ox, int oy, int anomaly) {
+        ArrayList<V16DecorationPlacement> plan =
+                v16DecorationPlan(terrain, cx, cy, ox, oy, anomaly, true);
+
+        for (V16DecorationPlacement placement : plan) {
+            if (InfiniteWorldDecorationLayer.isBlockingKind(placement.kind)) {
+                terrain[placement.cell] = Terrain.CUSTOM_DECO;
+            }
+        }
+    }
+
     private void rebuildV15DecorationProps() {
-        if (state().generatorVersion < 15 || customTiles == null) return;
+        if (state().generatorVersion < 15 || customTiles == null || baseWindow == null) return;
 
         final InfiniteWorldDecorationLayer townLayer =
                 new InfiniteWorldDecorationLayer(
@@ -5095,118 +5123,444 @@ public class InfiniteWorldLevel extends Level {
         final InfiniteWorldDecorationLayer dungeonLayer =
                 new InfiniteWorldDecorationLayer(
                         InfiniteWorldDecorationLayer.SOURCE_DUNGEON, width(), height());
-        final boolean[] claimed = new boolean[length()];
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
                 int anomaly = v9AnomalyType(cx, cy);
-                int count = anomaly != 0 ? 2
-                        : (Math.floorMod(hash(cx, cy, 29100), 100L) < 62 ? 1 : 0);
+                ArrayList<V16DecorationPlacement> plan =
+                        v16DecorationPlan(baseWindow, cx, cy, ox, oy, anomaly,
+                                state().generatorVersion >= 16);
 
-                for (int slot = 0; slot < count; slot++) {
-                    int cell = v15DecorationCell(cx, cy, ox, oy, slot, claimed);
-                    if (cell < 0) continue;
+                for (V16DecorationPlacement placement : plan) {
+                    int cell = placement.cell;
+                    int kind = placement.kind;
+                    boolean blocking = InfiniteWorldDecorationLayer.isBlockingKind(kind);
 
-                    int kind = v15DecorationKind(cx, cy, slot, anomaly);
-                    if (kind == InfiniteWorldDecorationLayer.CRATE) {
-                        dungeonLayer.put(cell, kind, InfiniteWorldLevel.this);
+                    if (state().generatorVersion >= 16 && blocking) {
+                        // Physical props are represented by invisible CUSTOM_DECO
+                        // terrain in the deterministic base map. If a later terrain
+                        // override removes that cell, do not resurrect the sprite.
+                        if (map[cell] != Terrain.CUSTOM_DECO) continue;
                     } else {
-                        townLayer.put(cell, kind, InfiniteWorldLevel.this);
+                        if (solid[cell] || pit[cell] || water[cell] || secret[cell]) continue;
+                        if (heaps.get(cell) != null || traps.get(cell) != null
+                                || plants.get(cell) != null || Actor.findChar(cell) != null) {
+                            continue;
+                        }
                     }
-                    claimed[cell] = true;
+
+                    InfiniteWorldDecorationLayer layer =
+                            InfiniteWorldDecorationLayer.sourceForKind(kind)
+                                    == InfiniteWorldDecorationLayer.SOURCE_DUNGEON
+                                    ? dungeonLayer : townLayer;
+                    layer.put(cell, kind, InfiniteWorldLevel.this);
                 }
             }
         });
 
-        // These layers are deliberately appended after broad floor accents.
-        // WndInfoCell therefore sees the prop's image/name/description when the
-        // magnifier targets it, while the underlying map terrain stays unchanged.
         if (!townLayer.isEmpty()) customTiles.add(townLayer);
         if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
     }
 
-    private int v15DecorationCell(int cx, int cy, int ox, int oy,
-                                  int slot, boolean[] claimed) {
+    private ArrayList<V16DecorationPlacement> v16DecorationPlan(
+            int[] terrain, int cx, int cy, int ox, int oy, int anomaly, boolean physicalMode) {
+
+        ArrayList<V16DecorationPlacement> result = new ArrayList<>();
+        boolean[] claimed = new boolean[CHUNK_SIZE * CHUNK_SIZE];
+        boolean[] hardClaimed = new boolean[CHUNK_SIZE * CHUNK_SIZE];
+
+        int count = v16DecorationCount(cx, cy, anomaly);
+        int previousCell = -1;
+        int previousKind = -1;
+
+        for (int slot = 0; slot < count; slot++) {
+            int kind = v16DecorationKind(cx, cy, slot, anomaly);
+
+            // Small clusters read much more like authored scenery than isolated
+            // single sprites. Only prop families that make sense in groups repeat.
+            if (slot % 3 != 0
+                    && previousKind > 0
+                    && InfiniteWorldDecorationLayer.isClusterFriendly(previousKind)
+                    && range(cx, cy, 29220 + slot, 0, 99) < 58) {
+                kind = previousKind;
+            }
+
+            boolean hard = physicalMode && InfiniteWorldDecorationLayer.isBlockingKind(kind);
+            if (hard && (cx == 0 && cy == 0 || isV11MerchantChunk(cx, cy))) {
+                // Keep the origin plaza and merchant outposts free of new physical
+                // blockers. They still receive pass-through visual clutter.
+                kind = v16NonBlockingFallbackKind(cx, cy, slot, anomaly);
+                hard = false;
+            }
+
+            int preferred = slot % 3 == 0 ? -1 : previousCell;
+            int cell = v16DecorationCell(terrain, cx, cy, ox, oy, slot, kind,
+                    preferred, claimed, hardClaimed, hard);
+
+            if (cell < 0) continue;
+
+            int lx = cell % width() - ox;
+            int ly = cell / width() - oy;
+            int local = lx + ly * CHUNK_SIZE;
+            claimed[local] = true;
+            if (hard) hardClaimed[local] = true;
+
+            result.add(new V16DecorationPlacement(cell, kind));
+            previousCell = cell;
+            previousKind = kind;
+        }
+
+        return result;
+    }
+
+    private int v16DecorationCount(int cx, int cy, int anomaly) {
+        if (cx == 0 && cy == 0) return 3;
+
+        switch (anomaly) {
+            case 1:  return 4 + range(cx, cy, 29100, 0, 2); // Level 0: intentionally sparse
+            case 2:
+            case 3:
+            case 4:  return 6 + range(cx, cy, 29101, 0, 3); // industrial
+            case 5:
+            case 6:  return 6 + range(cx, cy, 29102, 0, 3); // office/hotel
+            case 7:  return 4 + range(cx, cy, 29103, 0, 2); // lights out
+            case 8:  return 3 + range(cx, cy, 29104, 0, 2); // ocean
+            case 9:  return 7 + range(cx, cy, 29105, 0, 3); // caves
+            case 10: return 8 + range(cx, cy, 29106, 0, 3); // suburbs
+            case 11: return 9 + range(cx, cy, 29107, 0, 4); // fields
+            case 12: return 8 + range(cx, cy, 29108, 0, 3); // city
+            case 13: return 4 + range(cx, cy, 29109, 0, 2); // poolrooms
+            case 14: return 9 + range(cx, cy, 29110, 0, 4); // Motion/town
+            default: return 2 + range(cx, cy, 29111, 0, 2); // ordinary world
+        }
+    }
+
+    private int v16DecorationCell(
+            int[] terrain, int cx, int cy, int ox, int oy, int slot, int kind,
+            int preferredCell, boolean[] claimed, boolean[] hardClaimed, boolean hard) {
+
+        // Cluster members first search a compact 7x7 area around the previous prop.
+        if (preferredCell >= 0) {
+            int px = preferredCell % width() - ox;
+            int py = preferredCell / width() - oy;
+            int start = range(cx, cy, 29300 + slot * 7, 0, 48);
+
+            for (int attempt = 0; attempt < 49; attempt++) {
+                int idx = Math.floorMod(start + attempt * 17, 49);
+                int lx = px - 3 + idx % 7;
+                int ly = py - 3 + idx / 7;
+                if (v16DecorationCandidateValid(terrain, cx, cy, ox, oy,
+                        lx, ly, kind, claimed, hardClaimed, hard)) {
+                    return ox + lx + (oy + ly) * width();
+                }
+            }
+        }
+
         final int inner = CHUNK_SIZE - 4; // local 2..21
         final int area = inner * inner;
-        int start = (int)Math.floorMod(hash(cx, cy, 29120 + slot * 11), (long)area);
+        int start = (int)Math.floorMod(hash(cx, cy, 29400 + slot * 11), (long)area);
 
-        // 137 is coprime with 400, so this visits every interior cell at most once.
+        // 137 is coprime with 400, so every interior cell is considered once.
         for (int attempt = 0; attempt < area; attempt++) {
             int idx = Math.floorMod(start + attempt * 137, area);
             int lx = 2 + idx % inner;
             int ly = 2 + idx / inner;
-            int cell = ox + lx + (oy + ly) * width();
 
-            if (cell < 0 || cell >= length() || claimed[cell]) continue;
-            if (solid[cell] || pit[cell] || water[cell] || secret[cell]) continue;
-
-            int terrain = map[cell];
-            if (terrain != Terrain.EMPTY && terrain != Terrain.EMPTY_SP
-                    && terrain != Terrain.EMPTY_DECO && terrain != Terrain.GRASS) {
-                continue;
+            if (v16DecorationCandidateValid(terrain, cx, cy, ox, oy,
+                    lx, ly, kind, claimed, hardClaimed, hard)) {
+                return ox + lx + (oy + ly) * width();
             }
-
-            if (heaps.get(cell) != null || traps.get(cell) != null
-                    || plants.get(cell) != null || Actor.findChar(cell) != null) {
-                continue;
-            }
-
-            // Do not clutter the common guaranteed crossing lanes.
-            if ((lx >= 10 && lx <= 13) || (ly >= 10 && ly <= 13)) continue;
-
-            return cell;
         }
+
         return -1;
     }
 
-    private int v15DecorationKind(int cx, int cy, int slot, int anomaly) {
-        int roll = range(cx, cy, 29180 + slot * 13, 0, 99);
+    private boolean v16DecorationCandidateValid(
+            int[] terrain, int cx, int cy, int ox, int oy, int lx, int ly, int kind,
+            boolean[] claimed, boolean[] hardClaimed, boolean hard) {
+
+        if (lx < 2 || ly < 2 || lx >= CHUNK_SIZE - 2 || ly >= CHUNK_SIZE - 2) return false;
+
+        int local = lx + ly * CHUNK_SIZE;
+        if (claimed[local]) return false;
+
+        int cell = ox + lx + (oy + ly) * width();
+        if (cell < 0 || cell >= terrain.length) return false;
+
+        int t = terrain[cell];
+        if (!v16DecorationBaseTerrain(t)) return false;
+
+        // Preserve the broad cross-lanes used by the global road network and many
+        // Backrooms layouts. Visual clutter can be dense without obscuring navigation.
+        if ((lx >= 10 && lx <= 13) || (ly >= 10 && ly <= 13)) return false;
+
+        if (state().generatorVersion >= 7
+                && v8LocalCellReservedForRoomAccess(cx, cy, lx, ly)) {
+            return false;
+        }
+
+        if (hasChest(cx, cy)
+                && Math.abs(lx - chestLocalX(cx, cy)) <= 1
+                && Math.abs(ly - chestLocalY(cx, cy)) <= 1) {
+            return false;
+        }
+
+        if (v16NearDoorOrCriticalTerrain(terrain, cell)) return false;
+
+        if (hard && !v16BlockingDecorationSafe(terrain, ox, oy, lx, ly, hardClaimed)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean v16DecorationBaseTerrain(int terrain) {
+        return terrain == Terrain.EMPTY
+                || terrain == Terrain.EMPTY_SP
+                || terrain == Terrain.EMPTY_DECO
+                || terrain == Terrain.GRASS
+                || terrain == Terrain.HIGH_GRASS
+                || terrain == Terrain.EMBERS
+                || terrain == Terrain.CUSTOM_DECO;
+    }
+
+    private boolean v16NearDoorOrCriticalTerrain(int[] terrain, int cell) {
+        for (int off : PathFinder.NEIGHBOURS9) {
+            int pos = cell + off;
+            if (pos < 0 || pos >= terrain.length) continue;
+
+            int t = terrain[pos];
+            if (t == Terrain.DOOR || t == Terrain.OPEN_DOOR
+                    || t == Terrain.LOCKED_DOOR || t == Terrain.HERO_LKD_DR
+                    || t == Terrain.CRYSTAL_DOOR || t == Terrain.SECRET_DOOR
+                    || t == Terrain.ENTRANCE || t == Terrain.ENTRANCE_SP
+                    || t == Terrain.EXIT || t == Terrain.LOCKED_EXIT
+                    || t == Terrain.UNLOCKED_EXIT || t == Terrain.PEDESTAL
+                    || t == Terrain.WELL || t == Terrain.ALCHEMY) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean v16BlockingDecorationSafe(
+            int[] terrain, int ox, int oy, int lx, int ly, boolean[] hardClaimed) {
+
+        // If removing this floor tile would separate its immediate walkable
+        // neighbours, it is a choke point and must remain clear.
+        final int radius = 3;
+        int minX = Math.max(1, lx - radius);
+        int maxX = Math.min(CHUNK_SIZE - 2, lx + radius);
+        int minY = Math.max(1, ly - radius);
+        int maxY = Math.min(CHUNK_SIZE - 2, ly + radius);
+
+        ArrayList<Integer> neighbours = new ArrayList<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dy == 0) continue;
+                int nx = lx + dx;
+                int ny = ly + dy;
+                if (nx < 1 || ny < 1 || nx >= CHUNK_SIZE - 1 || ny >= CHUNK_SIZE - 1) continue;
+                if (v16PlanningPassable(terrain, ox, oy, nx, ny, hardClaimed, lx, ly)) {
+                    neighbours.add(nx + ny * CHUNK_SIZE);
+                }
+            }
+        }
+
+        if (neighbours.size() <= 1) return true;
+
+        int localW = maxX - minX + 1;
+        int localH = maxY - minY + 1;
+        boolean[] seen = new boolean[localW * localH];
+        int[] queue = new int[localW * localH];
+        int head = 0;
+        int tail = 0;
+
+        int first = neighbours.get(0);
+        int firstX = first % CHUNK_SIZE;
+        int firstY = first / CHUNK_SIZE;
+        seen[(firstX - minX) + (firstY - minY) * localW] = true;
+        queue[tail++] = first;
+
+        while (head < tail) {
+            int cur = queue[head++];
+            int x = cur % CHUNK_SIZE;
+            int y = cur / CHUNK_SIZE;
+
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
+                    if (!v16PlanningPassable(terrain, ox, oy, nx, ny, hardClaimed, lx, ly)) continue;
+
+                    int seenIndex = (nx - minX) + (ny - minY) * localW;
+                    if (seen[seenIndex]) continue;
+                    seen[seenIndex] = true;
+                    queue[tail++] = nx + ny * CHUNK_SIZE;
+                }
+            }
+        }
+
+        for (int neighbour : neighbours) {
+            int nx = neighbour % CHUNK_SIZE;
+            int ny = neighbour / CHUNK_SIZE;
+            if (!seen[(nx - minX) + (ny - minY) * localW]) return false;
+        }
+
+        return true;
+    }
+
+    private boolean v16PlanningPassable(
+            int[] terrain, int ox, int oy, int lx, int ly,
+            boolean[] hardClaimed, int blockedX, int blockedY) {
+
+        if (lx == blockedX && ly == blockedY) return false;
+        int local = lx + ly * CHUNK_SIZE;
+        if (hardClaimed[local]) return false;
+
+        int cell = ox + lx + (oy + ly) * width();
+        int t = terrain[cell];
+
+        // CUSTOM_DECO is treated as its pre-decoration floor while replaying the
+        // deterministic plan from baseWindow.
+        return t == Terrain.CUSTOM_DECO || (Terrain.flags[t] & Terrain.PASSABLE) != 0;
+    }
+
+    private int v16NonBlockingFallbackKind(int cx, int cy, int slot, int anomaly) {
+        int roll = range(cx, cy, 29500 + slot, 0, 99);
+        if (anomaly == 9) return roll < 70
+                ? InfiniteWorldDecorationLayer.MUSHROOMS
+                : InfiniteWorldDecorationLayer.RUBBLE;
+        if (anomaly == 11 || anomaly == 14) return roll < 65
+                ? InfiniteWorldDecorationLayer.FERN
+                : InfiniteWorldDecorationLayer.MUSHROOMS;
+        return roll < 50
+                ? InfiniteWorldDecorationLayer.RUBBLE
+                : InfiniteWorldDecorationLayer.MUSHROOMS;
+    }
+
+    private int v16DecorationKind(int cx, int cy, int slot, int anomaly) {
+        int roll = range(cx, cy, 29600 + slot * 13, 0, 99);
 
         switch (anomaly) {
-            case 2:  // Level 1 - service/storage
-            case 3:  // Level 2 - utility halls
-            case 4:  // Level 3 - electrical station
-                return roll < 45 ? InfiniteWorldDecorationLayer.BARREL
-                        : (roll < 82 ? InfiniteWorldDecorationLayer.CRATE
-                        : InfiniteWorldDecorationLayer.SIGN);
+            case 1: // Level 0: deliberately minimal, uncanny office clutter.
+                if (roll < 30) return InfiniteWorldDecorationLayer.SIGN;
+                if (roll < 55) return InfiniteWorldDecorationLayer.STOOL;
+                if (roll < 75) return InfiniteWorldDecorationLayer.RUBBLE;
+                return InfiniteWorldDecorationLayer.CUPBOARD;
 
-            case 5:  // Level 4 - abandoned office
-            case 6:  // Level 5 - hotel
-                return roll < 42 ? InfiniteWorldDecorationLayer.SIGN
-                        : (roll < 72 ? InfiniteWorldDecorationLayer.CRATE
-                        : InfiniteWorldDecorationLayer.BARREL);
+            case 2: // Level 1
+            case 3: // Level 2
+            case 4: // Level 3
+                if (roll < 18) return InfiniteWorldDecorationLayer.BARREL;
+                if (roll < 35) return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+                if (roll < 48) return InfiniteWorldDecorationLayer.CUPBOARD;
+                if (roll < 61) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                if (roll < 72) return InfiniteWorldDecorationLayer.WARNING_SIGN;
+                if (roll < 84) return InfiniteWorldDecorationLayer.TORCH;
+                if (roll < 93) return InfiniteWorldDecorationLayer.RUBBLE;
+                return InfiniteWorldDecorationLayer.WEAPON_RACK;
 
-            case 9:  // Level 8 - caves
-                return roll < 68 ? InfiniteWorldDecorationLayer.MUSHROOMS
-                        : InfiniteWorldDecorationLayer.CRATE;
+            case 5: // Level 4 office
+                if (roll < 22) return InfiniteWorldDecorationLayer.TABLE;
+                if (roll < 40) return InfiniteWorldDecorationLayer.STOOL;
+                if (roll < 57) return InfiniteWorldDecorationLayer.BOOKSHELF;
+                if (roll < 72) return InfiniteWorldDecorationLayer.CUPBOARD;
+                if (roll < 86) return InfiniteWorldDecorationLayer.SIGN;
+                return InfiniteWorldDecorationLayer.WOODEN_CRATE;
 
-            case 10: // Level 9 - suburbs
-            case 12: // Level 11 - city
-                return roll < 45 ? InfiniteWorldDecorationLayer.SIGN
-                        : (roll < 75 ? InfiniteWorldDecorationLayer.BARREL
-                        : InfiniteWorldDecorationLayer.BUSH);
+            case 6: // Level 5 hotel
+                if (roll < 22) return InfiniteWorldDecorationLayer.TABLE;
+                if (roll < 38) return InfiniteWorldDecorationLayer.STOOL;
+                if (roll < 54) return InfiniteWorldDecorationLayer.CUPBOARD;
+                if (roll < 68) return InfiniteWorldDecorationLayer.BOOKSHELF;
+                if (roll < 80) return InfiniteWorldDecorationLayer.SIGN;
+                if (roll < 90) return InfiniteWorldDecorationLayer.EMPTY_TUB;
+                return InfiniteWorldDecorationLayer.TORCH;
 
-            case 11: // Level 10 - fields
-            case 14: // Level 94 - motion/town
-                return roll < 50 ? InfiniteWorldDecorationLayer.BUSH
-                        : (roll < 78 ? InfiniteWorldDecorationLayer.MUSHROOMS
-                        : InfiniteWorldDecorationLayer.SIGN);
+            case 7: // Level 6
+                if (roll < 30) return InfiniteWorldDecorationLayer.RUBBLE;
+                if (roll < 50) return InfiniteWorldDecorationLayer.CASKET;
+                if (roll < 68) return InfiniteWorldDecorationLayer.GRAVESTONE;
+                if (roll < 84) return InfiniteWorldDecorationLayer.TORCH;
+                return InfiniteWorldDecorationLayer.STONE_CROSS;
 
-            case 8:  // Level 7 - ocean
-            case 13: // Level 37 - poolrooms
-                return roll < 58 ? InfiniteWorldDecorationLayer.SIGN
-                        : InfiniteWorldDecorationLayer.BARREL;
+            case 8: // Level 7 ocean
+                if (roll < 28) return InfiniteWorldDecorationLayer.LOG;
+                if (roll < 52) return InfiniteWorldDecorationLayer.BARREL;
+                if (roll < 72) return InfiniteWorldDecorationLayer.ROCK;
+                if (roll < 87) return InfiniteWorldDecorationLayer.SIGN;
+                return InfiniteWorldDecorationLayer.WATER_TROUGH;
 
-            default:
-                switch (roll / 20) {
-                    case 0: return InfiniteWorldDecorationLayer.BUSH;
-                    case 1: return InfiniteWorldDecorationLayer.MUSHROOMS;
-                    case 2: return InfiniteWorldDecorationLayer.SIGN;
-                    case 3: return InfiniteWorldDecorationLayer.BARREL;
-                    default:return InfiniteWorldDecorationLayer.CRATE;
-                }
+            case 9: // Level 8 caves
+                if (roll < 34) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                if (roll < 57) return InfiniteWorldDecorationLayer.ROCK;
+                if (roll < 73) return InfiniteWorldDecorationLayer.RUBBLE;
+                if (roll < 86) return InfiniteWorldDecorationLayer.CAMPFIRE;
+                return InfiniteWorldDecorationLayer.STONE_CROSS;
+
+            case 10: // Level 9 suburbs
+                if (roll < 18) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                if (roll < 32) return InfiniteWorldDecorationLayer.PINE_TREE_GREEN;
+                if (roll < 45) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                if (roll < 56) return InfiniteWorldDecorationLayer.FENCE_POST;
+                if (roll < 68) return InfiniteWorldDecorationLayer.SIGN;
+                if (roll < 80) return InfiniteWorldDecorationLayer.BARREL;
+                if (roll < 90) return InfiniteWorldDecorationLayer.LOG;
+                return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+
+            case 11: // Level 10 fields
+                if (roll < 20) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                if (roll < 36) return InfiniteWorldDecorationLayer.PINE_TREE_GREEN;
+                if (roll < 50) return InfiniteWorldDecorationLayer.FERN;
+                if (roll < 63) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                if (roll < 75) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                if (roll < 84) return InfiniteWorldDecorationLayer.FENCE_POST;
+                if (roll < 92) return InfiniteWorldDecorationLayer.LOG;
+                return InfiniteWorldDecorationLayer.SIGN;
+
+            case 12: // Level 11 city
+                if (roll < 18) return InfiniteWorldDecorationLayer.SIGN;
+                if (roll < 32) return InfiniteWorldDecorationLayer.WARNING_SIGN;
+                if (roll < 47) return InfiniteWorldDecorationLayer.BARREL;
+                if (roll < 61) return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+                if (roll < 74) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                if (roll < 86) return InfiniteWorldDecorationLayer.TABLE;
+                return InfiniteWorldDecorationLayer.ROCK;
+
+            case 13: // Level 37 poolrooms
+                if (roll < 24) return InfiniteWorldDecorationLayer.STONE_BASIN;
+                if (roll < 46) return InfiniteWorldDecorationLayer.EMPTY_TUB;
+                if (roll < 66) return InfiniteWorldDecorationLayer.WATER_TROUGH;
+                if (roll < 82) return InfiniteWorldDecorationLayer.SIGN;
+                return InfiniteWorldDecorationLayer.ROCK;
+
+            case 14: // Level 94 Motion
+                if (roll < 16) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                if (roll < 29) return InfiniteWorldDecorationLayer.ROUND_TREE_AUTUMN;
+                if (roll < 42) return InfiniteWorldDecorationLayer.PINE_TREE_GREEN;
+                if (roll < 54) return InfiniteWorldDecorationLayer.PINE_TREE_AUTUMN;
+                if (roll < 65) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                if (roll < 75) return InfiniteWorldDecorationLayer.FERN;
+                if (roll < 84) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                if (roll < 92) return InfiniteWorldDecorationLayer.LOG;
+                return InfiniteWorldDecorationLayer.SIGN;
+
+            default: // ordinary Infinite World
+                if (roll < 12) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                if (roll < 22) return InfiniteWorldDecorationLayer.PINE_TREE_GREEN;
+                if (roll < 32) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                if (roll < 42) return InfiniteWorldDecorationLayer.FERN;
+                if (roll < 52) return InfiniteWorldDecorationLayer.BARREL;
+                if (roll < 62) return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+                if (roll < 71) return InfiniteWorldDecorationLayer.SIGN;
+                if (roll < 80) return InfiniteWorldDecorationLayer.ROCK;
+                if (roll < 88) return InfiniteWorldDecorationLayer.LOG;
+                if (roll < 94) return InfiniteWorldDecorationLayer.RUBBLE;
+                return InfiniteWorldDecorationLayer.CAMPFIRE;
         }
     }
 
