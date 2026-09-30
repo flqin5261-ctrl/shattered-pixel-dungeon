@@ -47,13 +47,16 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
     public Tilemap create() {
         texture = textureName;
         Tilemap v = super.create();
+        v.map(buildData(), tileW);
+        return v;
+    }
 
+    private int[] buildData() {
         int[] data = new int[tileW * tileH];
         Arrays.fill(data, -1);
 
         if (Dungeon.level == null || textureName == null) {
-            v.map(data, tileW);
-            return v;
+            return data;
         }
 
         for (int y = 0; y < tileH; y++) {
@@ -75,8 +78,29 @@ public class InfiniteWorldAccentTilemap extends CustomTilemap {
             }
         }
 
-        v.map(data, tileW);
-        return v;
+        return data;
+    }
+
+    public void refreshIfAffected(int levelCell) {
+        if (Dungeon.level == null || vis == null || !vis.alive) return;
+
+        int gx = levelCell % Dungeon.level.width();
+        int gy = levelCell / Dungeon.level.width();
+
+        // Wall stitching/overhang can depend on one neighboring row/column, so
+        // include a one-cell halo instead of checking only the exact rectangle.
+        if (gx < tileX - 1 || gx > tileX + tileW
+                || gy < tileY - 1 || gy > tileY + tileH) {
+            return;
+        }
+
+        refresh();
+    }
+
+    public void refresh() {
+        if (vis == null || !vis.alive) return;
+        vis.map(buildData(), tileW);
+        vis.flushMapUpdate();
     }
 
     private boolean includedByPatchNoise(int x, int y) {
