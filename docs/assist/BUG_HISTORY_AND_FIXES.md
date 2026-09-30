@@ -1380,3 +1380,21 @@ Infinite World 已移除原版 Boss 进度，但天赋系统仍保留三处原�
 
 ## 回归要求
 不要通过“60级直接把所有天赋点塞满”来修这个问题。等级负责开放层级与产生可用天赋点，职业专精和护甲技能仍应由玩家选择，以保留原角色构筑逻辑。
+
+# 0.6.10/0.6.11 点击背包或Buff立即闪退
+
+## 症状
+进入原有 Infinite World 存档后角色可以正常移动，但点击背包、血条下方 Buff（包括创世回响和普通 Buff）会立即闪退。
+
+## 根因
+0.6.10 与 0.6.11 新增 ScrollPane 时使用了错误初始化顺序：
+- new ScrollPane(content)
+- scrollPane.setRect(...)
+- add(scrollPane)
+
+ScrollPane.setRect() 会同步调用 ScrollPane.layout()。layout() 内部通过 camera().cameraToScreen(...) 读取父窗口相机；由于此时 ScrollPane 尚未 add 到 Window，parent 为 null，camera() 也是 null，于是打开窗口时出现运行时 NullPointerException。CI 只做编译，因此不会捕获这种点击窗口才触发的运行时错误。
+
+## 验证与修复
+- 0.6.12 将 WndBag.java 和 WndInfoBuff.java 精确恢复为 0.6.9-stable 对应 blob，旧存档重新可以正常打开背包和 Buff，确认根因属于 UI 滚动改造而非存档损坏。
+- 0.6.13 重新实现滚动时统一改为 new -> add -> setRect，保证 setRect/layout 执行时已经能够继承 Window camera。
+- 后续任何新 ScrollPane 都必须遵守相同生命周期顺序。
