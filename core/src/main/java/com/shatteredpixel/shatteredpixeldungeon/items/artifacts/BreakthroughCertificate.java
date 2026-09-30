@@ -7,6 +7,17 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -15,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -23,10 +35,21 @@ public class BreakthroughCertificate extends EquipableItem {
     private static final String CERT_LEVEL = "cert_level";
     private static final String REVIVE_CHARGE = "revive_charge";
     private static final String REGEN_PROGRESS = "regen_progress";
+    private static final String IMMUNITY_INDEX = "immunity_index";
+
+    private static final Class<?>[] IMMUNITY_POOL = new Class<?>[]{
+            Burning.class, Poison.class, Paralysis.class, Vertigo.class,
+            Blindness.class, Cripple.class, Weakness.class, Vulnerable.class,
+            Slow.class, Charm.class, Hex.class
+    };
+
+    private static int consumableBoostDepth = 0;
+    private static Hero consumableBoostHero = null;
 
     private int certificateLevel = 30;
     private float reviveCharge = 0f;
     private float regenProgress = 0f;
+    private int immunityIndex = -1;
 
     {
         image = ItemSpriteSheet.TOKEN;
@@ -68,10 +91,10 @@ public class BreakthroughCertificate extends EquipableItem {
 
     public int strengthBonus() {
         switch (certificateLevel) {
-            case 60: return 4;
-            case 50: return 3;
-            case 40: return 2;
-            default:return 1;
+            case 60: return 8;
+            case 50: return 6;
+            case 40: return 4;
+            default:return 2;
         }
     }
 
@@ -95,19 +118,19 @@ public class BreakthroughCertificate extends EquipableItem {
 
     public float evasionMultiplier() {
         switch (certificateLevel) {
-            case 60: return 1.14f;
-            case 50: return 1.10f;
-            case 40: return 1.07f;
-            default:return 1.04f;
+            case 60: return 1.32f;
+            case 50: return 1.24f;
+            case 40: return 1.16f;
+            default:return 1.10f;
         }
     }
 
     public float expMultiplier() {
         switch (certificateLevel) {
-            case 60: return 1.15f;
-            case 50: return 1.12f;
-            case 40: return 1.08f;
-            default:return 1.05f;
+            case 60: return 1.60f;
+            case 50: return 1.40f;
+            case 40: return 1.25f;
+            default:return 1.15f;
         }
     }
 
@@ -131,10 +154,10 @@ public class BreakthroughCertificate extends EquipableItem {
 
     public float speedMultiplier() {
         switch (certificateLevel) {
-            case 60: return 1.10f;
-            case 50: return 1.07f;
-            case 40: return 1.05f;
-            default:return 1.03f;
+            case 60: return 1.25f;
+            case 50: return 1.18f;
+            case 40: return 1.12f;
+            default:return 1.08f;
         }
     }
 
@@ -176,20 +199,134 @@ public class BreakthroughCertificate extends EquipableItem {
 
     public float reviveChargeRequired() {
         switch (certificateLevel) {
-            case 60: return 180f;
-            case 50: return 220f;
-            case 40: return 260f;
-            default:return 300f;
+            case 60: return 80f;
+            case 50: return 120f;
+            case 40: return 160f;
+            default:return 200f;
         }
     }
 
     public float reviveHpFraction() {
         switch (certificateLevel) {
-            case 60: return 0.50f;
-            case 50: return 0.42f;
-            case 40: return 0.36f;
-            default:return 0.30f;
+            case 60: return 0.70f;
+            case 50: return 0.55f;
+            case 40: return 0.45f;
+            default:return 0.35f;
         }
+    }
+
+    public float damageTakenMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 0.80f;
+            case 50: return 0.84f;
+            case 40: return 0.88f;
+            default:return 0.92f;
+        }
+    }
+
+    public float negativeEffectMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 0.50f;
+            case 50: return 0.65f;
+            case 40: return 0.75f;
+            default:return 0.85f;
+        }
+    }
+
+    public float wandChargeMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 1.80f;
+            case 50: return 1.55f;
+            case 40: return 1.35f;
+            default:return 1.20f;
+        }
+    }
+
+    public float consumableDurationMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 1.80f;
+            case 50: return 1.55f;
+            case 40: return 1.35f;
+            default:return 1.20f;
+        }
+    }
+
+    public int searchDistanceBonus() {
+        switch (certificateLevel) {
+            case 60: return 4;
+            case 50: return 3;
+            case 40: return 2;
+            default:return 1;
+        }
+    }
+
+    public float searchChanceBonus() {
+        switch (certificateLevel) {
+            case 60: return 0.60f;
+            case 50: return 0.45f;
+            case 40: return 0.30f;
+            default:return 0.20f;
+        }
+    }
+
+    public Class<?> immunityClass() {
+        ensureImmunity();
+        return IMMUNITY_POOL[immunityIndex];
+    }
+
+    public String immunityName() {
+        ensureImmunity();
+        return Messages.get(BreakthroughCertificate.class, "immunity_" + immunityIndex);
+    }
+
+    private void ensureImmunity() {
+        if (immunityIndex < 0 || immunityIndex >= IMMUNITY_POOL.length) {
+            immunityIndex = Random.Int(IMMUNITY_POOL.length);
+        }
+    }
+
+    public void rerollImmunity(Hero hero) {
+        ensureImmunity();
+        int previous = immunityIndex;
+        if (IMMUNITY_POOL.length > 1) {
+            do {
+                immunityIndex = Random.Int(IMMUNITY_POOL.length);
+            } while (immunityIndex == previous);
+        }
+        if (hero != null && isEquipped(hero)) {
+            BreakthroughBlessing old = hero.buff(BreakthroughBlessing.class);
+            if (old != null) old.detach();
+            activate(hero);
+        }
+        GLog.p("破界之印的永久免疫已切换为：" + immunityName());
+        Item.updateQuickslot();
+    }
+
+    public static boolean isSupportedNegativeEffect(Class effect) {
+        if (effect == null) return false;
+        for (Class<?> cls : IMMUNITY_POOL) {
+            if (cls.isAssignableFrom(effect)) return true;
+        }
+        return false;
+    }
+
+    public static void beginConsumableBoost(Hero hero) {
+        if (hero == null || equipped(hero) == null) return;
+        consumableBoostHero = hero;
+        consumableBoostDepth++;
+    }
+
+    public static void endConsumableBoost(Hero hero) {
+        if (hero == null || hero != consumableBoostHero) return;
+        consumableBoostDepth = Math.max(0, consumableBoostDepth - 1);
+        if (consumableBoostDepth == 0) consumableBoostHero = null;
+    }
+
+    public static float adjustConsumableDuration(Char target, Class<? extends Buff> buffClass, float duration) {
+        if (!(target instanceof Hero) || target != consumableBoostHero || consumableBoostDepth <= 0) return duration;
+        if (isSupportedNegativeEffect(buffClass)) return duration;
+        BreakthroughCertificate cert = equipped((Hero)target);
+        return cert == null ? duration : duration * cert.consumableDurationMultiplier();
     }
 
     public boolean reviveReady() {
@@ -315,14 +452,24 @@ public class BreakthroughCertificate extends EquipableItem {
     @Override
     public void activate(Char ch) {
         if (ch instanceof Hero) {
+            ensureImmunity();
             BreakthroughBlessing blessing = Buff.affect(ch, BreakthroughBlessing.class);
             blessing.certificate = this;
+            blessing.immunities.clear();
+            blessing.immunities.add(immunityClass());
         }
     }
 
     @Override
     public boolean isUpgradable() {
-        return false;
+        return true;
+    }
+
+    @Override
+    public Item upgrade() {
+        // Normal upgrade paths never change certificate stats. ScrollOfUpgrade
+        // special-cases this item to reroll its permanent immunity.
+        return this;
     }
 
     @Override
@@ -336,6 +483,7 @@ public class BreakthroughCertificate extends EquipableItem {
         bundle.put(CERT_LEVEL, certificateLevel);
         bundle.put(REVIVE_CHARGE, reviveCharge);
         bundle.put(REGEN_PROGRESS, regenProgress);
+        bundle.put(IMMUNITY_INDEX, immunityIndex);
     }
 
     @Override
@@ -344,6 +492,8 @@ public class BreakthroughCertificate extends EquipableItem {
         certificateLevel = bundle.contains(CERT_LEVEL) ? bundle.getInt(CERT_LEVEL) : 30;
         reviveCharge = bundle.contains(REVIVE_CHARGE) ? bundle.getFloat(REVIVE_CHARGE) : 0f;
         regenProgress = bundle.contains(REGEN_PROGRESS) ? bundle.getFloat(REGEN_PROGRESS) : 0f;
+        immunityIndex = bundle.contains(IMMUNITY_INDEX) ? bundle.getInt(IMMUNITY_INDEX) : -1;
+        ensureImmunity();
     }
 
     public static BreakthroughCertificate equipped(Hero hero) {
