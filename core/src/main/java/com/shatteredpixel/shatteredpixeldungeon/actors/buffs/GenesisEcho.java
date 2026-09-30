@@ -219,11 +219,14 @@ public class GenesisEcho extends Buff {
         return miracleLinked(hero) ? 2 : 1;
     }
 
-    public static boolean blocksInstantDeath(Hero hero, Object cause) {
-        if (!active(hero) || cause == null) return false;
+    public static boolean blocksInstantDeath(Hero hero, Object cause, boolean fromDamagePipeline) {
+        if (!active(hero)) return false;
 
-        // Direct die() calls normally arrive while HP is still positive.
-        if (hero.HP > 0) return true;
+        // A direct die() call is an instant-death mechanic and is always rejected.
+        // Ordinary lethal combat/environment damage is allowed while 奇迹·世界 is
+        // not equipped, so damage-pipeline deaths need a narrower cause check.
+        if (!fromDamagePipeline) return true;
+        if (cause == null) return false;
 
         Class<?> cls = cause instanceof Class ? (Class<?>)cause : cause.getClass();
         String n = cls.getSimpleName().toLowerCase();
