@@ -5109,7 +5109,9 @@ public class InfiniteWorldLevel extends Level {
     private static final int V16_STYLE_BARREL_ROW = 7;
     private static final int V16_STYLE_STATUE_PAIR = 8;
     private static final int V16_STYLE_MIXED_CORNER = 9;
-    private static final int V16_STYLE_COUNT = 10;
+    private static final int V16_STYLE_REGION_PAIR = 10;
+    private static final int V16_STYLE_REGION_CORNER = 11;
+    private static final int V16_STYLE_COUNT = 12;
 
     private void rebuildV15DecorationProps() {
         if (state().generatorVersion < 15 || customTiles == null) return;
@@ -5332,11 +5334,22 @@ public class InfiniteWorldLevel extends Level {
                         {1, 0, 0, Terrain.STATUE_SP}
                 };
             case V16_STYLE_MIXED_CORNER:
-            default:
                 return new int[][]{
                         {0, 0, 0, Terrain.STATUE_SP},
                         {1, 0, InfiniteWorldDecorationLayer.BUSH, 0},
                         {0, 1, InfiniteWorldDecorationLayer.SIGN, 0}
+                };
+            case V16_STYLE_REGION_PAIR:
+                return new int[][]{
+                        {0, 0, 0, Terrain.REGION_DECO},
+                        {1, 0, 0, Terrain.REGION_DECO_ALT}
+                };
+            case V16_STYLE_REGION_CORNER:
+            default:
+                return new int[][]{
+                        {0, 0, 0, Terrain.REGION_DECO_ALT},
+                        {1, 0, InfiniteWorldDecorationLayer.MUSHROOMS, 0},
+                        {0, 1, InfiniteWorldDecorationLayer.BUSH, 0}
                 };
         }
     }
