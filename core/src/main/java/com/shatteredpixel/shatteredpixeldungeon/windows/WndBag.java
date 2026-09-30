@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -40,9 +39,9 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventorySlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RightClickMenu;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.input.GameAction;
 import com.watabou.input.KeyBindings;
@@ -51,6 +50,7 @@ import com.watabou.input.PointerEvent;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.PointF;
 
 import java.util.ArrayList;
@@ -86,10 +86,9 @@ public class WndBag extends WndTabbed {
 	protected int row;
 	
 	private static Bag lastBag;
-	private static Bag pageBag;
-	private static int pageIndex = 0;
-	private int pageCount = 1;
-	private Bag shownBag;
+
+	private Component itemContent;
+	private ScrollPane itemScroll;
 
 	public WndBag( Bag bag ) {
 		this(bag, null);
@@ -107,42 +106,37 @@ public class WndBag extends WndTabbed {
 		this.selector = selector;
 		
 		lastBag = bag;
-		shownBag = bag;
-		if (pageBag != bag) {
-			pageBag = bag;
-			pageIndex = 0;
-		}
 
 		slotWidth = PixelScene.landscape() ? SLOT_WIDTH_L : SLOT_WIDTH_P;
 		slotHeight = PixelScene.landscape() ? SLOT_HEIGHT_L : SLOT_HEIGHT_P;
 
 		nCols = PixelScene.landscape() ? COLS_L : COLS_P;
-		nRows = (int)Math.ceil(26/(float)nCols); //extra breakthrough-certificate equipment slot
 
 		int windowWidth = slotWidth * nCols + SLOT_MARGIN * (nCols - 1);
-		int windowHeight = TITLE_HEIGHT + slotHeight * nRows + SLOT_MARGIN * (nRows - 1);
-
-		if (PixelScene.landscape()){
-			while (slotHeight >= 24 && (windowHeight + 20 + chrome.marginTop()) > PixelScene.uiCamera.height){
-				slotHeight--;
-				windowHeight -= nRows;
-			}
-		} else {
-			while (slotWidth >= 26 && (windowWidth + chrome.marginHor()) > PixelScene.uiCamera.width){
-				slotWidth--;
-				windowWidth -= nCols;
-			}
+		while (slotWidth >= 24 && (windowWidth + chrome.marginHor()) > PixelScene.uiCamera.width){
+			slotWidth--;
+			windowWidth = slotWidth * nCols + SLOT_MARGIN * (nCols - 1);
 		}
 
 		placeTitle( bag, windowWidth );
-		
+
+		itemContent = new Component();
 		placeItems( bag );
 
-		if (pageCount > 1) {
-			windowHeight += 15;
-			addPageButtons(windowWidth, windowHeight - 14);
-		}
+		int rowsUsed = row + (col > 0 ? 1 : 0);
+		int contentHeight = Math.max(slotHeight,
+				rowsUsed * slotHeight + Math.max(0, rowsUsed - 1) * SLOT_MARGIN);
+		itemContent.setSize(windowWidth, contentHeight);
 
+		int maxViewportHeight = Math.max(slotHeight,
+				PixelScene.uiCamera.height - chrome.marginVer() - tabHeight() - TITLE_HEIGHT - 6);
+		int viewportHeight = Math.min(contentHeight, maxViewportHeight);
+
+		itemScroll = new ScrollPane(itemContent);
+		itemScroll.setRect(0, TITLE_HEIGHT, windowWidth, viewportHeight);
+		add(itemScroll);
+
+		int windowHeight = TITLE_HEIGHT + viewportHeight;
 		resize( windowWidth, windowHeight );
 
 		int i = 1;
@@ -259,11 +253,6 @@ public class WndBag extends WndTabbed {
 	}
 	
 	protected void placeItems( Bag container ) {
-
-		if (container == Dungeon.hero.belongings.backpack && GenesisEcho.active(Dungeon.hero)) {
-			placeInfiniteBackpackPage(container);
-			return;
-		}
 		
 		// Equipped items
 		Belongings stuff = Dungeon.hero.belongings;
@@ -301,77 +290,12 @@ public class WndBag extends WndTabbed {
 		}
 	}
 	
-	private void placeInfiniteBackpackPage(Bag container) {
-		Belongings stuff = Dungeon.hero.belongings;
-
-		placeItem( stuff.weapon != null ? stuff.weapon : new Placeholder( ItemSpriteSheet.WEAPON_HOLDER ) );
-		placeItem( stuff.armor != null ? stuff.armor : new Placeholder( ItemSpriteSheet.ARMOR_HOLDER ) );
-		placeItem( stuff.artifact != null ? stuff.artifact : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
-		placeItem( stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
-		placeItem( stuff.misc != null ? stuff.misc : new Placeholder( ItemSpriteSheet.SOMETHING ) );
-		placeItem( stuff.ring != null ? stuff.ring : new Placeholder( ItemSpriteSheet.RING_HOLDER ) );
-
-		int equipped = 6;
-		if (stuff.secondWep != null) {
-			placeItem(stuff.secondWep);
-			equipped++;
-		}
-
-		ArrayList<Item> pageItems = new ArrayList<>();
-		for (Item item : container.items) {
-			if (!(item instanceof Bag)) pageItems.add(item);
-		}
-
-		int freeSlots = Math.max(5, container.capacity() - container.items.size());
-		for (int i = 0; i < freeSlots; i++) pageItems.add(null);
-
-		int slotsPerPage = Math.max(1, nRows * nCols - equipped);
-		pageCount = Math.max(1, (int)Math.ceil(pageItems.size() / (float)slotsPerPage));
-		pageIndex = Math.max(0, Math.min(pageIndex, pageCount - 1));
-
-		int from = pageIndex * slotsPerPage;
-		int to = Math.min(pageItems.size(), from + slotsPerPage);
-		for (int i = from; i < to; i++) {
-			placeItem(pageItems.get(i));
-		}
-
-		while (count < nRows * nCols) placeItem(null);
-	}
-
-	private void addPageButtons(int width, float y) {
-		RedButton prev = new RedButton("< " + (pageIndex + 1) + "/" + pageCount, 7) {
-			@Override
-			protected void onClick() {
-				if (pageIndex <= 0) return;
-				pageIndex--;
-				hide();
-				GameScene.show(new WndBag(shownBag, selector));
-			}
-		};
-		prev.setRect(0, y, width/2f - 1, 13);
-		prev.enable(pageIndex > 0);
-		add(prev);
-
-		RedButton next = new RedButton((pageIndex + 1) + "/" + pageCount + " >", 7) {
-			@Override
-			protected void onClick() {
-				if (pageIndex >= pageCount - 1) return;
-				pageIndex++;
-				hide();
-				GameScene.show(new WndBag(shownBag, selector));
-			}
-		};
-		next.setRect(width/2f + 1, y, width/2f - 1, 13);
-		next.enable(pageIndex < pageCount - 1);
-		add(next);
-	}
-
 	protected void placeItem( final Item item ) {
 
 		count++;
 		
 		int x = col * (slotWidth + SLOT_MARGIN);
-		int y = TITLE_HEIGHT + row * (slotHeight + SLOT_MARGIN);
+		int y = row * (slotHeight + SLOT_MARGIN);
 
 		InventorySlot slot = new InventorySlot( item ){
 			@Override
@@ -415,8 +339,8 @@ public class WndBag extends WndTabbed {
 							WndBag.this.hide();
 						}
 					};
-					parent.addToFront(r);
-					r.camera = camera();
+					WndBag.this.addToFront(r);
+					r.camera = WndBag.this.camera();
 					PointF mousePos = PointerEvent.currentHoverPos();
 					mousePos = camera.screenToCamera((int)mousePos.x, (int)mousePos.y);
 					r.setPos(mousePos.x-3, mousePos.y-3);
@@ -439,7 +363,7 @@ public class WndBag extends WndTabbed {
 			}
 		};
 		slot.setRect( x, y, slotWidth, slotHeight );
-		add(slot);
+		itemContent.add(slot);
 
 		if (item == null || (selector != null && !selector.itemSelectable(item))){
 			slot.enable(false);
