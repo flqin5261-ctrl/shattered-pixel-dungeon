@@ -1833,3 +1833,85 @@ Build：
 - artifact digest：`sha256:3636d91475c1fd5cc27e4d37fa277d6dad8a4fd9b246cf5a13358e1a53a4f202`
 - APK SHA-256：`8508db9fce64d1368315c80946414bad1646df05d555df0af05e116359cd6329`
 - result：success
+
+
+# 23. 0.5.1 — 稀有商人据点
+
+版本：
+
+- 0.5.1
+- versionCode 947
+- dev：`assist-0.5.1-merchants`
+- stable：`assist-0.5.1-stable`
+- Generator V11
+- release code SHA：`d9e0d06829d61674d4bb96a52f649cfea45fe90c`
+
+本版首次向 Infinite World 加入商人。
+
+## 23.1 商人不是普通随机 NPC
+
+商人被设计为固定世界坐标的稀有据点，而不是随机站在路边。
+
+- 使用 9-Chunk 稀疏 lattice 选定候选商店 Chunk；
+- 出生周边不会直接生成商店；
+- anomaly 宏区不生成商店；
+- primary spine / secondary infinite route 上不放商店，避免 V10 路网最后 carve 时切穿店铺；
+- 由于 9 Chunk 间距大于 7×7 active window，同一窗口最多只会有一个商人。
+
+## 23.2 商店房
+
+Generator V11 新增 merchant room theme=10：
+
+- 房门固定普通门；
+- 房内为安全的小型商店空间；
+- 普通 themed-room loot 不再叠加到商店房；
+- 普通怪生态不会在商人 8 格范围内自然刷怪。
+
+## 23.3 商人
+
+新增 `InfiniteWorldShopkeeper extends Shopkeeper`。
+
+直接复用原版：
+
+- Shopkeeper 交互；
+- `Heap.Type.FOR_SALE`；
+- `WndTradeItem`；
+- 原版买卖/价格逻辑。
+
+商人不会被普通敌人的 40 格 ecology despawn 逻辑清掉。
+
+Streaming 时商人和普通近距离 Mob 一样重算 local position。
+
+## 23.4 库存
+
+每个商店固定 6 个货位：
+
+- PotionOfHealing
+- SmallRation
+- 随机药剂
+- 安全卷轴
+- 1 件按世界距离决定 tier 的装备
+- 1 件工具/实用品
+
+库存使用 deterministic world position + objectStates。
+
+买掉商品后：
+
+- 对应货位标记 consumed；
+- streaming 后不刷新；
+- save/load 后不刷新。
+
+## 23.5 商人离开
+
+如果玩家攻击商人导致原版 `flee()`：
+
+- 商店 Chunk 的 merchant-gone 状态写入 objectStates；
+- 该商人不会因为 streaming 重建而重新出现。
+
+## 23.6 Build
+
+- workflow run：36652803838
+- artifact：11071337926
+- result：success
+- artifact ZIP SHA-256：`3636d91475c1fd5cc27e4d37fa277d6dad8a4fd9b246cf5a13358e1a53a4f202`
+- APK SHA-256：`286294c86515604e706223005bbd0d0d62a5f954cb5a34bb3594099e4f452764`
