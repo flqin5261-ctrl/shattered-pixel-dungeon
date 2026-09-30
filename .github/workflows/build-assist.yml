@@ -38,6 +38,7 @@ on:
       - assist-0.5.12-short-trial
       - assist-0.5.13-breakthrough-certificate
       - assist-0.6.4-certificate-ui
+      - assist-0.6.5-breakthrough-polish
   workflow_dispatch:
 
 permissions:
