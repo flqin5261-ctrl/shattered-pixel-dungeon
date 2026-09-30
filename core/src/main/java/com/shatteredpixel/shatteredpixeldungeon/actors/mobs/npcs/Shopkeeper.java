@@ -201,17 +201,19 @@ public class Shopkeeper extends NPC {
 	}
 
 	//shopkeepers are greedy!
-	public static int sellPrice(Item item){
+	public static int baseSellPrice(Item item){
 		// Infinite World V15 guarantees missing inventory-expansion bags at
 		// merchants. Keep those progression essentials realistically affordable
 		// instead of applying the normal greedy x5 shop markup.
-		int price;
 		if (Dungeon.infiniteWorld && item instanceof Bag) {
-			price = Math.max(20, item.value() * 2);
+			return Math.max(20, item.value() * 2);
 		} else {
-			price = item.value() * 5 * (Dungeon.depth / 5 + 1);
+			return item.value() * 5 * (Dungeon.depth / 5 + 1);
 		}
-		return breakthroughDiscount(price);
+	}
+
+	public static int sellPrice(Item item){
+		return breakthroughDiscount(baseSellPrice(item));
 	}
 
 	public static int breakthroughDiscount(int price){
