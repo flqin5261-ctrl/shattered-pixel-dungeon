@@ -84,6 +84,7 @@ public class GenesisEcho extends Buff {
                 Math.round((1f-seal.hungerMultiplier())*100f),
                 Math.round((seal.goldMultiplier()-1f)*100f),
                 Math.round((seal.speedMultiplier()-1f)*100f),
+                seal.backpackBonus(),
                 seal.visionBonus(),
                 seal.searchDistanceBonus(),
                 Math.round(seal.searchChanceBonus()*100f),
