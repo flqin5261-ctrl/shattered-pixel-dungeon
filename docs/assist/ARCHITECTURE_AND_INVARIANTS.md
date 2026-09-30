@@ -183,7 +183,7 @@ Streaming 时需要处理：
 当前：
 
 ```
-WORLD_GEN_VERSION = 10
+WORLD_GEN_VERSION = 11
 ```
 
 旧存档保存自己的 generatorVersion。
@@ -1560,3 +1560,64 @@ bundle.put(MOBS, mobs)
 未来如果加入新的 Elite buff，必须测试：
 
 > reward-free despawn 时 detach 是否真正无副作用。
+
+
+# 44. Generator V11：Merchant Outposts
+
+V11 将商人定义为 deterministic world structure，而不是 ecology spawn。
+
+## 44.1 为什么不用普通 Mob Ecology
+商人必须：
+- 有固定地点；
+- 有固定库存；
+- 可离开后回来继续交易；
+- 不因 40 格敌人 despawn 消失；
+- 不能随着低频刷怪随机重复出现。
+
+因此使用 `InfiniteWorldShopkeeper extends Shopkeeper`，并保存 `shopChunkX/Y`。
+
+## 44.2 空间约束
+商人候选采用 seed 驱动 7-Chunk lattice。
+7×7 active window 覆盖的 chunk coordinate span 为 6，因此任意窗口最多一个 lattice point，可避免同时存在多个 Shopkeeper。
+
+候选还排除：
+- 出生 4 Chunk 范围；
+- V9 anomaly macro；
+- V10 primary spine；
+- V10 secondary infinite route。
+
+最后一条很重要：V10 无限道路是在房间之后最终 carve，如果商店位于该路网上，可能被道路穿墙。V11 直接避免这种冲突。
+
+## 44.3 商店房
+商店复用 themed room index 0，但 theme 强制为 10：
+- 普通门；
+- 内部 EMPTY_SP / EMPTY_DECO；
+- 不生成原本的植物/卷轴/藏宝室奖励；
+- 不允许 legacy chest 在商人 Chunk 叠加。
+
+## 44.4 库存
+库存使用原版 `Heap.Type.FOR_SALE`，因此：
+- 点击商品继续走 `WndTradeItem`；
+- 金币结算继续使用原版 Shopkeeper；
+- 玩家可向商人出售物品；
+- 回购列表在商人仍 active 时保留。
+
+每个 stock slot 使用 deterministic world cell + objectState key。
+购买导致 FOR_SALE heap 消失，下一次 snapshot 将 slot 标记 consumed。
+
+## 44.5 商人状态
+商人被攻击/偷窃失败调用 flee 时：
+`InfiniteWorldShopkeeper.flee()`
+先调用 `markInfiniteWorldMerchantGone(cx,cy)`，再执行原版 flee。
+
+普通 Streaming unload 不能调用 flee/destroy，只调用 reward-free actor removal，因此不会把据点错误标记为关闭。
+
+## 44.6 Streaming
+Window shift：
+- Enemy 继续使用 0.5.0 距离 prune/rebase。
+- InfiniteWorldShopkeeper 单独处理：
+  - 仍在新 window -> local pos rebase；
+  - 离开 window -> unload；
+  - 新 merchant chunk 进入 -> `ensureV11Shopkeeper(true)` 补入 GameScene。
+
+商人的 buyback 历史只在 NPC 连续 active 时保存；一旦商人完全离开活动窗口后重新生成，旧 buyback 历史不保证保留。正式库存状态不受影响。
