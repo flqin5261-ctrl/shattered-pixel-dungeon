@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.ItemStatusHandler;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.AquaBrew;
@@ -291,7 +292,12 @@ public class Potion extends Item {
 		
 		hero.spend( TIME_TO_DRINK );
 		hero.busy();
-		apply( hero );
+		BreakthroughCertificate.beginConsumableBoost(hero);
+		try {
+			apply( hero );
+		} finally {
+			BreakthroughCertificate.endConsumableBoost(hero);
+		}
 		
 		Sample.INSTANCE.play( Assets.Sounds.DRINK );
 		
