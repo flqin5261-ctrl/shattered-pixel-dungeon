@@ -16,6 +16,8 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 
+import java.util.ArrayList;
+
 public class BreakthroughCertificate extends EquipableItem {
 
     private static final String CERT_LEVEL = "cert_level";
@@ -199,6 +201,14 @@ public class BreakthroughCertificate extends EquipableItem {
     }
 
     @Override
+    public ArrayList<String> actions(Hero hero) {
+        ArrayList<String> actions = super.actions(hero);
+        actions.remove(AC_DROP);
+        actions.remove(AC_THROW);
+        return actions;
+    }
+
+    @Override
     public String name() {
         return Messages.get(this, "name", certificateLevel);
     }
@@ -215,6 +225,8 @@ public class BreakthroughCertificate extends EquipableItem {
                 visionBonus(),
                 Math.round((1f-shopPriceMultiplier())*100f),
                 Math.round(chestBonusChance()*100f),
+                Math.round(regenInterval()),
+                Math.round(reviveChargeRequired()),
                 Math.round(reviveHpFraction()*100f),
                 reviveChargePercent());
     }
