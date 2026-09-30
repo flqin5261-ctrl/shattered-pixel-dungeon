@@ -1621,3 +1621,52 @@ Window shift：
   - 新 merchant chunk 进入 -> `ensureV11Shopkeeper(true)` 补入 GameScene。
 
 商人的 buyback 历史只在 NPC 连续 active 时保存；一旦商人完全离开活动窗口后重新生成，旧 buyback 历史不保证保留。正式库存状态不受影响。
+
+# V12 — 可发现性保证与唯一神器箱不变量
+
+## 1. Generator 兼容
+V12 的商人密度和 anomaly 概率只对 generatorVersion >= 12 生效。
+旧 V11 世界必须继续得到旧商人格点与 8% anomaly 结果，不能因为安装新 APK 改写已存在世界的基础布局。
+
+## 2. 唯一神器箱必须使用绝对世界状态
+保证神器箱不是普通随机房间奖励，也不能只依赖当前 local cell。
+InfiniteWorldState 保存：
+- heroActionValue
+- artifactChestWorldX / artifactChestWorldY
+- artifactChestArtifactIndex
+- artifactChestState
+
+状态 0/1/2/3 分别表示未生成、关闭水晶箱、已开但神器仍在、神器已取走。
+任何 Window shift / Save / Load / rebuildWindow 都只能恢复同一个世界对象，绝不能再次执行一次新的“400 行动值奖励”。
+
+## 3. 行动值定义
+只累计 Hero 正向 spend / spendConstant 时间；负 spend 不计入。
+阈值当前固定为 400。
+如果阈值到达瞬间没有合法附近格子，本次不改变 state=0，之后正向行动会继续尝试，直到能安全生成。
+
+## 4. 神器唯一性
+首次确定神器类型时优先从 Generator.Category.ARTIFACT 当前剩余 probs 中选择，并用 Generator.removeArtifact() 消耗该类型，避免保证箱与后续随机神器重复。
+恢复箱子时只能按已经保存的 artifactChestArtifactIndex 重建，不能重新抽取。
+
+## 5. 可发现性
+保证箱生成位置必须：
+- 在当前 active window 内；
+- Hero 可达；
+- 避开 solid/pit/secret、角色、trap、plant 和非普通 Heap；
+- 优先 2～5 cell，必要时 1～7 cell；
+- Heap.seen=true；
+- 同步 visited/mapped；
+- 给一把 CrystalKey，避免唯一奖励 soft-lock。
+
+## 6. 异境便笺
+Document.INFINITE_WORLD_NOTES 的页面发现状态是“是否还需要近身保证”的权威状态。
+V12 进入尚未收录的 anomaly 类型时，可在 Hero 附近补一张可见便笺；一旦页面收录，补偿逻辑必须停止。
+原 deterministic anomaly anchor note 仍可存在，用于保持世界级固定内容设计。
+
+## 7. 不得破坏的旧不变量
+本版不授权修改：
+- Streaming 只能在 Hero.onMotionComplete() 后执行；
+- SHIFT_LOW=24、SHIFT_HIGH=144、SHIFT_STEP=3 的 hysteresis；
+- animated water backdrop / synchronous VBO flush；
+- 普通怪距离清除必须使用 despawnFromInfiniteWorld()；
+- applicationId、固定签名和 versionCode 单调递增。
