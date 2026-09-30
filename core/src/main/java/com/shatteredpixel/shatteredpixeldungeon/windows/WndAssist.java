@@ -9,8 +9,12 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
+import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
@@ -534,6 +538,43 @@ public class WndAssist extends Window {
             Catalog.setSeen(cls);
             GameScene.updateKeyDisplay();
             GLog.p("已获得：" + Messages.titleCase(first.trueName()) + " ×" + amount);
+            return;
+        }
+
+        if (first instanceof Gold) {
+            Dungeon.gold += amount;
+            Catalog.setSeen(cls);
+            GLog.p("已增加金币 ×" + amount + "，当前金币：" + Dungeon.gold);
+            return;
+        }
+
+        if (first instanceof EnergyCrystal) {
+            Dungeon.energy += amount;
+            Catalog.setSeen(cls);
+            GLog.p("已增加能量晶体 ×" + amount + "，当前能量：" + Dungeon.energy);
+            return;
+        }
+
+        if (first instanceof Dewdrop) {
+            Waterskin waterskin = Dungeon.hero.belongings.getItem(Waterskin.class);
+            if (waterskin == null) {
+                GLog.w("露珠不能存入普通背包。请先获取水袋，再用此功能添加露珠。");
+                return;
+            }
+
+            int grantedDew = 0;
+            for (int i = 0; i < amount && !waterskin.isFull(); i++) {
+                Dewdrop dew = new Dewdrop();
+                waterskin.collectDew(dew);
+                grantedDew++;
+            }
+            Catalog.setSeen(cls);
+            if (grantedDew > 0) {
+                GLog.p("已向水袋加入露珠 ×" + grantedDew
+                        + (grantedDew < amount ? "（水袋已满）" : ""));
+            } else {
+                GLog.w("水袋已经装满。");
+            }
             return;
         }
 
