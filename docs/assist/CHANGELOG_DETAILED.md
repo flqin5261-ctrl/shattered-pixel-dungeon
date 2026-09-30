@@ -2281,3 +2281,71 @@ Integration:
 - V15 Backrooms generation and merchant progression remain unchanged.
 - Water/VBO/Fog/Streaming invariants remain unchanged.
 
+# 0.5.9 / Generator V16 — 密集环境摆件 + 真实碰撞
+
+版本：
+- versionName: 0.5.9
+- versionCode: 955
+- dev: assist-0.5.9-solid-decor
+- stable: assist-0.5.9-stable
+- WORLD_GEN_VERSION: 16
+
+用户反馈 0.5.8 的环境装饰仍然过少，而且只是无碰撞的视觉贴图。
+
+V16 将装饰从“单格贴纸”升级为真正的场景摆件系统。
+
+## 密度
+- 普通 Chunk 尝试生成 2～3 组 set-piece。
+- Backrooms-inspired district Chunk 尝试生成 4～5 组。
+- 如果地形没有足够安全空间则宁可少放，不强行塞进窄路。
+
+## 12 种场景组合
+1. 灌木簇
+2. 蘑菇簇
+3. 路牌角落
+4. 双木桶
+5. 双木箱
+6. 木箱+木桶补给杂物堆
+7. 2×2 木箱堆
+8. 三木桶排
+9. 双石像
+10. 石像+灌木+路牌街角
+11. 区域装饰成对摆件
+12. 区域装饰+蘑菇/灌木角落
+
+## 真实碰撞
+- 路牌、木桶、木箱等 Kenney 摆件的实体格使用 Terrain.CUSTOM_DECO。
+- 石像使用 STATUE / STATUE_SP。
+- 区域摆件使用 REGION_DECO / REGION_DECO_ALT。
+- 上述 terrain 都具有 SOLID flag，Hero 与 Mob 正常寻路时必须绕开。
+- 旁观测试模式仍然可以穿过，便于 QA。
+
+## 绝不堵路
+任何包含 SOLID cell 的 set-piece 都必须满足：
+- 整组摆件周围完整一圈均为 PASSABLE terrain；
+- 周围不能有 Heap / Trap / Plant / Char；
+- 不生成在 Chunk 中央常用十字通行带；
+- 不生成在边缘 gateway 附近；
+- 因此即使占据 2×2 或 3×1，多方向绕行仍然存在。
+
+## 非交互
+这些对象全部只是环境：
+- 不可开；
+- 不可拾取；
+- 不掉物；
+- 不攻击；
+- 不触发脚本；
+- 不消耗动作。
+它们只提供视觉与碰撞。
+
+## Persistence
+- V16 每个 set-piece slot 将 style + local anchor 持久化到 InfiniteWorldState.objectStates。
+- Streaming/Save-Load 后同一世界坐标仍恢复同一个组合。
+- runtime solid terrain 不写入 terrainOverrides，避免与 deterministic set-piece state 重复持久化。
+- 旧 V15 world 保留 0.5.8 的稀疏无碰撞装饰，不被强制改图。
+
+## 未改动
+- 0.5.8 spectator ×8 / 20-cell FOV。
+- V15 14 类 Backrooms district。
+- 商人成长与必卖缺失 Bag。
+- 怪物强度仍未调整，继续留给下一阶段。
