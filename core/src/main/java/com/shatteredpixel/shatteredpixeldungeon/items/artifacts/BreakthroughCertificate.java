@@ -37,9 +37,7 @@ public class BreakthroughCertificate extends EquipableItem {
     private static final String CERT_LEVEL = "cert_level";
     private static final String REVIVE_CHARGE = "revive_charge";
     private static final String REGEN_PROGRESS = "regen_progress";
-    private static final String IMMUNITY_INDEX = "immunity_index";
-
-    private static final Class[] IMMUNITY_POOL = new Class[]{
+    private static final Class[] NEGATIVE_EFFECT_CLASSES = new Class[]{
             Burning.class, Poison.class, Paralysis.class, Vertigo.class,
             Blindness.class, Cripple.class, Weakness.class, Vulnerable.class,
             Slow.class, Charm.class, Hex.class
@@ -51,7 +49,6 @@ public class BreakthroughCertificate extends EquipableItem {
     private int certificateLevel = 30;
     private float reviveCharge = 0f;
     private float regenProgress = 0f;
-    private int immunityIndex = -1;
 
     {
         image = ItemSpriteSheet.TOKEN;
@@ -363,42 +360,9 @@ public class BreakthroughCertificate extends EquipableItem {
         return Math.min(1f, searchChanceBonus() * copies(hero));
     }
 
-    public Class immunityClass() {
-        ensureImmunity();
-        return IMMUNITY_POOL[immunityIndex];
-    }
-
-    public String immunityName() {
-        ensureImmunity();
-        return Messages.get(BreakthroughCertificate.class, "immunity_" + immunityIndex);
-    }
-
-    private void ensureImmunity() {
-        if (immunityIndex < 0 || immunityIndex >= IMMUNITY_POOL.length) {
-            immunityIndex = Random.Int(IMMUNITY_POOL.length);
-        }
-    }
-
-    public void rerollImmunity(Hero hero) {
-        ensureImmunity();
-        int previous = immunityIndex;
-        if (IMMUNITY_POOL.length > 1) {
-            do {
-                immunityIndex = Random.Int(IMMUNITY_POOL.length);
-            } while (immunityIndex == previous);
-        }
-        if (hero != null && isEquipped(hero)) {
-            BreakthroughBlessing old = hero.buff(BreakthroughBlessing.class);
-            if (old != null) old.detach();
-            activate(hero);
-        }
-        GLog.p("破界之印的永久免疫已切换为：" + immunityName());
-        Item.updateQuickslot();
-    }
-
     public static boolean isSupportedNegativeEffect(Class effect) {
         if (effect == null) return false;
-        for (Class<?> cls : IMMUNITY_POOL) {
+        for (Class<?> cls : NEGATIVE_EFFECT_CLASSES) {
             if (cls.isAssignableFrom(effect)) return true;
         }
         return false;
@@ -493,7 +457,6 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((evasionMultiplier()-1f)*100f),
                     Math.round((1f-damageTakenMultiplier())*100f),
                     Math.round((1f-negativeEffectMultiplier())*100f),
-                    immunityName(),
                     Math.round((1f-hungerMultiplier())*100f),
                     Math.round((goldMultiplier()-1f)*100f),
                     Math.round((speedMultiplier()-1f)*100f),
@@ -518,7 +481,6 @@ public class BreakthroughCertificate extends EquipableItem {
                 Math.round((evasionMultiplier()-1f)*100f),
                 Math.round((1f-damageTakenMultiplier())*100f),
                 Math.round((1f-negativeEffectMultiplier())*100f),
-                immunityName(),
                 Math.round((expMultiplier()-1f)*100f),
                 Math.round((1f-hungerMultiplier())*100f),
                 Math.round((goldMultiplier()-1f)*100f),
@@ -591,22 +553,18 @@ public class BreakthroughCertificate extends EquipableItem {
     @Override
     public void activate(Char ch) {
         if (ch instanceof Hero) {
-            ensureImmunity();
             BreakthroughBlessing blessing = Buff.affect(ch, BreakthroughBlessing.class);
             blessing.certificate = this;
-            blessing.setImmunity(immunityClass());
         }
     }
 
     @Override
     public boolean isUpgradable() {
-        return true;
+        return false;
     }
 
     @Override
     public Item upgrade() {
-        // Normal upgrade paths never change certificate stats. ScrollOfUpgrade
-        // special-cases this item to reroll its permanent immunity.
         return this;
     }
 
@@ -621,7 +579,6 @@ public class BreakthroughCertificate extends EquipableItem {
         bundle.put(CERT_LEVEL, certificateLevel);
         bundle.put(REVIVE_CHARGE, reviveCharge);
         bundle.put(REGEN_PROGRESS, regenProgress);
-        bundle.put(IMMUNITY_INDEX, immunityIndex);
     }
 
     @Override
@@ -630,8 +587,6 @@ public class BreakthroughCertificate extends EquipableItem {
         certificateLevel = bundle.contains(CERT_LEVEL) ? bundle.getInt(CERT_LEVEL) : 30;
         reviveCharge = bundle.contains(REVIVE_CHARGE) ? bundle.getFloat(REVIVE_CHARGE) : 0f;
         regenProgress = bundle.contains(REGEN_PROGRESS) ? bundle.getFloat(REGEN_PROGRESS) : 0f;
-        immunityIndex = bundle.contains(IMMUNITY_INDEX) ? bundle.getInt(IMMUNITY_INDEX) : -1;
-        ensureImmunity();
     }
 
     private void makeRoomForSelfBeforeUnequip(Hero hero) {
@@ -689,11 +644,6 @@ public class BreakthroughCertificate extends EquipableItem {
             revivePersists = true;
         }
 
-        private void setImmunity(Class cls) {
-            immunities.clear();
-            if (cls != null) immunities.add(cls);
-        }
-
         @Override
         public boolean act() {
             spend(TICK);
@@ -739,7 +689,6 @@ public class BreakthroughCertificate extends EquipableItem {
                         Math.round((cert.evasionMultiplier()-1f)*100f),
                         Math.round((1f-cert.damageTakenMultiplier())*100f),
                         Math.round((1f-cert.negativeEffectMultiplier())*100f),
-                        cert.immunityName(),
                         Math.round((1f-cert.hungerMultiplier())*100f),
                         Math.round((cert.goldMultiplier()-1f)*100f),
                         Math.round((cert.speedMultiplier()-1f)*100f),
@@ -764,7 +713,6 @@ public class BreakthroughCertificate extends EquipableItem {
                         Math.round((cert.evasionMultiplier()-1f)*100f),
                         Math.round((1f-cert.damageTakenMultiplier())*100f),
                         Math.round((1f-cert.negativeEffectMultiplier())*100f),
-                        cert.immunityName(),
                         Math.round((cert.expMultiplier()-1f)*100f),
                         Math.round((1f-cert.hungerMultiplier())*100f),
                         Math.round((cert.goldMultiplier()-1f)*100f),
@@ -797,7 +745,6 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((preview.evasionMultiplier()-1f)*100f),
                     Math.round((1f-preview.damageTakenMultiplier())*100f),
                     Math.round((1f-preview.negativeEffectMultiplier())*100f),
-                    cert.immunityName(),
                     Math.round((preview.expMultiplier()-1f)*100f),
                     Math.round((1f-preview.hungerMultiplier())*100f),
                     Math.round((preview.goldMultiplier()-1f)*100f),
