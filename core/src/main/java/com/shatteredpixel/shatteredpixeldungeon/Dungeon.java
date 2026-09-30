@@ -54,6 +54,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.BreakthroughTrialLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CavesBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CavesLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
@@ -63,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.ExtraChallengeLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
@@ -287,7 +289,7 @@ public class Dungeon {
 		generatedLevels.clear();
 		infiniteWorldState = new InfiniteWorldState();
 
-		gold = 0;
+		gold = infiniteWorld ? 300 : 0;
 		energy = 0;
 
 		droppedItems = new SparseArray<>();
@@ -323,7 +325,11 @@ public class Dungeon {
 		Actor.clear();
 		
 		Level level;
-		if (infiniteWorld) {
+		if (infiniteWorld && infiniteWorldState != null
+				&& infiniteWorldState.breakthroughTrialActive
+				&& branch == InfiniteWorldProgression.BREAKTHROUGH_BRANCH) {
+			level = new BreakthroughTrialLevel();
+		} else if (infiniteWorld) {
 			level = new InfiniteWorldLevel();
 		} else if (extraChallenge) {
 			level = new ExtraChallengeLevel();
