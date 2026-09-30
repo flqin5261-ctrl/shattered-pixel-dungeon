@@ -390,6 +390,25 @@ public class CellSelector extends ScrollArea {
 	public void update() {
 		super.update();
 
+		if (pendingGenesisTapCell != -1) {
+			if (!GameScene.isDefaultCellListener(listener)
+					|| Dungeon.hero == null
+					|| !GenesisEcho.ultraTeleport(Dungeon.hero)) {
+				pendingGenesisTapCell = -1;
+				pendingGenesisTapDelay = 0f;
+			} else {
+				pendingGenesisTapDelay -= Game.elapsed;
+				if (pendingGenesisTapDelay <= 0f && Dungeon.hero.ready
+						&& !GameScene.interfaceBlockingHero()) {
+					int cell = pendingGenesisTapCell;
+					pendingGenesisTapCell = -1;
+					pendingGenesisTapDelay = 0f;
+					if (listener != null) listener.onSelect(cell);
+					GameScene.ready();
+				}
+			}
+		}
+
 		GameAction newLeftStick = actionFromStick(ControllerHandler.leftStickPosition.x,
 				ControllerHandler.leftStickPosition.y);
 
