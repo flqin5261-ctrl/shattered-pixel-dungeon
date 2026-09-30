@@ -41,6 +41,7 @@ on:
       - assist-0.6.5-breakthrough-polish
       - assist-0.6.6-genesis-echo
       - assist-0.6.7-genesis-authority
+      - assist-0.6.14-layout-fix
       - assist-0.6.13-scroll-aoe
       - assist-0.6.12-ui-rollback
       - assist-0.6.11-scroll-hotfix
