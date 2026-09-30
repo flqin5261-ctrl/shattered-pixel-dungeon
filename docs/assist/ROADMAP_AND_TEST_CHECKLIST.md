@@ -1516,3 +1516,69 @@ V10 的验收标准不是“所有路都无限”，而是：
 - [ ] 400 action-value 唯一神器箱仍整局仅一个。
 - [ ] 0.5.4 指定物品作弊正常。
 - [ ] fixed applicationId / stable signature 不变。
+
+# B16. 0.5.7 / Generator V15 专项回归
+
+V15 地形分布发生变化，要验证 14 类新环境必须重新开始创建 V15 世界。
+
+## B16.1 自动层级档案
+- [ ] V15 世界不再生成 InfiniteWorldNote 纸条。
+- [ ] 第一次进入每一种特殊环境时立即提示并解锁对应档案。
+- [ ] 同一种环境再次进入不重复刷解锁提示。
+- [ ] Save/Load 后档案仍保持已获得。
+- [ ] Journal 可读 Level 0/1/2/3/4/5/6/7/8/9/10/11/37/94 共 14 条。
+
+## B16.2 14 类地形
+- [ ] Level 0 黄墙重复迷宫。
+- [ ] Level 1 混凝土服务/仓储厅。
+- [ ] Level 2 狭窄检修走廊。
+- [ ] Level 3 电气/机械网格。
+- [ ] Level 4 废弃办公室。
+- [ ] Level 5 旅馆走廊/客房。
+- [ ] Level 6 Lights Out 狭窄暗廊。
+- [ ] Level 7 大面积水域。
+- [ ] Level 8 不规则洞穴。
+- [ ] Level 9 郊区街道与住宅。
+- [ ] Level 10 田野/农路。
+- [ ] Level 11 城市街网。
+- [ ] Level 37 Poolrooms。
+- [ ] Level 94 草地小镇。
+- [ ] 每一种都能通过普通 Infinite World 探索直接进入/离开。
+- [ ] 每一种都保留四边 gateway 与 V10 无限路连通。
+- [ ] 连续 Streaming 后主题不出现错贴、假水、黑块。
+
+## B16.3 分布
+- [ ] 4×4 macro 内主题保持一致。
+- [ ] 特殊 district 体感约 42%，明显常见但仍保留足够普通地牢。
+- [ ] 起点 2 Chunk 缓冲内不出现 V15 特殊 district。
+
+## B16.4 商人出现频率成长
+- [ ] Tier0 的 3×3 基础格点已经比 V14 更容易遇到商店。
+- [ ] Hero Level 4/7/11/15 或 action 300/800/1600/2800 推进后，新生成远方 Chunk 的 merchant density 逐档提高。
+- [ ] 已经生成过的 Chunk 在升级前后 merchant/no-merchant 状态完全不变。
+- [ ] 商店仍不覆盖 anomaly/primary/secondary infinite route。
+- [ ] 每个商店继续满足 V14 connectivity guarantee。
+
+## B16.5 库存成长
+- [ ] 新开局第一个商人不出售高级 Wand/Ring/+1 装备。
+- [ ] Tier1 后开始出现少量 Wand/Transmutation。
+- [ ] Tier2 后 Ring/Wand 明显增加。
+- [ ] Tier3/4 才允许少量 +1 merchandise。
+- [ ] 每个商人的 tier 在首次接近后锁定，离开再回来不变。
+- [ ] 买走的货物不刷新。
+
+## B16.6 四种扩展背包
+- [ ] Hero 缺四包时，第一个遇到的商人至少出售其中一个。
+- [ ] 买到一个 Bag 后，下一个新商人保证出售剩余三种之一。
+- [ ] 商店预加载后若从作弊/其他来源先获得其原计划 Bag，真正接近时能改卖另一个仍缺 Bag。
+- [ ] 收齐 VelvetPouch / ScrollHolder / PotionBandolier / MagicalHolster 后不再强制 Bag。
+- [ ] Infinite World Bag 价格为 value×2（最低20），明显低于普通 ×5 商店定价。
+- [ ] 消耗过的 Bag slot 不会 Streaming/Save-Load 后复活。
+
+## B16.7 核心回归
+- [ ] 0.5.6 无界旁观测试模式正常。
+- [ ] V14 merchant route repair / dynamic accent refresh 正常。
+- [ ] 唯一神器水晶箱仍整局只有一个。
+- [ ] Mob ecology / no-reward despawn 正常。
+- [ ] Streaming 仍只在 Hero.onMotionComplete 后发生。
+- [ ] fixed package/signature 可覆盖安装旧 Assist APK。
