@@ -8,11 +8,11 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.6.4",
-    "version_code": 960,
+    "version_name": "0.6.5",
+    "version_code": 961,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.6.4-stable",
-    "development_branch": "assist-0.6.4-certificate-ui",
+    "stable_branch": "assist-0.6.5-stable",
+    "development_branch": "assist-0.6.5-breakthrough-polish",
     "release_code_sha": "2ab689931df0ab6c7eff9e539a8a0a815568b0b6",
     "world_generator_version": 17
   },
@@ -258,7 +258,7 @@
       "theme": "one persistent boundless stitched world of ordinary, ruined and Backrooms-inspired regions whose danger adapts to the Hero"
     },
     "breakthrough_certificate": {
-      "slot": "independent sixth equipment slot beside artifact; does not consume artifact/ring/misc slots",
+      "slot": "independent sixth equipment slot; coexists with Artifact",
       "grant": "automatically created and equipped on first successful level-30 breakthrough; legacy completed saves receive one on Infinite World movement if missing",
       "tiers": [
         30,
@@ -348,7 +348,22 @@
         "evasion": "+4/+7/+10/+14%",
         "experience": "+5/+8/+12/+15%",
         "balance_note": "no flat damage reduction or permanent immunity was added; HP/regen/revive already provide strong defensive scaling"
-      }
+      },
+      "display_name": "破界之印-LV30/LV40/LV50/LV60",
+      "strength": "+2/+4/+6/+8",
+      "evasion": "+10/+16/+24/+32%",
+      "experience": "+15/+25/+40/+60%",
+      "movement": "+8/+12/+18/+25%",
+      "damage_reduction": "8/12/16/20% non-hunger damage reduction",
+      "status_resistance": "15/25/35/50% additional resistance to common negative statuses",
+      "wand_recharge": "+20/+35/+55/+80% natural wand recharge",
+      "consumable_duration": "+20/+35/+55/+80% duration for positive potion/scroll buffs",
+      "search_sense": "+1/+2/+3/+4 search radius and +20/+30/+45/+60 percentage points for secret-trap/secret-door auto-detection",
+      "revive": "200/160/120/80 action-value full charge; revive at 35/45/55/70% HP",
+      "permanent_immunity": "one random immunity from Burning/Poison/Paralysis/Vertigo/Blindness/Cripple/Weakness/Vulnerability/Slow/Charm/Hex; persisted while equipped",
+      "immunity_reroll": "using ScrollOfUpgrade on the Seal consumes the scroll and rerolls to a different immunity without changing Seal tier",
+      "shop_ui": "buy window shows a grey struck-through original price and a green Seal discounted price",
+      "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly"
     }
   },
   "current_content": {
@@ -667,6 +682,12 @@
     "Stable branches must not be overwritten."
   ],
   "known_items_to_verify": [
+    "0.6.5 WndAssist: one-click breakthrough completion works both before entering the arena and while already inside it.",
+    "0.6.5 Seal reroll: ScrollOfUpgrade can select the Seal, consumes the scroll, changes the immunity to a different supported negative effect, and does not change Seal tier.",
+    "0.6.5 shop UI: buying with the Seal equipped shows crossed-out original price plus green discounted price while purchase uses the discounted amount.",
+    "0.6.5 wand recharge and positive potion/scroll durations measurably increase at each Seal tier.",
+    "0.6.5 secret sensing: passive search radius and chance increase without revealing through non-visible geometry.",
+    "0.6.5 damage reduction/status resistance/immunity all disappear immediately when the Seal is unequipped.",
     "0.6.4 certificate formatting: item description and clickable status buff list every bonus on its own line.",
     "0.6.4 top-left badge: under the HP bar, certificate blessing uses an amulet-style icon and visibly shows 30/40/50/60 even in compact mobile UI.",
     "0.6.4 status click: current tier, totem charge, and complete next-tier stat preview are readable without opening the inventory.",
@@ -749,6 +770,10 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device verify all Seal LV30/LV40/LV50/LV60 stat lines and HUD text match actual calculations.",
+    "Test ScrollOfUpgrade immunity reroll repeatedly and verify save/load preserves the selected immunity.",
+    "Test shop crossed-out original price layout on narrow Android screens.",
+    "Use quick breakthrough cheat to recover from accidental restart without replaying the arena.",
     "Real-device verify the ghost quickslot regression fix by creating and quickslotting a trial-only wand before intentional trial death.",
     "Real-device verify BreakthroughCertificate lv30 bonuses, then use QA level controls to check lv40/lv50/lv60 transitions and removal behavior.",
     "Retune certificate percentages only after combat/exploration feedback; keep the independent slot architecture stable.",
