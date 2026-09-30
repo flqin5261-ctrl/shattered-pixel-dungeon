@@ -1460,6 +1460,8 @@ Assist 菜单新增“获取指定物品”。
 - non-stackable：生成指定份数。
 - 背包满则掉 Hero 脚下。
 - Key 特殊处理：使用当前 Dungeon.depth，加入 Notes/KeyRecord 并刷新钥匙显示，而不是错误塞入背包。
+- Gold / EnergyCrystal 直接增加 Dungeon.gold / Dungeon.energy。
+- Dewdrop 直接加入 Waterskin，水袋满或不存在时给出明确提示。
 - 生成物品自动 identify。
 
 本版 WORLD_GEN_VERSION 继续为 13；没有改变 Infinite World 地形公式，0.5.3 V13 世界可以直接继续。
