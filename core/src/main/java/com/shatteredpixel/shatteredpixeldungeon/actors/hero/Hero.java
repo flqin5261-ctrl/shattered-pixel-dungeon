@@ -226,6 +226,7 @@ public class Hero extends Char {
 
 	public boolean ready = false;
 	public boolean damageInterrupt = true;
+	private boolean genesisResolvingDamageDeath = false;
 	public HeroAction curAction = null;
 	public HeroAction lastAction = null;
 
@@ -1753,7 +1754,12 @@ public class Hero extends Char {
 
 		int preHP = HP + shielding();
 		if (src instanceof Hunger) preHP -= shielding();
-		super.damage( dmg, src );
+		genesisResolvingDamageDeath = true;
+		try {
+			super.damage( dmg, src );
+		} finally {
+			genesisResolvingDamageDeath = false;
+		}
 		int postHP = HP + shielding();
 		if (src instanceof Hunger) postHP -= shielding();
 		int effectiveDamage = preHP - postHP;
@@ -2340,7 +2346,7 @@ public class Hero extends Char {
 			return;
 		}
 
-		if (GenesisEcho.blocksInstantDeath(this, cause)) {
+		if (GenesisEcho.blocksInstantDeath(this, cause, genesisResolvingDamageDeath)) {
 			HP = Math.max(1, HP);
 			GLog.p("创世回响拒绝了即死命运。");
 			return;
