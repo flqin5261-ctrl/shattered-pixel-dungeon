@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.5.4-stable",
     "development_branch": "assist-0.5.4-item-grant",
-    "release_code_sha": "e621bebabd389619ee04a22a4d9cf2428d5381f0",
+    "release_code_sha": "be91d3565933ab3789fa49a685ce8f96de624967",
     "world_generator_version": 13
   },
   "build": {
@@ -302,7 +302,13 @@
       "keys": "added to Notes/key records at current depth",
       "identified_on_grant": true,
       "fallback_when_backpack_full": "drop at hero position",
-      "new_world_required": false
+      "new_world_required": false,
+      "special_items": {
+        "keys": "Notes/KeyRecord at current Dungeon.depth",
+        "gold": "increments Dungeon.gold directly",
+        "energy_crystal": "increments Dungeon.energy directly",
+        "dewdrop": "adds dew to Waterskin up to capacity; requires Waterskin"
+      }
     }
   },
   "hard_invariants": [
