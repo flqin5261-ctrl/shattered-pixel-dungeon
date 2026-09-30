@@ -1887,3 +1887,25 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] Normal non-Infinite dungeon keeps upstream Boss/item talent gating unchanged.
 - [ ] Miracle World description no longer ends with the redundant Genesis-link explanation.
 - [ ] Genesis Echo description no longer exposes the dynamic-monster-scaling implementation note.
+
+# B28. 0.6.9 Genesis talent regression
+
+- [ ] Seal/Miracle World descriptions contain no “永久免疫” line and Scroll of Upgrade cannot reroll a Seal immunity.
+- [ ] Burning/Poison/Bleeding/Corrosion/Ooze/control/curse blocks show a short matching “××免疫” feedback above the Hero and/or log.
+- [ ] Forced teleport shows “传送免疫”; direct instant death shows “即死免疫”; linked damage shows “伤害免疫”.
+- [ ] Tier 5 appears in Infinite World at the intended level window and all four numerical effects match their descriptions.
+- [ ] Tier 6 appears in Infinite World and all five numerical effects match their descriptions.
+- [ ] Non-Infinite games still expose only original tiers 1-4.
+- [ ] Equip Miracle World: every initialized tier-1-through-tier-6 talent immediately reports/evaluates at max rank without overwriting saved point allocation.
+- [ ] Unequip Miracle World: tier-1-through-tier-6 talents immediately return to their stored point values.
+- [ ] Valid normal weapon attacks while Miracle World is linked execute ordinary mobs and special-death/mechanism mobs.
+- [ ] Tier 7 is hidden before Genesis Echo and visible after Genesis Echo awakening.
+- [ ] Tier 7 has exactly one spendable point; after choosing one authority the other three cannot be selected.
+- [ ] Tier-7 reset clears the current authority, removes its Buff, and permits a different choice.
+- [ ] Selected tier-7 authority shows a dedicated “VII” Buff beneath HP and remains active after Miracle World is removed.
+- [ ] Genesis Reach kills any hostile mob currently in Hero fieldOfView by clicking it and remotely collects/opens every revealed heap/chest without walking.
+- [ ] Genesis Teleport: double-tap visited standable cells at near/far screen positions; no cooldown; black/unvisited cells reject teleport; a normal single tap still moves after the 0.28s detection window.
+- [ ] Genesis Overcast: normal and cursed wand paths execute targeted hostile mobs; positive potion/scroll buffs are at least 999 action-value.
+- [ ] Genesis Fortune: test normal, locked and crystal chests; output scatters across the 9x9 Hero-centred area, creates at least 10 extra items, stackables are >=10, and Weapon/Armor/Ring/Wand items are +120.
+- [ ] Fortune burst with few nearby passable cells does not lose items; items may reuse valid cells but must remain obtainable.
+- [ ] Save/load preserves tiers 5/6 allocations, selected tier-7 authority and its visible Buff.
