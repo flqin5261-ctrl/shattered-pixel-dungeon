@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -60,6 +61,29 @@ public class WndAssist extends Window {
 
         addToggle("无敌", SPDSettings.assistInvincible(), SPDSettings::assistInvincible);
         addToggle("物品/金币只增不减", SPDSettings.assistNoConsume(), SPDSettings::assistNoConsume);
+
+        if (Dungeon.infiniteWorld && Dungeon.level instanceof InfiniteWorldLevel) {
+            addToggle("无界旁观测试模式", SPDSettings.assistInfiniteSpectator(), value -> {
+                SPDSettings.assistInfiniteSpectator(value);
+
+                if (Dungeon.hero != null) {
+                    Dungeon.hero.interrupt();
+                }
+
+                if (!value && Dungeon.level instanceof InfiniteWorldLevel) {
+                    ((InfiniteWorldLevel)Dungeon.level).settleHeroAfterSpectator(Dungeon.hero);
+                }
+
+                GameScene.setInfiniteSpectatorHeroLayer(value);
+                if (Dungeon.hero != null && Dungeon.level != null) {
+                    Dungeon.observe();
+                }
+
+                GLog.p(value
+                        ? "无界旁观测试模式已开启：可穿墙悬浮，移动至少 ×4，怪物行动与自然刷新暂停。"
+                        : "无界旁观测试模式已关闭。");
+            });
+        }
 
         addUpgradeRow();
         addSpeedRow();
