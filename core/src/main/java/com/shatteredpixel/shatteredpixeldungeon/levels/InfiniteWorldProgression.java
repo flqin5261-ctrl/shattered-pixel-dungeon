@@ -252,6 +252,7 @@ public final class InfiniteWorldProgression {
         InfiniteWorldState st = Dungeon.infiniteWorldState;
         if (!st.breakthroughTrialActive) return;
 
+        int trialPos = Dungeon.hero != null ? Dungeon.hero.pos : 0;
         Hero restored = new Hero();
         if (st.breakthroughHeroSnapshot != null && !st.breakthroughHeroSnapshot.isNull()) {
             restored.restoreFromBundle(st.breakthroughHeroSnapshot);
@@ -262,6 +263,9 @@ public final class InfiniteWorldProgression {
             restored.restoreFromBundle(fallback);
         }
 
+        if (Dungeon.level != null && Dungeon.level.length() > 0) {
+            restored.pos = Math.max(0, Math.min(Dungeon.level.length() - 1, trialPos));
+        }
         Dungeon.hero = restored;
         Dungeon.gold = st.breakthroughTrialGold;
         Dungeon.energy = st.breakthroughTrialEnergy;
