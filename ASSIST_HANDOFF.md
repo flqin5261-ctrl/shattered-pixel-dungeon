@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.6**
-- 当前 versionCode：**952**
-- 当前最新稳定分支：`assist-0.5.6-stable`
+- 当前最新稳定版本：**0.5.7**
+- 当前 versionCode：**953**
+- 当前最新稳定分支：`assist-0.5.7-stable`
 - 当前发布代码 SHA：`dd6e872fc5f1b7bd10f1cb40c0a9ec2f452254b1`
-- 当前对应开发分支：`assist-0.5.6-spectator-test`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 14**
+- 当前对应开发分支：`assist-0.5.7-backrooms-merchants`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 15**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -1512,3 +1512,60 @@ Assist 菜单在 Infinite World 中增加“无界旁观测试模式”，专用
 - 0.5.5 V14 存档可直接继续，不需要重新开始；
 - 不得借此模式改动 Streaming 时机、Water backdrop、VBO batching/flush、absolute world coordinate 规则；
 - 该模式是 QA 工具，不得把其临时 passability 写入 terrainOverrides 或正常世界生成公式。
+
+# 30. 0.5.7 / Generator V15 — 14 类 Backrooms District + 自动层级档案 + 成长型商人
+
+用户要求 Backrooms-like terrain 暂时作为 Infinite World 普通探索内容，不实现特殊 noclip/层级跳转系统。
+
+## 30.1 14 类正常探索环境
+V15 4×4 macro 中约 42% 为特殊 district，出生缓冲 2 Chunk。
+类型：Level 0、1、2、3、4、5、6、7、8、9、10、11、37、94。
+所有类型都：
+- 正常步行即可进入；
+- 保留 shared edge gateways；
+- 继续叠加 V10 infinite network；
+- 不创建独立 Level；
+- 不要求特殊道具；
+- 视觉只重组原版 sewers/prison/caves/city/halls 材质，不复制外部图片。
+
+## 30.2 层级资料自动获得
+- V15 不再生成 InfiniteWorldNote。
+- Hero 首次进入一种 V15 district 时直接 find 对应 `INFINITE_WORLD_NOTES` page。
+- 输出一次 `backrooms_info_unlocked` 提示并闪烁 Journal。
+- Document 自身负责 Save/Load persistence。
+- 旧 V9-V14 保存继续保留老六类 physical note 行为，因此 legacy page keys 不删除。
+
+## 30.3 Merchant frequency progression
+- Tier = max(Hero Level tier, heroActionValue tier)。
+- Level 阈值：4 / 7 / 11 / 15。
+- Action 阈值：300 / 800 / 1600 / 2800。
+- Tier0 已有 3×3 base merchant lattice，比 V14 的 4×4 更密。
+- Tier1-4 对之后首次生成的 Chunk 逐渐开放额外稀疏 deterministic lattices。
+- 每个 Chunk 第一次生成时把 merchant/no-merchant 锁进 objectStates，因此升级后旧地形不会突然出现或消失商店。
+- anomaly / primary / secondary route 排除规则继续优先。
+- V14 merchant connectivity final-pass guarantee 继续生效。
+
+## 30.4 Merchant stock progression
+- 商人第一次进入 Hero 2 Chunk 范围时锁定自己的 stock tier。
+- Tier0：基础 weapon/armor、生存品、工具品；equipment slot 不出 Wand/Ring。
+- 中期逐步允许 Wand / Ring / ScrollOfTransmutation。
+- Tier3 / Tier4 才分别有约 25% / 45% 的 +1 merchandise 机会。
+- 普通 merchant 不卖 Artifact。
+- 买走库存继续用原来的 consumed state，永不免费刷新。
+
+## 30.5 Mandatory expansion bags
+原版四个扩展包：
+- VelvetPouch
+- ScrollHolder
+- PotionBandolier
+- MagicalHolster
+
+只要 Hero 还缺任意一个，每一个新遇到的 V15 商人 slot0 都必须卖一个当前 missing bag。
+如果商店先被 active window 预加载，Hero 在真正靠近前从别处获得了该 Bag，靠近时会重新挑 still-missing bag。
+四包收齐后 slot0 回退 PotionOfHealing。
+Infinite World Bag 定价 value×2（最低20）；普通货物保持原版 value×5 pricing。
+
+## 30.6 兼容
+- V15 地形分布要新建 V15 世界才能体验。
+- V14 老存档继续保持 generatorVersion14，不会被重算成 V15。
+- 0.5.6 spectator QA、V14 merchant connectivity、dynamic accent、Water/VBO、唯一神器箱、Mob ecology 均不能回归。
