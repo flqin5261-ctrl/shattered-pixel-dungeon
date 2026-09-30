@@ -1789,3 +1789,54 @@ InfiniteWorldAccentTilemap 是 visual-only，不得改变 collision。
 8. 关闭模式必须安全。
    - 如果 Hero 正在非法站立格，先落到最近正常可站立且未被角色占据的格。
    - 随后恢复普通 pathing / collision / Hero render layer。
+
+# V15 — Backrooms District Archive 与成长型 Merchant 不变量
+
+## 14 类特殊环境
+V15 的 Level 0/1/2/3/4/5/6/7/8/9/10/11/37/94 目前只是 Infinite World 的 normal district。
+硬约束：
+- 不需要特殊入口。
+- 不需要 noclip 事件。
+- 不需要特殊物品切换层级。
+- 不创建独立 Level 实例。
+- 每个 district 仍必须满足 shared-edge gateway contract。
+- V10 primary/secondary infinite routes 仍是最终全局连通骨架。
+- Pool/Water 类型只能复用原版 animated water backdrop，不允许新建全屏水层。
+
+## Archive acquisition
+- Generator V15 不生成 InfiniteWorldNote。
+- `recordHeroMove()` 根据 Hero 绝对世界 Chunk 判断当前 district。
+- 对首次进入的类型调用 `Document.INFINITE_WORLD_NOTES.findPage(page)`。
+- Document 本身负责 Journal persistence。
+- 老 V9-V14 保存仍可继续使用旧六类 physical note keys，因此这些 legacy page keys 不能删除。
+
+## Merchant site persistence
+V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每次重算旧地图。
+规则：
+1. 基础候选为 3×3 deterministic lattice。
+2. tier 1-4 依次加入额外 deterministic sparse lattices。
+3. 一个 Chunk 第一次参与生成时把最终 merchant/no-merchant 决定写入 `objectStates`。
+4. 后续无论 Hero 等级或 action value 如何变化，已锁定 Chunk 的 merchant status 不得变化。
+5. anomaly、primary road、secondary route 排除仍优先于 merchant candidate。
+6. V14 shop connectivity final-pass validation 对 V15 继续生效。
+
+## Merchant progress tier
+`tier = max(levelTier, actionTier)`。
+- level: <4=0, 4+=1, 7+=2, 11+=3, 15+=4。
+- action: <300=0, 300+=1, 800+=2, 1600+=3, 2800+=4。
+商人第一次进入 Hero 2 Chunk 范围时把 tier 锁入 per-outpost objectState；库存此后不因 Hero 再升级而变化。
+
+## Mandatory bag offer
+四个 progression bags 为 VelvetPouch / ScrollHolder / PotionBandolier / MagicalHolster。
+- 只要 Hero 仍缺至少一个，任一新遇到的 V15 商人 slot 0 必须是当前 missing set 中的一件。
+- 实际接近商人时必须再次检查 Hero inventory；预生成选择若已经不再 missing，必须 retarget。
+- 买走 slot 以后沿用既有 consumed state，不得刷新。
+- 全部四包获得后 slot 0 回退到 PotionOfHealing。
+- Infinite World Bag 购买价使用 value×2（min 20）；普通商品继续原版 Shopkeeper pricing。
+
+## Merchant rarity progression
+- tier0 equipment: basic weapon/armor only。
+- Wand/Ring 等高价值类型只能随 tier 引入。
+- +1 merchandise 仅 tier3/4 按低概率出现。
+- Artifact 永远不进入普通 merchant stock。
+- 不允许用世界距离替代 V15 的 Hero level/action progression；旧 V11-V14 仍保留自己的旧计算。
