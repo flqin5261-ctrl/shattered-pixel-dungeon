@@ -2439,3 +2439,16 @@ Changes:
 - Difficulty span is compressed rather than truncated: wave 5 reaches approximately the old wave-10 finale multipliers.
 - Slime is no longer part of normal wave pools. It can appear only as wave-1 slot 5 with 25% probability, so a trial can contain at most one Slime and usually none.
 - Wave 5 retains a mixed late-game finale without filling the arena with five simultaneous ranged threats.
+
+
+# 0.5.13 — Breakthrough Certificate
+
+Version: 0.5.13 / versionCode 959 / WORLD_GEN_VERSION 17 unchanged.
+
+- Fixed stale quickslot references after breakthrough rollback by snapshotting the pre-trial layout as placeholders and rebinding it to restored belongings.
+- Lowered wave-5 stat spike while retaining a meaningful finale.
+- Added an independent BreakthroughCertificate equipment slot that coexists with artifacts.
+- Certificate tiers: lv30/lv40/lv50/lv60, with escalating HP, STR, damage, regen, hunger reduction, gold bonus, movement, vision, shop discount, chest bonus and rechargeable revival.
+- Certificate bonuses are queried from the equipped item at calculation time, so unequipping removes them immediately.
+- Normal and locked chests may roll one extra supply item; crystal artifact chests are excluded.
+- Artifact post-+10 levels now explicitly affect effective level and gain +2.5% recharge efficiency per overlevel, up to +50% at visible +30.
