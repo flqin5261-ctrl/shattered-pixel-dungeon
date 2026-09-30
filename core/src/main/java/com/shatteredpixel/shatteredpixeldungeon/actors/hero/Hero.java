@@ -1828,6 +1828,7 @@ public class Hero extends Char {
 	}
 	
 	private boolean walkingToVisibleTrapInFog = false;
+	private boolean spectatorPathMode = false;
 	
 	private boolean getCloser( final int target ) {
 
@@ -1835,6 +1836,10 @@ public class Hero extends Char {
 			return false;
 
 		final boolean spectatorTest = InfiniteWorldLevel.assistSpectatorActive();
+		if (spectatorPathMode != spectatorTest) {
+			path = null;
+			spectatorPathMode = spectatorTest;
+		}
 
 		if (rooted && !spectatorTest) {
 			PixelScene.shake( 1, 1f );
@@ -2003,7 +2008,8 @@ public class Hero extends Char {
 			}
 
 		//TODO perhaps only trigger this if hero is already adjacent? reducing mistaps
-		} else if ((Dungeon.level instanceof MiningLevel || Dungeon.level instanceof InfiniteWorldLevel)
+		} else if (!InfiniteWorldLevel.assistSpectatorActive()
+					&& (Dungeon.level instanceof MiningLevel || Dungeon.level instanceof InfiniteWorldLevel)
 					&& belongings.getItem(Pickaxe.class) != null
 					&& ((Dungeon.level instanceof MiningLevel
 						&& (Dungeon.level.map[cell] == Terrain.WALL
