@@ -340,14 +340,21 @@ public class GenesisEcho extends Buff {
             return false;
         }
 
-        ScrollOfTeleportation.appear(hero, cell);
-        Dungeon.level.occupyCell(hero);
-        if (Dungeon.level instanceof InfiniteWorldLevel) {
-            ((InfiniteWorldLevel)Dungeon.level).recordHeroMove(hero);
-        }
-        Dungeon.observe();
-        GameScene.updateFog();
+        // Clear any queued walk before moving. ScrollOfTeleportation.appear()
+        // already calls Hero.move(..., false), which performs occupyCell and
+        // InfiniteWorld recordHeroMove exactly once.
         hero.interrupt();
+        ScrollOfTeleportation.appear(hero, cell, 0.12f);
+        hero.resetNavigationAfterTeleport();
+
+        if (Dungeon.level instanceof InfiniteWorldLevel) {
+            ((InfiniteWorldLevel)Dungeon.level).beginGenesisTeleportGrace(hero);
+        }
+
+        // Dungeon.observe() already performs the required fog update, so do not
+        // issue a second full GameScene.updateFog() here.
+        Dungeon.observe();
+
         GLog.p("超距离传送");
         return true;
     }
