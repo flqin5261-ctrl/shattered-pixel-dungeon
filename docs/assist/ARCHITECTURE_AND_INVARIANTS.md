@@ -1747,3 +1747,45 @@ InfiniteWorldAccentTilemap 是 visual-only，不得改变 collision。
 - 只更新 base DungeonTerrainTilemap；
 - 等下一次 Streaming 才修正 custom wall；
 - 为每一种可变 Terrain 单独永久 hardcode exclude。
+
+# Infinite World Spectator QA Mode 不变量
+
+0.5.6 增加仅用于 Assist 调试的无界旁观测试模式。它的目标是加速实机 QA，而不是成为新的世界物理规则。
+
+1. 不得修改真实 Terrain 来实现穿墙。
+   - 不得把 WALL 批量改 EMPTY。
+   - 不得永久修改 Level.passable / solid / pit。
+   - 穿墙只能使用 Hero 专属临时 QA path map。
+
+2. Streaming 生命周期保持原样。
+   - 每一步仍是正常 Hero.move。
+   - recordHeroMove() 仍更新绝对世界坐标。
+   - window shift 仍只能由 Hero.onMotionComplete() -> afterHeroMotionComplete() 触发。
+   - 禁止为了快速飞行而改回移动中 Streaming。
+
+3. 探索必须是真实探索。
+   - Dungeon.observe()、heroFOV、visited、mapped、syncExplorationArea() 不得绕开。
+   - 经过的区域应和正常步行一样永久记录。
+   - 旁观模式不是一次性 Magic Mapping，也不是全图 X-Ray。
+
+4. 怪物 AI 必须冻结。
+   - Actor.process() 在调用 Mob.act() 之前拦截。
+   - 模式开启时普通 Mob 不得检测 Hero、更新 AI、移动或攻击。
+   - InfiniteWorldMobEcology 不得自然生成新敌人。
+   - 冻结的 Mob 可以继续显示，便于观察 spawn/location bug。
+
+5. Hero 交互必须保留。
+   - Chest / Heap / FOR_SALE / NPC interact / Unlock 等仍走正常 HeroAction。
+   - 不应因为被冻结的 visibleEnemies 阻止拾取、购买或连续测试移动。
+
+6. 旁观移动非物理。
+   - Level.occupyCell(Hero) 在旁观模式中不触发 trap / plant / chasm / floor blob / door-enter 等踩踏逻辑。
+   - Hero 在此模式免疫伤害，并忽略 Root / Paralysis / Vertigo 对 QA 移动的阻断。
+
+7. 视觉必须允许看见 Hero。
+   - 穿进 wall cell 时 Hero Sprite 临时渲染在 wall/raised terrain 之上、fog 之下。
+   - 禁止通过删除墙视觉来解决人物被遮挡，因为那会污染地形 QA。
+
+8. 关闭模式必须安全。
+   - 如果 Hero 正在非法站立格，先落到最近正常可站立且未被角色占据的格。
+   - 随后恢复普通 pathing / collision / Hero render layer。
