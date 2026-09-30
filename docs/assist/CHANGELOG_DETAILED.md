@@ -2063,3 +2063,49 @@ V13 同时做三件事：
 物品来源使用 Catalog 而不是另写一套硬编码清单，因此会覆盖原版图鉴中的武器、护甲、投掷武器、法杖、戒指、神器、饰物、袋子、药水、卷轴、种子、符石、食物、炸弹、飞镖、炼金酿剂/药剂、法术、钥匙以及大部分任务/杂项物品。
 
 本版只改 Assist UI/物品生成，不改 Infinite World 世界生成公式，所以 Generator V13 保持不变，0.5.3 V13 存档可直接继续。
+
+# 0.5.5 / Generator V14 — 商店强制可达 + 动态墙贴图同步
+
+版本：
+- versionName: 0.5.5
+- versionCode: 951
+- dev: assist-0.5.5-merchant-connectivity
+- stable: assist-0.5.5-stable
+- WORLD_GEN_VERSION: 14
+
+本版来自真实设备反馈，不是单纯调商人概率。
+
+## 修复：商店房可能存在但无法正常到达
+V14 在每个 merchant chunk 的所有主题房和无限道路完成后执行最终 connectivity validation：
+- 商店门外必须能沿 PASSABLE terrain 到至少一个 shared-edge gateway；
+- 已连通则完全不改；
+- 不连通才自动补一条 deterministic corridor；
+- 补路优先绕开其他主题房矩形；
+- 不额外打穿非法 chunk 边界；
+- 极端布局使用 fallback route，保证商店不再成为孤岛。
+
+V11-V13 旧存档也有 runtime repair：
+- active merchant chunk 加载时即时检查；
+- 仅修断路；
+- 修复结果通过 terrainOverrides 持久化；
+- 不需要为了这一个 Bug 强制抛弃当前 V13 存档。
+
+## 修复：可走地板仍显示旧墙
+InfiniteWorldAccentTilemap 不再只有 Streaming rebuild 才更新。
+现在 GameScene.updateMap(cell) 会局部刷新受影响的 accent floor/wall mesh。
+因此：
+- Bomb 炸掉主题墙后视觉立即同步；
+- 不会再出现逻辑能走、画面还是墙、角色被旧墙覆盖的情况。
+
+## Secret Room
+SECRET_DOOR 从墙变为普通门时会立即重建当前 Infinite World accent definitions，并重新挂载 custom overlays。
+Secret Room 的独立材质不再必须等下次窗口 Streaming 才出现。
+
+## Merchant map reveal
+商店提示除了标记房间，还会标记商店到共享 Chunk 出口的真实可走路径。
+不会把 SECRET_DOOR 当成普通通路提前暴露。
+
+## 兼容
+- 新世界使用 Generator V14，基础地形本身包含 merchant access guarantee。
+- 旧 V11-V13 世界不改 generatorVersion，但会运行 merchant access repair。
+- 唯一神器箱、六类 Liminal、怪物生态、Streaming 触发时机、VBO/Water 修复均保持。
