@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.KindofMisc;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
@@ -82,6 +83,7 @@ public class Belongings implements Iterable<Item> {
 	public KindOfWeapon weapon = null;
 	public Armor armor = null;
 	public Artifact artifact = null;
+	public BreakthroughCertificate breakthroughCertificate = null;
 	public KindofMisc misc = null;
 	public Ring ring = null;
 
@@ -139,6 +141,14 @@ public class Belongings implements Iterable<Item> {
 		}
 	}
 
+	public BreakthroughCertificate breakthroughCertificate(){
+		if (!lostInventory() || (breakthroughCertificate != null && breakthroughCertificate.keptThroughLostInventory())){
+			return breakthroughCertificate;
+		} else {
+			return null;
+		}
+	}
+
 	public KindofMisc misc(){
 		if (!lostInventory() || (misc != null && misc.keptThroughLostInventory())){
 			return misc;
@@ -168,6 +178,7 @@ public class Belongings implements Iterable<Item> {
 	private static final String WEAPON		= "weapon";
 	private static final String ARMOR		= "armor";
 	private static final String ARTIFACT   = "artifact";
+	private static final String BREAKTHROUGH_CERT = "breakthrough_cert";
 	private static final String MISC       = "misc";
 	private static final String RING       = "ring";
 
@@ -180,6 +191,7 @@ public class Belongings implements Iterable<Item> {
 		bundle.put( WEAPON, weapon );
 		bundle.put( ARMOR, armor );
 		bundle.put( ARTIFACT, artifact );
+		bundle.put( BREAKTHROUGH_CERT, breakthroughCertificate );
 		bundle.put( MISC, misc );
 		bundle.put( RING, ring );
 		bundle.put( SECOND_WEP, secondWep );
@@ -201,6 +213,9 @@ public class Belongings implements Iterable<Item> {
 		artifact = (Artifact) bundle.get(ARTIFACT);
 		if (artifact() != null)     artifact().activate(owner);
 
+		breakthroughCertificate = (BreakthroughCertificate) bundle.get(BREAKTHROUGH_CERT);
+		if (breakthroughCertificate() != null) breakthroughCertificate().activate(owner);
+
 		misc = (KindofMisc) bundle.get(MISC);
 		if (misc() != null)         misc().activate( owner );
 
@@ -218,6 +233,7 @@ public class Belongings implements Iterable<Item> {
 		weapon = secondWep = null;
 		armor = null;
 		artifact = null;
+		breakthroughCertificate = null;
 		misc = null;
 		ring = null;
 	}
@@ -425,7 +441,7 @@ public class Belongings implements Iterable<Item> {
 		
 		private Iterator<Item> backpackIterator = backpack.iterator();
 		
-		private Item[] equipped = {weapon, armor, artifact, misc, ring, secondWep};
+		private Item[] equipped = {weapon, armor, artifact, breakthroughCertificate, misc, ring, secondWep};
 		private int backpackIndex = equipped.length;
 		
 		@Override
@@ -466,13 +482,16 @@ public class Belongings implements Iterable<Item> {
 				equipped[2] = artifact = null;
 				break;
 			case 3:
-				equipped[3] = misc = null;
+				equipped[3] = breakthroughCertificate = null;
 				break;
 			case 4:
-				equipped[4] = ring = null;
+				equipped[4] = misc = null;
 				break;
 			case 5:
-				equipped[5] = secondWep = null;
+				equipped[5] = ring = null;
+				break;
+			case 6:
+				equipped[6] = secondWep = null;
 				break;
 			default:
 				backpackIterator.remove();
