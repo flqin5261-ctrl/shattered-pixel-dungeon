@@ -117,7 +117,7 @@ public class Heap implements Bundlable {
 
 		if (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST) {
 			BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
-			if (certificate != null && Random.Float() < certificate.chestBonusChance()) {
+			if (certificate != null && Random.Float() < certificate.effectiveChestBonusChance(hero)) {
 				int roll = Random.Int(100);
 				Generator.Category cat;
 				if (roll < 35) cat = Generator.Category.POTION;
