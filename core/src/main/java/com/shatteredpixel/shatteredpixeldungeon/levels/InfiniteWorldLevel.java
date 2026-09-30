@@ -3581,6 +3581,7 @@ public class InfiniteWorldLevel extends Level {
     private boolean hasChest(int cx, int cy) {
         if (state().generatorVersion >= 9) {
             if (v9AnomalyType(cx, cy) != 0) return false;
+            if (state().generatorVersion >= 11 && isV11MerchantChunk(cx, cy)) return false;
             return Math.floorMod(hash(cx, cy, 6001), 100) < 12;
         }
         return Math.floorMod(hash(cx, cy, 6001), 100) < 42;
