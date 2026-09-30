@@ -2374,3 +2374,49 @@ Version:
 - Monster strength/stats/ecology are unchanged.
 - Streaming timing remains Hero.onMotionComplete() -> InfiniteWorldLevel.afterHeroMotionComplete().
 - applicationId and stable signing key remain unchanged.
+
+
+# 0.5.11 — Infinite World Long-Run Progression
+
+Version:
+- versionName: 0.5.11
+- versionCode: 957
+- dev: assist-0.5.11-progression
+- target stable: assist-0.5.11-stable
+- WORLD_GEN_VERSION: 17 (unchanged)
+
+## Start / narrative
+- Fresh Infinite World gold: 300.
+- Replaced the normal sewer/dungeon story card with a dedicated Infinite World introduction.
+
+## Dynamic enemies
+- Every newly spawned Infinite World mob snapshots Hero level, strongest owned weapon/armor/wand, two strongest rings, artifact ownership and artifact visible level.
+- Dynamic threat level 1-60 affects enemy family selection.
+- HP scales strongly against offensive upgrades; damage scales strongly against defensive upgrades; accuracy/defense scale more moderately.
+- Spawned mobs keep their snapshot until despawn/death.
+- Dynamic loot probability scales up to about 2.25x base and EXP gains receive a threat-level floor.
+- No bosses were added.
+
+## Level-30 breakthrough
+- Hero cannot advance past level 30 until the breakthrough succeeds.
+- Level 30 automatically grants a BreakthroughToken.
+- Token enters a dedicated 49x49 branch-99 arena.
+- Ten waves, ten enemies per wave.
+- Wave pools and stat multipliers escalate from low mobs to mixed late-game threats.
+- 30 action-value gap between cleared waves with countdown messages.
+- Arena contains scattered temporary recovery/utility supplies.
+- Trial defeat is non-lethal and never consumes Ankhs or submits a normal game-over.
+- Success and failure both restore the exact pre-trial Hero/inventory/gold/energy snapshot; failure reissues the token.
+- Success unlocks Hero level 60, standard equipment +120, artifacts +30.
+
+## Upgrade caps
+- Before breakthrough: Weapon/Armor/Ring/Wand +50; Artifact +10.
+- After breakthrough: Weapon/Armor/Ring/Wand +120; Artifact +30.
+- Artifact post-cap progression is stored separately from native artifact levels so original artifact state remains compatible; equipped capped artifacts continue long-run growth from Hero XP.
+
+## QA
+- Infinite World Assist window includes a one-click +1 Hero level testing button.
+- The test button cannot bypass the level-30 breakthrough gate.
+
+## CI note
+- One intermediate 0.5.11 Action failed while downloading the Gradle distribution with `Connection reset by peer`. This was a transient runner network failure, not a compiler failure; earlier/later runs are the authority for code validity.
