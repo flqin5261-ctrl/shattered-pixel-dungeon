@@ -1758,7 +1758,10 @@ public class Hero extends Char {
 	@Override
 	public void damage( int dmg, Object src ) {
 		if (SPDSettings.assistInvincible() || InfiniteWorldLevel.assistSpectatorActive()) return;
-		if (GenesisEcho.damageImmune(this)) return;
+		if (GenesisEcho.damageImmune(this)) {
+			if (sprite != null) sprite.showStatus(0x66FFCC, "伤害免疫");
+			return;
+		}
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null) {
 			return;
@@ -2418,6 +2421,7 @@ public class Hero extends Char {
 		if (GenesisEcho.blocksInstantDeath(this, cause, genesisResolvingDamageDeath)) {
 			HP = Math.max(1, HP);
 			GLog.p("创世回响拒绝了即死命运。");
+			if (sprite != null) sprite.showStatus(0x66FFCC, "即死免疫");
 			return;
 		}
 
