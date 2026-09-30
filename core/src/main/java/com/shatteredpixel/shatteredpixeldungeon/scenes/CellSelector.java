@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -62,6 +63,10 @@ public class CellSelector extends ScrollArea {
 	}
 	
 	private float mouseZoom;
+
+	private int pendingGenesisTapCell = -1;
+	private float pendingGenesisTapDelay = 0f;
+	private static final float GENESIS_DOUBLE_TAP_WINDOW = 0.28f;
 
 	private float minimumZoom() {
 		return Dungeon.infiniteWorld ? Math.max(1.8f, PixelScene.minZoom) : PixelScene.minZoom;
