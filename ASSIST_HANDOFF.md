@@ -1920,3 +1920,38 @@ Wand.WandCharger 自然恢复 charge 时再乘 Seal wandChargeMultiplier。
 - Seal capacity bonus: LV30 +5 / LV40 +8 / LV50 +12 / Miracle Echo +16。
 - Miracle Echo + Genesis linked 时，再复制 +16，所以 LV60 装备时共有 +32 Seal-derived slots。
 - unequip 后重新计算容量；若超载，优先把普通非 unique、非 Bag 物品移到 Hero 所在格，再处理其他非 Seal 物品；绝不直接删除。
+
+
+# 40. 0.6.7 — 奇迹·世界与创世回响权限重构
+
+## 40.1 命名
+- LV60 终局装备正式统一名称：`奇迹·世界`。
+- 不再使用“奇迹·回响”作为玩家可见名称。
+- 去掉“60级经验加成已移除”之类解释性废话。
+
+## 40.2 创世回响常驻权限
+创世回响只要已经觉醒，即使取下奇迹·世界也永久存在并真实生效：
+- 即死免疫：Hero.die 区分普通伤害致死与直接 instant-death 调用，直接即死被拒绝。
+- 被迫传送免疫：普通外部 teleport 被阻止；Hero 自己使用 ScrollOfTeleportation 仍允许。
+- 控制免疫：Blindness、Daze、Paralysis、Roots、Vertigo、Cripple、Charm、Terror、Amok、Drowsy、Sleep、Slow、Chill、Frost 通过 Char.isImmune 实际拒绝附加。
+- 已经存在的被阻挡控制在创世回响恢复/觉醒时主动清理。
+- 商店免费、购买额外复制、击杀永久 +1 HP/+1 STR 保持 0.6.6 行为。
+
+## 40.3 奇迹·世界佩戴联动
+只有真正装备 LV60 奇迹·世界时，创世回响临时新增：
+- 诅咒免疫：Burning / Poison / Bleeding / Corrosion / Ooze / Weakness / Vulnerable / Degrade / Hex / Doom 显式加入动态 immunity；Hero.add 同时拒绝任何其他 `Buff.buffType.NEGATIVE`，避免未来新负面 Buff 漏网。
+- 伤害免疫：Hero.damage 在最前端直接 return；Hero.isInvulnerable 同时返回 true。因此近战、远程、法术、陷阱、饥饿等走标准 damage pipeline 的伤害全部为 0。
+- 原有第二套奇迹·世界属性复制层继续存在。
+- 取下奇迹·世界后：诅咒免疫、伤害免疫、复制层立刻消失；创世回响本体和其常驻权限不消失。
+
+## 40.4 无限空间
+彻底取消破界之印/奇迹·世界的固定背包扩容。
+- Backpack 恢复原版 20 格基础容量计算。
+- 创世回响觉醒后，根背包容量改为 `max(normalCapacity, items.size()+5)`。
+- 因此不论塞入多少物品，逻辑上始终至少还有 5 个空位。
+- 该能力来自创世回响本体，所以取下奇迹·世界后仍永久存在。
+
+## 40.5 升级卷轴免疫刷取 UI
+WndUpgrade 选择破界之印/奇迹·世界时，窗口底部直接显示：
+`当前永久免疫：xxx`
+连续使用升级卷轴重刷时不需要退出窗口检查。
