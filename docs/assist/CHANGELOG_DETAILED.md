@@ -2109,3 +2109,54 @@ Secret Room 的独立材质不再必须等下次窗口 Streaming 才出现。
 - 新世界使用 Generator V14，基础地形本身包含 merchant access guarantee。
 - 旧 V11-V13 世界不改 generatorVersion，但会运行 merchant access repair。
 - 唯一神器箱、六类 Liminal、怪物生态、Streaming 触发时机、VBO/Water 修复均保持。
+
+# 0.5.6 — 无界旁观测试模式
+
+版本：
+- versionName: 0.5.6
+- versionCode: 952
+- dev: assist-0.5.6-spectator-test
+- stable: assist-0.5.6-stable
+- WORLD_GEN_VERSION: 14（不变）
+
+Assist 菜单在 Infinite World 中新增“无界旁观测试模式”，用于高效率地形、Streaming 与可达性 QA。
+
+## 移动
+- 只在 Infinite World 生效。
+- Hero 可穿过 WALL、WALL_DECO、门壳、坑等活动窗口内部地形。
+- 不修改 Level.map / passable 等真实地形数据，只为 Hero 的 QA 寻路构造临时 passable map。
+- 不能穿越 168×168 活动窗口最外层 streaming frame。
+- 仍避开实际角色占据的格子，避免与 Mob/NPC 叠格。
+- 旁观模式最低移动倍率 ×4；普通 Assist 移速若高于 ×4，则使用更高倍率。
+- 忽略 Root / Paralysis / Vertigo 对测试移动的阻断。
+- 经过坑、陷阱、植物、门、地表 Blob 时不触发物理踩踏效果。
+- Hero 在旁观模式下免疫伤害。
+
+## Streaming 与探索
+- Streaming 触发点完全不变，仍只在 Hero.onMotionComplete() 后执行。
+- 每步仍通过 Hero.move -> InfiniteWorldLevel.recordHeroMove 记录绝对世界坐标。
+- Dungeon.observe/FOV/visited/mapped/InfiniteWorldState 探索同步继续正常工作。
+- Hero 站在墙格内部时，只将当前所在格临时视为不阻挡视线；周围真实墙仍正常挡视野，因此不是全图 X-Ray。
+- 经过的区域会像普通探索一样加载、驱散迷雾并永久记录探索状态。
+
+## 怪物冻结
+- Actor.process 在调度 Mob 时直接冻结其行动，只推进调度时间，不调用 Mob.act。
+- 因此已有怪物不会检测、追击、移动、攻击或因看见 Hero 改 AI 状态。
+- InfiniteWorldMobEcology 在模式开启时暂停自然刷新。
+- 可见怪物仍保留在地图上供测试观察，但不会触发 Hero 的发现新敌人中断移动或附近有敌人不能自动捡物/交易等限制。
+- 商人等 NPC 的直接 Hero 交互仍可使用。
+
+## 正常交互
+- 宝箱仍能正常打开；
+- 地面物品仍能正常拾取；
+- FOR_SALE 仍能购买；
+- NPC/商人交互仍走原有逻辑；
+- 钥匙/门等手动交互仍可执行。
+- 点击墙本身时不会再被 Infinite World Pickaxe 的挖掘动作抢占；点击墙后方即可穿墙移动。
+
+## 显示与退出保护
+- 旁观时 Hero Sprite 被临时放到 raised terrain / wall 之后的 effects 层，穿墙途中不会被墙贴图完全遮住。
+- 关闭模式时，如果 Hero 正位于墙/坑等非法站立格，会自动落到当前 active window 内最近的正常可站立格。
+- 正常格关闭时不移动 Hero。
+
+本版没有改变世界生成公式，所以 WORLD_GEN_VERSION 保持 V14，0.5.5 V14 存档可直接继续。
