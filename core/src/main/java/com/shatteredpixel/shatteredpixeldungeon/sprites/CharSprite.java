@@ -227,7 +227,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			// Spectator QA reads as free-flight: no run-cycle, just an idle pose
 			// gliding between cells with the native levitation particle effect.
 			play( idle );
-			add( State.LEVITATING );
+			if (levitation == null) add( State.LEVITATING );
 		} else {
 			play( run );
 		}
