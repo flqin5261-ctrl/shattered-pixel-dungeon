@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.*;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.InfiniteWorldShopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -86,6 +87,13 @@ public class InfiniteWorldLevel extends Level {
     private static final float MOB_RESPAWN_MAX_TURNS = 50f;
 
     private InfiniteWorldMobEcology mobEcology;
+
+    // Merchant outposts are intentionally much rarer than ordinary rooms.
+    // A 9-chunk lattice is wider than the 7x7 active window, guaranteeing that
+    // at most one travelling merchant can be active at once.
+    private static final int MERCHANT_SPACING_CHUNKS = 9;
+    private static final int MERCHANT_STOCK_SLOTS = 6;
+    private static final int MERCHANT_ROOM_THEME = 10;
 
     // Keep recently generated chunks in memory. The world itself is still seed-driven;
     // this cache only avoids rebuilding chunks when the player walks back and forth.
@@ -186,9 +194,9 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     protected void createMobs() {
-        // No enemies are pre-populated during level generation. The ecology
-        // controller begins after the hero enters the world and adds one enemy at
-        // a time on a slow cadence.
+        // Enemies are still not pre-populated. Deterministic merchant NPCs are
+        // different: they belong to fixed world outposts and are created with the level.
+        ensureV11Shopkeeper(false);
     }
 
     @Override
@@ -447,6 +455,23 @@ public class InfiniteWorldLevel extends Level {
         int hy = Dungeon.hero.pos / width();
 
         for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (mob instanceof InfiniteWorldShopkeeper) {
+                int oldX = mob.pos % width();
+                int oldY = mob.pos / width();
+                int newX = oldX - shiftedCellsX;
+                int newY = oldY - shiftedCellsY;
+
+                if (newX <= 0 || newX >= width() - 1
+                        || newY <= 0 || newY >= height() - 1) {
+                    mob.despawnFromInfiniteWorld();
+                } else {
+                    int newPos = newX + newY * width();
+                    if (solid[newPos] || pit[newPos]) mob.despawnFromInfiniteWorld();
+                    else mob.rebaseForInfiniteWorld(newPos);
+                }
+                continue;
+            }
+
             if (mob.alignment != Char.Alignment.ENEMY) continue;
             if (mob.properties().contains(Char.Property.BOSS)
                     || mob.properties().contains(Char.Property.MINIBOSS)) continue;
@@ -588,6 +613,7 @@ public class InfiniteWorldLevel extends Level {
         final int shiftedCellsY = shiftY * CHUNK_SIZE;
 
         rebaseInfiniteWorldMobs(shiftedCellsX, shiftedCellsY);
+        ensureV11Shopkeeper(true);
 
         hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
         hero.lastAction = rebaseCellAction(hero.lastAction, lastTargetWorldX, lastTargetWorldY, st);
