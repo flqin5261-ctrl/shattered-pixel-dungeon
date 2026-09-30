@@ -568,6 +568,9 @@ public class Hero extends Char {
 		if (buff(Scimitar.SwordDance.class) != null){
 			accuracy *= 1.50f;
 		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) accuracy *= certificate.accuracyMultiplier();
 		
 		if (!RingOfForce.fightingUnarmed(this)) {
 			return Math.max(1, Math.round(attackSkill * accuracy * wep.accuracyFactor( this, target )));
@@ -609,6 +612,9 @@ public class Hero extends Char {
 		if (paralysed > 0) {
 			evasion /= 2;
 		}
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (certificate != null) evasion *= certificate.evasionMultiplier();
 
 		if (belongings.armor() != null) {
 			evasion = belongings.armor().evasionFactor(this, evasion);
@@ -2096,6 +2102,13 @@ public class Hero extends Char {
 	}
 	
 	public void earnExp( int exp, Class source ) {
+
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
+		if (exp > 0 && certificate != null
+				&& source != InfiniteWorldProgression.class
+				&& source != AscensionChallenge.class) {
+			exp = Math.max(exp, Math.round(exp * certificate.expMultiplier()));
+		}
 
 		//xp granted by ascension challenge is only for on-exp gain effects
 		if (source != AscensionChallenge.class) {
