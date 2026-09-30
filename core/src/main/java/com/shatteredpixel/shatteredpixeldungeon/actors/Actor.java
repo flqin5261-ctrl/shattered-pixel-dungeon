@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Bundlable;
@@ -298,7 +299,15 @@ public abstract class Actor implements Bundlable {
 					doNext = false;
 					current = null;
 				} else {
-					doNext = acting.act();
+					if (acting instanceof Mob && InfiniteWorldLevel.assistSpectatorActive()) {
+						// Terrain QA spectator mode freezes every Mob actor at the
+						// scheduler boundary. Hero interactions may still spend time,
+						// but no mob AI/detection/movement/attack code is allowed to run.
+						acting.spendConstant(TICK);
+						doNext = true;
+					} else {
+						doNext = acting.act();
+					}
 					if (doNext && (Dungeon.hero == null || !Dungeon.hero.isAlive())) {
 						doNext = false;
 						current = null;
