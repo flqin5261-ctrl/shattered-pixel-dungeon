@@ -1861,3 +1861,47 @@ V15 merchant frequency 可以随进度提高，但禁止用 mutable progress 每
 - Any path that clears/rebuilds customTiles (including secret-door accent refresh and Streaming rebuild) must restore the sparse decoration layer before GameScene refreshes custom overlays.
 - Environment props do not justify a generator-version bump while they remain deterministic, non-collision visual overlays.
 
+# V16 — Solid Environment Set-piece 不变量
+
+## 两类装饰
+V16 明确区分：
+1. visual-only：灌木、蘑菇等，不改变 Terrain。
+2. solid scenery：木桶、木箱、部分路牌、石像、区域装饰，真正占据 SOLID terrain。
+
+禁止通过单纯 UI hitbox 假装碰撞。普通 Hero/Mob pathing 必须从 Level.map / Terrain.flags 看到真实阻挡。
+
+## CUSTOM_DECO
+Kenney sprite 本身仍由 InfiniteWorldDecorationLayer 绘制。
+需要碰撞时：
+- underlying map[cell] = Terrain.CUSTOM_DECO；
+- CUSTOM_DECO 是 invisible solid environment decoration；
+- custom overlay 提供实际像素画面与放大镜 name/desc。
+
+石像/region deco 则直接使用原版 SOLID Terrain，避免重复叠图。
+
+## Placement safety
+任何包含 SOLID part 的 formation：
+- 必须位于 Chunk interior；
+- formation bounding box 外扩 1 cell 的完整 ring 必须全部 PASSABLE；
+- ring 内不能存在 gameplay object/actor；
+- center crossing band local x/y 9..14 禁止放置；
+- formation 不得覆盖 heap/trap/plant/char。
+
+该规则的意义不是“概率上不堵路”，而是局部拓扑上保证至少存在一圈四方向 bypass。
+
+## Persistence
+V16 decoration slot 的 objectState 是唯一权威：
+- packed state = style + local anchor。
+- 首次有效放置后锁定。
+- Streaming 重建时从 objectState 复原。
+- managed solid cell 在 snapshotForSave 时不得写成 terrainOverride。
+- Save bundle 中当前 map 可以含 solid decor；下一次 Streaming 仍必须回到 objectState 驱动。
+
+## Legacy
+- V15 保持旧 sparse visual-only decoration 公式。
+- V16 collision dressing 不反向注入旧 generatorVersion。
+- 这也是 WORLD_GEN_VERSION 15 -> 16 的原因。
+
+## QA spectator
+Spectator mode 的临时穿墙 passability 高于正常碰撞，因此能穿过 V16 solid scenery 是预期行为。
+关闭 spectator 后必须恢复 Terrain.CUSTOM_DECO / STATUE / REGION_DECO 的正常 SOLID collision。
