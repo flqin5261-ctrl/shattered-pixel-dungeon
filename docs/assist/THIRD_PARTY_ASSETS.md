@@ -31,6 +31,15 @@ Used 16×16 sprites in 0.5.8:
 - Tiny Town: bush (index 5), mushrooms (29), sign (83), barrel (107)
 - Tiny Dungeon: crate (66)
 
-These sprites are used only as sparse non-collision Infinite World decoration
-overlays. They do not replace Shattered Pixel Dungeon's terrain, water, doors,
-items, creatures or gameplay objects.
+Assist 0.5.8 used these sprites as sparse non-collision overlays.
+
+Assist 0.5.9 / Generator V16 additionally arranges the same CC0 sprites into
+non-interactive environment set-pieces. Bushes and mushroom clusters remain
+visual-only, while selected signs, barrels and crates can occupy real solid
+terrain cells via Terrain.CUSTOM_DECO. The art is still presentation-only:
+there are no loot containers, attacks, pickups or scripted interactions tied to
+these sprites.
+
+V16 also mixes in Shattered Pixel Dungeon's own non-interactive solid statue
+and region-decoration terrain for more scene variety. External Kenney sprites
+never replace water, doors, merchants, items, creatures or gameplay objects.
