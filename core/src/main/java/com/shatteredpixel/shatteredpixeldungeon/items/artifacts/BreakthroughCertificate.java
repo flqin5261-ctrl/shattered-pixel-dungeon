@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -169,6 +170,19 @@ public class BreakthroughCertificate extends EquipableItem {
             case 40: return 1.12f;
             default:return 1.08f;
         }
+    }
+
+    public int backpackBonus() {
+        switch (certificateLevel) {
+            case 60: return 16;
+            case 50: return 12;
+            case 40: return 8;
+            default:return 5;
+        }
+    }
+
+    public int effectiveBackpackBonus(Hero hero) {
+        return backpackBonus() * copies(hero);
     }
 
     public int visionBonus() {
@@ -566,6 +580,7 @@ public class BreakthroughCertificate extends EquipableItem {
             if (buff != null) buff.detach();
             hero.updateHT(false);
             Dungeon.observe();
+            spillBackpackOverflow(hero);
             return true;
         }
         return false;
@@ -620,6 +635,39 @@ public class BreakthroughCertificate extends EquipableItem {
         regenProgress = bundle.contains(REGEN_PROGRESS) ? bundle.getFloat(REGEN_PROGRESS) : 0f;
         immunityIndex = bundle.contains(IMMUNITY_INDEX) ? bundle.getInt(IMMUNITY_INDEX) : -1;
         ensureImmunity();
+    }
+
+    private static void spillBackpackOverflow(Hero hero) {
+        if (hero == null || Dungeon.level == null) return;
+
+        Bag backpack = hero.belongings.backpack;
+        int overflow = backpack.items.size() - backpack.capacity();
+        if (overflow <= 0) return;
+
+        // Prefer ordinary items first so progression-unique gear and special bags
+        // remain in the inventory whenever possible.
+        ArrayList<Item> candidates = new ArrayList<>();
+        for (Item item : backpack.items) {
+            if (item instanceof BreakthroughCertificate) continue;
+            if (!item.unique && !(item instanceof Bag)) candidates.add(item);
+        }
+        for (Item item : backpack.items) {
+            if (item instanceof BreakthroughCertificate || candidates.contains(item)) continue;
+            candidates.add(item);
+        }
+
+        for (Item item : candidates) {
+            if (overflow <= 0) break;
+            item.detachAll(backpack);
+            Dungeon.level.drop(item, hero.pos).sprite.drop();
+            overflow = backpack.items.size() - backpack.capacity();
+        }
+
+        if (overflow > 0) {
+            GLog.w("背包容量降低，仍有部分物品无法自动移出；请整理背包。");
+        } else {
+            GLog.i("破界装备已取下，超出容量的物品已安全放在角色身边。");
+        }
     }
 
     public static BreakthroughCertificate equipped(Hero hero) {
