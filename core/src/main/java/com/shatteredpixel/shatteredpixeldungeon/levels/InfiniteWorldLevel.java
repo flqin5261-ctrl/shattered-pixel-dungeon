@@ -134,6 +134,11 @@ public class InfiniteWorldLevel extends Level {
     // regenerating all 49 chunks every time exploration state is snapshotted.
     private int[] baseWindow;
 
+    // V16 environment set-pieces are deterministic and persisted through objectStates.
+    // This mask marks only runtime-generated solid decoration terrain so snapshotting
+    // does not accidentally turn decorative collision into permanent terrain overrides.
+    private boolean[] v16ManagedSolidDecor;
+
     {
         color1 = 0x36585F;
         color2 = 0x7AA7A1;
@@ -1029,8 +1034,13 @@ public class InfiniteWorldLevel extends Level {
         for (int cell = 0; cell < length(); cell++) {
             long key = worldKeyForLocalCell(cell);
 
-            if (map[cell] != baseWindow[cell]) st.setTerrainOverride(key, map[cell]);
-            else st.setTerrainOverride(key, null);
+            if (state().generatorVersion >= 16 && isV16ManagedSolidDecorationCell(cell)) {
+                st.setTerrainOverride(key, null);
+            } else if (map[cell] != baseWindow[cell]) {
+                st.setTerrainOverride(key, map[cell]);
+            } else {
+                st.setTerrainOverride(key, null);
+            }
 
             if (visited[cell]) st.markVisited(key);
             if (mapped[cell]) st.markMapped(key);
@@ -5086,9 +5096,30 @@ public class InfiniteWorldLevel extends Level {
     }
 
 
+    private static final int V16_DECOR_NONE = 1;
+    private static final int V16_DECOR_STATE_BASE = 2;
+
+    private static final int V16_STYLE_BUSH_PATCH = 0;
+    private static final int V16_STYLE_MUSHROOM_PATCH = 1;
+    private static final int V16_STYLE_SIGN_CORNER = 2;
+    private static final int V16_STYLE_BARREL_PAIR = 3;
+    private static final int V16_STYLE_CRATE_PAIR = 4;
+    private static final int V16_STYLE_SUPPLY_PILE = 5;
+    private static final int V16_STYLE_CRATE_BLOCK = 6;
+    private static final int V16_STYLE_BARREL_ROW = 7;
+    private static final int V16_STYLE_STATUE_PAIR = 8;
+    private static final int V16_STYLE_MIXED_CORNER = 9;
+    private static final int V16_STYLE_COUNT = 10;
+
     private void rebuildV15DecorationProps() {
         if (state().generatorVersion < 15 || customTiles == null) return;
 
+        if (state().generatorVersion >= 16) {
+            rebuildV16DecorationProps();
+            return;
+        }
+
+        // V15 legacy behavior: sparse, visual-only stickers.
         final InfiniteWorldDecorationLayer townLayer =
                 new InfiniteWorldDecorationLayer(
                         InfiniteWorldDecorationLayer.SOURCE_TOWN, width(), height());
@@ -5109,30 +5140,380 @@ public class InfiniteWorldLevel extends Level {
                     if (cell < 0) continue;
 
                     int kind = v15DecorationKind(cx, cy, slot, anomaly);
-                    if (kind == InfiniteWorldDecorationLayer.CRATE) {
-                        dungeonLayer.put(cell, kind, InfiniteWorldLevel.this);
-                    } else {
-                        townLayer.put(cell, kind, InfiniteWorldLevel.this);
-                    }
+                    putV16DecorationVisual(townLayer, dungeonLayer, cell, kind);
                     claimed[cell] = true;
                 }
             }
         });
 
-        // These layers are deliberately appended after broad floor accents.
-        // WndInfoCell therefore sees the prop's image/name/description when the
-        // magnifier targets it, while the underlying map terrain stays unchanged.
         if (!townLayer.isEmpty()) customTiles.add(townLayer);
         if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
     }
 
+    private void rebuildV16DecorationProps() {
+        final InfiniteWorldDecorationLayer townLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_TOWN, width(), height());
+        final InfiniteWorldDecorationLayer dungeonLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_DUNGEON, width(), height());
+
+        final boolean[] claimed = new boolean[length()];
+        v16ManagedSolidDecor = new boolean[length()];
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+
+                // Ordinary chunks now get 2-3 authored set-pieces. Backrooms-inspired
+                // chunks get 4-5, so the environment reads as deliberately dressed
+                // instead of a mostly empty floor with a single sticker.
+                int count = anomaly != 0
+                        ? 4 + (Math.floorMod(hash(cx, cy, 29200), 100L) < 60 ? 1 : 0)
+                        : 2 + (Math.floorMod(hash(cx, cy, 29201), 100L) < 72 ? 1 : 0);
+
+                for (int slot = 0; slot < count; slot++) {
+                    long stateKey = v16DecorationStateKey(cx, cy, slot);
+                    int stored = state().objectState(stateKey);
+
+                    int style;
+                    int anchorLocal;
+
+                    if (stored == 0) {
+                        style = v16DecorationStyle(cx, cy, slot, anomaly);
+                        int anchorCell = v16FindDecorationAnchor(
+                                cx, cy, ox, oy, slot, style, claimed);
+                        if (anchorCell < 0) {
+                            state().setObjectState(stateKey, V16_DECOR_NONE);
+                            continue;
+                        }
+
+                        int lx = anchorCell % width() - ox;
+                        int ly = anchorCell / width() - oy;
+                        anchorLocal = lx + ly * CHUNK_SIZE;
+                        int packed = V16_DECOR_STATE_BASE + anchorLocal + (style << 10);
+                        state().setObjectState(stateKey, packed);
+                    } else if (stored == V16_DECOR_NONE) {
+                        continue;
+                    } else {
+                        int packed = stored - V16_DECOR_STATE_BASE;
+                        anchorLocal = packed & 0x3FF;
+                        style = (packed >>> 10) & 0x3F;
+                        if (style < 0 || style >= V16_STYLE_COUNT
+                                || anchorLocal < 0 || anchorLocal >= CHUNK_SIZE * CHUNK_SIZE) {
+                            continue;
+                        }
+                    }
+
+                    int anchor = ox + (anchorLocal % CHUNK_SIZE)
+                            + (oy + anchorLocal / CHUNK_SIZE) * width();
+                    applyV16DecorationFormation(
+                            townLayer, dungeonLayer, anchor, style, claimed);
+                }
+            }
+        });
+
+        // CUSTOM_DECO and STATUE are true SOLID terrain, so refresh all collision
+        // and open-space maps after the non-interactive scene dressing is applied.
+        buildFlagMaps();
+        cleanWalls();
+
+        if (!townLayer.isEmpty()) customTiles.add(townLayer);
+        if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
+    }
+
+    private long v16DecorationStateKey(int cx, int cy, int slot) {
+        long wx = (long)cx * CHUNK_SIZE + CHUNK_SIZE / 2;
+        long wy = (long)cy * CHUNK_SIZE + CHUNK_SIZE / 2;
+        long world = encodeWorld(wx, wy);
+        long mix = 0x9E3779B97F4A7C15L * (0x71A0L + slot * 17L);
+        return world ^ Long.rotateLeft(mix, (slot * 7) & 31);
+    }
+
+    private int v16DecorationStyle(int cx, int cy, int slot, int anomaly) {
+        int roll = range(cx, cy, 29240 + slot * 19, 0, 99);
+
+        // Storage/utility/hotel/city-like districts get more physical clutter;
+        // fields/caves get more vegetation. All styles remain non-interactive.
+        switch (anomaly) {
+            case 2:
+            case 3:
+            case 4:
+                if (roll < 18) return V16_STYLE_BARREL_ROW;
+                if (roll < 38) return V16_STYLE_CRATE_BLOCK;
+                if (roll < 62) return V16_STYLE_SUPPLY_PILE;
+                if (roll < 82) return V16_STYLE_BARREL_PAIR;
+                return V16_STYLE_SIGN_CORNER;
+            case 5:
+            case 6:
+            case 12:
+                if (roll < 24) return V16_STYLE_CRATE_PAIR;
+                if (roll < 47) return V16_STYLE_SUPPLY_PILE;
+                if (roll < 67) return V16_STYLE_STATUE_PAIR;
+                if (roll < 84) return V16_STYLE_SIGN_CORNER;
+                return V16_STYLE_MIXED_CORNER;
+            case 9:
+                return roll < 55 ? V16_STYLE_MUSHROOM_PATCH
+                        : (roll < 78 ? V16_STYLE_STATUE_PAIR : V16_STYLE_CRATE_PAIR);
+            case 10:
+            case 11:
+            case 14:
+                if (roll < 34) return V16_STYLE_BUSH_PATCH;
+                if (roll < 57) return V16_STYLE_MUSHROOM_PATCH;
+                if (roll < 75) return V16_STYLE_SIGN_CORNER;
+                if (roll < 88) return V16_STYLE_MIXED_CORNER;
+                return V16_STYLE_CRATE_PAIR;
+            case 8:
+            case 13:
+                if (roll < 35) return V16_STYLE_SIGN_CORNER;
+                if (roll < 65) return V16_STYLE_BARREL_PAIR;
+                if (roll < 82) return V16_STYLE_CRATE_PAIR;
+                return V16_STYLE_SUPPLY_PILE;
+            default:
+                return roll % V16_STYLE_COUNT;
+        }
+    }
+
+    private int[][] v16Formation(int style) {
+        // element = {dx, dy, visualKind, terrain}
+        // terrain 0 means passable visual-only overlay.
+        switch (style) {
+            case V16_STYLE_BUSH_PATCH:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.BUSH, 0},
+                        {1, 0, InfiniteWorldDecorationLayer.BUSH, 0},
+                        {0, 1, InfiniteWorldDecorationLayer.MUSHROOMS, 0}
+                };
+            case V16_STYLE_MUSHROOM_PATCH:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.MUSHROOMS, 0},
+                        {1, 0, InfiniteWorldDecorationLayer.MUSHROOMS, 0},
+                        {0, 1, InfiniteWorldDecorationLayer.MUSHROOMS, 0},
+                        {1, 1, InfiniteWorldDecorationLayer.BUSH, 0}
+                };
+            case V16_STYLE_SIGN_CORNER:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.SIGN, Terrain.CUSTOM_DECO},
+                        {1, 0, InfiniteWorldDecorationLayer.BUSH, 0}
+                };
+            case V16_STYLE_BARREL_PAIR:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO},
+                        {1, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO}
+                };
+            case V16_STYLE_CRATE_PAIR:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO},
+                        {0, 1, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO}
+                };
+            case V16_STYLE_SUPPLY_PILE:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO},
+                        {1, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO},
+                        {0, 1, InfiniteWorldDecorationLayer.SIGN, 0}
+                };
+            case V16_STYLE_CRATE_BLOCK:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO},
+                        {1, 0, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO},
+                        {0, 1, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO},
+                        {1, 1, InfiniteWorldDecorationLayer.CRATE, Terrain.CUSTOM_DECO}
+                };
+            case V16_STYLE_BARREL_ROW:
+                return new int[][]{
+                        {0, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO},
+                        {1, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO},
+                        {2, 0, InfiniteWorldDecorationLayer.BARREL, Terrain.CUSTOM_DECO}
+                };
+            case V16_STYLE_STATUE_PAIR:
+                return new int[][]{
+                        {0, 0, 0, Terrain.STATUE},
+                        {1, 0, 0, Terrain.STATUE_SP}
+                };
+            case V16_STYLE_MIXED_CORNER:
+            default:
+                return new int[][]{
+                        {0, 0, 0, Terrain.STATUE_SP},
+                        {1, 0, InfiniteWorldDecorationLayer.BUSH, 0},
+                        {0, 1, InfiniteWorldDecorationLayer.SIGN, 0}
+                };
+        }
+    }
+
+    private int v16FindDecorationAnchor(int cx, int cy, int ox, int oy,
+                                        int slot, int style, boolean[] claimed) {
+        final int[][] formation = v16Formation(style);
+        final int inner = CHUNK_SIZE - 6; // anchor local 3..20
+        final int area = inner * inner;
+        int start = (int)Math.floorMod(hash(cx, cy, 29300 + slot * 23), (long)area);
+
+        for (int attempt = 0; attempt < area; attempt++) {
+            int idx = Math.floorMod(start + attempt * 71, area);
+            int lx = 3 + idx % inner;
+            int ly = 3 + idx / inner;
+            int anchor = ox + lx + (oy + ly) * width();
+
+            if (v16FormationFits(anchor, ox, oy, formation, claimed)) return anchor;
+        }
+        return -1;
+    }
+
+    private boolean v16FormationFits(int anchor, int ox, int oy,
+                                     int[][] formation, boolean[] claimed) {
+        int ax = anchor % width();
+        int ay = anchor / width();
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+        boolean hasSolid = false;
+
+        for (int[] part : formation) {
+            int x = ax + part[0];
+            int y = ay + part[1];
+            int lx = x - ox;
+            int ly = y - oy;
+
+            if (lx < 2 || lx > CHUNK_SIZE - 3 || ly < 2 || ly > CHUNK_SIZE - 3) return false;
+            if ((lx >= 9 && lx <= 14) || (ly >= 9 && ly <= 14)) return false;
+
+            int cell = x + y * width();
+            if (cell < 0 || cell >= length() || claimed[cell]) return false;
+
+            int terrain = map[cell];
+            if (terrain != Terrain.EMPTY && terrain != Terrain.EMPTY_SP
+                    && terrain != Terrain.EMPTY_DECO && terrain != Terrain.GRASS) {
+                return false;
+            }
+            if ((Terrain.flags[terrain] & Terrain.PASSABLE) == 0
+                    || heaps.get(cell) != null || traps.get(cell) != null
+                    || plants.get(cell) != null || Actor.findChar(cell) != null) {
+                return false;
+            }
+
+            if (part[3] != 0) hasSolid = true;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+
+        if (!hasSolid) return true;
+
+        // Collision-bearing set pieces are allowed only inside a fully open one-cell
+        // ring. This guarantees there is always a four-directional bypass around
+        // them and prevents decorative furniture from sealing a narrow corridor.
+        for (int y = minY - 1; y <= maxY + 1; y++) {
+            for (int x = minX - 1; x <= maxX + 1; x++) {
+                int cell = x + y * width();
+                if (cell < 0 || cell >= length()) return false;
+
+                boolean occupiedByFormation = false;
+                for (int[] part : formation) {
+                    if (x == ax + part[0] && y == ay + part[1]) {
+                        occupiedByFormation = true;
+                        break;
+                    }
+                }
+                if (occupiedByFormation) continue;
+
+                int terrain = map[cell];
+                if ((Terrain.flags[terrain] & Terrain.PASSABLE) == 0
+                        || heaps.get(cell) != null || traps.get(cell) != null
+                        || plants.get(cell) != null || Actor.findChar(cell) != null) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void applyV16DecorationFormation(
+            InfiniteWorldDecorationLayer townLayer,
+            InfiniteWorldDecorationLayer dungeonLayer,
+            int anchor, int style, boolean[] claimed) {
+
+        int ax = anchor % width();
+        int ay = anchor / width();
+
+        for (int[] part : v16Formation(style)) {
+            int cell = ax + part[0] + (ay + part[1]) * width();
+            if (cell < 0 || cell >= length()) continue;
+
+            int visualKind = part[2];
+            int terrain = part[3];
+
+            if (visualKind != 0) {
+                putV16DecorationVisual(townLayer, dungeonLayer, cell, visualKind);
+            }
+
+            if (terrain != 0) {
+                map[cell] = terrain;
+                v16ManagedSolidDecor[cell] = true;
+            }
+            claimed[cell] = true;
+        }
+    }
+
+    private void putV16DecorationVisual(
+            InfiniteWorldDecorationLayer townLayer,
+            InfiniteWorldDecorationLayer dungeonLayer,
+            int cell, int kind) {
+        if (kind == InfiniteWorldDecorationLayer.CRATE) {
+            dungeonLayer.put(cell, kind, InfiniteWorldLevel.this);
+        } else {
+            townLayer.put(cell, kind, InfiniteWorldLevel.this);
+        }
+    }
+
+    private boolean isV16ManagedSolidDecorationCell(int cell) {
+        if (state().generatorVersion < 16) return false;
+
+        if (v16ManagedSolidDecor != null
+                && cell >= 0 && cell < v16ManagedSolidDecor.length
+                && v16ManagedSolidDecor[cell]) {
+            return true;
+        }
+
+        int wx = worldXForLocalCell(cell);
+        int wy = worldYForLocalCell(cell);
+        int cx = Math.floorDiv(wx, CHUNK_SIZE);
+        int cy = Math.floorDiv(wy, CHUNK_SIZE);
+        int lx = Math.floorMod(wx, CHUNK_SIZE);
+        int ly = Math.floorMod(wy, CHUNK_SIZE);
+
+        int anomaly = v9AnomalyType(cx, cy);
+        int count = anomaly != 0
+                ? 4 + (Math.floorMod(hash(cx, cy, 29200), 100L) < 60 ? 1 : 0)
+                : 2 + (Math.floorMod(hash(cx, cy, 29201), 100L) < 72 ? 1 : 0);
+
+        for (int slot = 0; slot < count; slot++) {
+            int stored = state().objectState(v16DecorationStateKey(cx, cy, slot));
+            if (stored <= V16_DECOR_NONE) continue;
+
+            int packed = stored - V16_DECOR_STATE_BASE;
+            int anchorLocal = packed & 0x3FF;
+            int style = (packed >>> 10) & 0x3F;
+            if (style < 0 || style >= V16_STYLE_COUNT) continue;
+
+            int ax = anchorLocal % CHUNK_SIZE;
+            int ay = anchorLocal / CHUNK_SIZE;
+            for (int[] part : v16Formation(style)) {
+                if (part[3] != 0 && lx == ax + part[0] && ly == ay + part[1]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private int v15DecorationCell(int cx, int cy, int ox, int oy,
                                   int slot, boolean[] claimed) {
-        final int inner = CHUNK_SIZE - 4; // local 2..21
+        final int inner = CHUNK_SIZE - 4;
         final int area = inner * inner;
         int start = (int)Math.floorMod(hash(cx, cy, 29120 + slot * 11), (long)area);
 
-        // 137 is coprime with 400, so this visits every interior cell at most once.
         for (int attempt = 0; attempt < area; attempt++) {
             int idx = Math.floorMod(start + attempt * 137, area);
             int lx = 2 + idx % inner;
@@ -5153,7 +5534,6 @@ public class InfiniteWorldLevel extends Level {
                 continue;
             }
 
-            // Do not clutter the common guaranteed crossing lanes.
             if ((lx >= 10 && lx <= 13) || (ly >= 10 && ly <= 13)) continue;
 
             return cell;
@@ -5165,40 +5545,34 @@ public class InfiniteWorldLevel extends Level {
         int roll = range(cx, cy, 29180 + slot * 13, 0, 99);
 
         switch (anomaly) {
-            case 2:  // Level 1 - service/storage
-            case 3:  // Level 2 - utility halls
-            case 4:  // Level 3 - electrical station
+            case 2:
+            case 3:
+            case 4:
                 return roll < 45 ? InfiniteWorldDecorationLayer.BARREL
                         : (roll < 82 ? InfiniteWorldDecorationLayer.CRATE
                         : InfiniteWorldDecorationLayer.SIGN);
-
-            case 5:  // Level 4 - abandoned office
-            case 6:  // Level 5 - hotel
+            case 5:
+            case 6:
                 return roll < 42 ? InfiniteWorldDecorationLayer.SIGN
                         : (roll < 72 ? InfiniteWorldDecorationLayer.CRATE
                         : InfiniteWorldDecorationLayer.BARREL);
-
-            case 9:  // Level 8 - caves
+            case 9:
                 return roll < 68 ? InfiniteWorldDecorationLayer.MUSHROOMS
                         : InfiniteWorldDecorationLayer.CRATE;
-
-            case 10: // Level 9 - suburbs
-            case 12: // Level 11 - city
+            case 10:
+            case 12:
                 return roll < 45 ? InfiniteWorldDecorationLayer.SIGN
                         : (roll < 75 ? InfiniteWorldDecorationLayer.BARREL
                         : InfiniteWorldDecorationLayer.BUSH);
-
-            case 11: // Level 10 - fields
-            case 14: // Level 94 - motion/town
+            case 11:
+            case 14:
                 return roll < 50 ? InfiniteWorldDecorationLayer.BUSH
                         : (roll < 78 ? InfiniteWorldDecorationLayer.MUSHROOMS
                         : InfiniteWorldDecorationLayer.SIGN);
-
-            case 8:  // Level 7 - ocean
-            case 13: // Level 37 - poolrooms
+            case 8:
+            case 13:
                 return roll < 58 ? InfiniteWorldDecorationLayer.SIGN
                         : InfiniteWorldDecorationLayer.BARREL;
-
             default:
                 switch (roll / 20) {
                     case 0: return InfiniteWorldDecorationLayer.BUSH;
