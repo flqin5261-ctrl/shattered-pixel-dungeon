@@ -2281,3 +2281,53 @@ Integration:
 - V15 Backrooms generation and merchant progression remain unchanged.
 - Water/VBO/Fog/Streaming invariants remain unchanged.
 
+# 0.5.9 — Environment Decoration Pass
+
+- versionName: 0.5.9
+- versionCode: 955
+- WORLD_GEN_VERSION remains 15.
+- dev: assist-0.5.9-decoration-pass
+- stable: assist-0.5.9-stable
+
+This release expands the 0.5.8 visual-only environment system rather than changing gameplay collision or monster mechanics.
+
+## Prop catalog
+The prop catalog grows from 5 to 23 visual categories:
+weeds, flowers, three tree variants, mushrooms, stone patch, sign, rock, stump, barrel, rubble, brazier, arcane brazier, pedestal, sarcophagus, crystal ornament, table, stool, shelf, armor display, fence and vase.
+
+The old 0.5.8 "crate" mapping was removed because the pinned Tiny Dungeon sprite index visually matched a sarcophagus/coffin rather than a wooden crate.
+
+## Density
+- ordinary V15 chunk: deterministic 4-7 props
+- most Backrooms-inspired chunks: deterministic 8-12 props
+- Level 37 / Poolrooms: 5-8 props to preserve open-water visual identity
+
+## Regional decoration pools
+Every Backrooms-inspired district now has a distinct prop pool:
+- Level 0: office debris / signs / tables / stools / shelves
+- Levels 1-3: storage, rubble, braziers, fences and fixtures
+- Level 4: office furniture
+- Level 5: hotel furniture and ornament
+- Level 6: darker ruin / sarcophagus / brazier mix
+- Level 7: shoreline debris and rocks
+- Level 8: mushrooms, rubble, stone and crystal ornament
+- Level 9: suburban trees/signs/barrels/stumps
+- Level 10: weeds/flowers/trees/stumps/mushrooms
+- Level 11: urban signs/barrels/fences/rubble
+- Level 37: cleaner pedestal/vase/sign/crystal mix
+- Level 94: trees/flowers/mushrooms/signs/barrels
+
+Furniture and architectural fixtures prefer wall-adjacent floor cells, with a safe fallback when none are available.
+
+## Hard exclusions
+Props remain pure CustomTilemap overlays:
+- no interaction
+- no collision
+- no map[] mutation
+- no pathfinding mutation
+- no terrainOverride writes
+- no monster or merchant behavior changes
+
+Placement still skips heaps, traps, plants, characters, water, pits, secret terrain and the common center crossing lanes.
+
+Monster strength/progression remains intentionally deferred until after this environment pass is tested.
