@@ -43,6 +43,7 @@ public class InfiniteWorldState implements Bundlable {
     public int breakthroughTrialGold = 0;
     public int breakthroughTrialEnergy = 0;
     public Bundle breakthroughHeroSnapshot = null;
+    public Bundle breakthroughQuickslotSnapshot = null;
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
@@ -213,6 +214,7 @@ public class InfiniteWorldState implements Bundlable {
     private static final String BREAKTHROUGH_GOLD = "breakthrough_gold";
     private static final String BREAKTHROUGH_ENERGY = "breakthrough_energy";
     private static final String BREAKTHROUGH_HERO = "breakthrough_hero";
+    private static final String BREAKTHROUGH_QUICKSLOT = "breakthrough_quickslot";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -253,6 +255,9 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(BREAKTHROUGH_ENERGY, breakthroughTrialEnergy);
         if (breakthroughHeroSnapshot != null) {
             bundle.put(BREAKTHROUGH_HERO, breakthroughHeroSnapshot);
+        }
+        if (breakthroughQuickslotSnapshot != null) {
+            bundle.put(BREAKTHROUGH_QUICKSLOT, breakthroughQuickslotSnapshot);
         }
 
         long[] terrainKeys = new long[terrainOverrides.size()];
@@ -342,6 +347,8 @@ public class InfiniteWorldState implements Bundlable {
                 ? bundle.getInt(BREAKTHROUGH_ENERGY) : 0;
         breakthroughHeroSnapshot = bundle.contains(BREAKTHROUGH_HERO)
                 ? bundle.getBundle(BREAKTHROUGH_HERO) : null;
+        breakthroughQuickslotSnapshot = bundle.contains(BREAKTHROUGH_QUICKSLOT)
+                ? bundle.getBundle(BREAKTHROUGH_QUICKSLOT) : null;
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
