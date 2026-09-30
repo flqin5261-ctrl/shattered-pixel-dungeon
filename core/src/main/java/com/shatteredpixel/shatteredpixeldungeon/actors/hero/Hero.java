@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Combo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Drowsy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Foresight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GreaterHaste;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HoldFast;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
@@ -264,7 +265,7 @@ public class Hero extends Char {
 	public void updateHT( boolean boostHP ){
 		int curHT = HT;
 		
-		HT = 20 + 5*(lvl-1) + HTBoost;
+		HT = 20 + 5*(lvl-1) + HTBoost + GenesisEcho.permanentHpBonus(this);
 		float multiplier = RingOfMight.HTMultiplier(this);
 		HT = Math.round(multiplier * HT);
 		
@@ -274,7 +275,7 @@ public class Hero extends Char {
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null) {
-			HT = Math.round(HT * certificate.healthMultiplier());
+			HT = Math.round(HT * certificate.effectiveHealthMultiplier(this));
 		}
 		
 		if (boostHP){
@@ -298,7 +299,8 @@ public class Hero extends Char {
 		}
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
-		if (certificate != null) strBonus += certificate.strengthBonus();
+		if (certificate != null) strBonus += certificate.effectiveStrengthBonus(this);
+		strBonus += GenesisEcho.permanentStrBonus(this);
 
 		return STR + strBonus;
 	}
@@ -570,7 +572,7 @@ public class Hero extends Char {
 		}
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
-		if (certificate != null) accuracy *= certificate.accuracyMultiplier();
+		if (certificate != null) accuracy *= certificate.effectiveAccuracyMultiplier(this);
 		
 		if (!RingOfForce.fightingUnarmed(this)) {
 			return Math.max(1, Math.round(attackSkill * accuracy * wep.accuracyFactor( this, target )));
@@ -614,7 +616,7 @@ public class Hero extends Char {
 		}
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
-		if (certificate != null) evasion *= certificate.evasionMultiplier();
+		if (certificate != null) evasion *= certificate.effectiveEvasionMultiplier(this);
 
 		if (belongings.armor() != null) {
 			evasion = belongings.armor().evasionFactor(this, evasion);
@@ -717,7 +719,7 @@ public class Hero extends Char {
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null) {
-			dmg = Math.round(dmg * certificate.damageMultiplier());
+			dmg = Math.round(dmg * certificate.effectiveDamageMultiplier(this));
 		}
 
 		if (dmg < 0) dmg = 0;
@@ -760,7 +762,7 @@ public class Hero extends Char {
 		speed = AscensionChallenge.modifyHeroSpeed(speed);
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
-		if (certificate != null) speed *= certificate.speedMultiplier();
+		if (certificate != null) speed *= certificate.effectiveSpeedMultiplier(this);
 
 		float assistMoveMultiplier = SPDSettings.assistSpeed()
 				? SPDSettings.assistSpeedMultiplier() : 1f;
@@ -1730,7 +1732,7 @@ public class Hero extends Char {
 
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null && !(src instanceof Hunger)) {
-			damage *= certificate.damageTakenMultiplier();
+			damage *= certificate.effectiveDamageTakenMultiplier(this);
 		}
 
 		dmg = Math.round(damage);
@@ -2112,7 +2114,7 @@ public class Hero extends Char {
 		if (exp > 0 && certificate != null
 				&& source != InfiniteWorldProgression.class
 				&& source != AscensionChallenge.class) {
-			exp = Math.max(exp, Math.round(exp * certificate.expMultiplier()));
+			exp = Math.max(exp, Math.round(exp * certificate.effectiveExpMultiplier(this)));
 		}
 
 		//xp granted by ascension challenge is only for on-exp gain effects
@@ -2228,6 +2230,7 @@ public class Hero extends Char {
 			}
 			if (Dungeon.infiniteWorld && InfiniteWorldProgression.breakthroughCompleted()) {
 				InfiniteWorldProgression.syncBreakthroughCertificate(this);
+				GenesisEcho.ensure(this);
 			}
 		}
 	}
@@ -2237,6 +2240,11 @@ public class Hero extends Char {
 	}
 	
 	public static int maxExp( int lvl ){
+		if (Dungeon.infiniteWorld && lvl == 59) {
+			// Level 60 grants Miracle Echo + Genesis Echo, so this final step is
+			// intentionally a much longer endgame grind.
+			return 3600;
+		}
 		return 5 + lvl * 5;
 	}
 	
@@ -2249,7 +2257,7 @@ public class Hero extends Char {
 		float result = super.resist(effect);
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (certificate != null && BreakthroughCertificate.isSupportedNegativeEffect(effect)) {
-			result *= certificate.negativeEffectMultiplier();
+			result *= certificate.effectiveNegativeEffectMultiplier(this);
 		}
 		return result;
 	}
@@ -2314,6 +2322,12 @@ public class Hero extends Char {
 			// normal game-over after finishTrial() has restored the real Hero.
 			HP = Math.max(1, HP);
 			((BreakthroughTrialLevel)Dungeon.level).finishTrial(false);
+			return;
+		}
+
+		if (GenesisEcho.blocksInstantDeath(this, cause)) {
+			HP = Math.max(1, HP);
+			GLog.p("创世回响拒绝了即死命运。");
 			return;
 		}
 
@@ -2659,7 +2673,7 @@ public class Hero extends Char {
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
 		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
 		BreakthroughCertificate searchCertificate = BreakthroughCertificate.equipped(this);
-		if (searchCertificate != null) distance += searchCertificate.searchDistanceBonus();
+		if (searchCertificate != null) distance += searchCertificate.effectiveSearchDistanceBonus(this);
 		
 		boolean foresight = buff(Foresight.class) != null;
 		boolean foresightScan = foresight && !Dungeon.level.mapped[pos];
@@ -2751,7 +2765,7 @@ public class Hero extends Char {
 						if (searchCertificate != null
 								&& (Dungeon.level.map[curr] == Terrain.SECRET_TRAP
 								|| Dungeon.level.map[curr] == Terrain.SECRET_DOOR)) {
-							chance = Math.min(1f, chance + searchCertificate.searchChanceBonus());
+							chance = Math.min(1f, chance + searchCertificate.effectiveSearchChanceBonus(this));
 						}
 
 						//don't want to let the player search though hidden doors in tutorial
