@@ -246,7 +246,14 @@ public class Artifact extends KindofMisc {
 			return super.info() + "\n\n" + Messages.get(Artifact.class, "not_cursed");
 			
 		} else {
-			return super.info();
+			String info = super.info();
+			if (Dungeon.infiniteWorld && visiblyUpgraded() > 10) {
+				int extra = visiblyUpgraded() - 10;
+				int rechargeBonus = Math.round((assistOverlevelChargeMultiplier() - 1f) * 100f);
+				info += "\n\n" + Messages.get(Artifact.class, "assist_overlevel_power",
+						visiblyUpgraded(), buffedLvl(), rechargeBonus);
+			}
+			return info;
 			
 		}
 	}
@@ -311,6 +318,11 @@ public class Artifact extends KindofMisc {
 	}
 
 	protected ArtifactBuff activeBuff() {return null; }
+
+	public float assistOverlevelChargeMultiplier(){
+		if (!Dungeon.infiniteWorld || visiblyUpgraded() <= 10) return 1f;
+		return 1f + 0.025f * (visiblyUpgraded() - 10);
+	}
 	
 	public void charge(Hero target, float amount){
 		//do nothing by default;
@@ -339,7 +351,7 @@ public class Artifact extends KindofMisc {
 		}
 
 		public void charge(Hero target, float amount){
-			Artifact.this.charge(target, amount);
+			Artifact.this.charge(target, amount * Artifact.this.assistOverlevelChargeMultiplier());
 		}
 
 	}
