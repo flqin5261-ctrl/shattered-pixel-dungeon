@@ -742,7 +742,7 @@ public class Hero extends Char {
 		if (InfiniteWorldLevel.assistSpectatorActive()) {
 			// QA spectator mode is intentionally fast even when the normal Assist
 			// speed toggle is off. A separately configured higher speed still wins.
-			assistMoveMultiplier = Math.max(4f, assistMoveMultiplier);
+			assistMoveMultiplier = Math.max(8f, assistMoveMultiplier);
 		}
 		if (assistMoveMultiplier != 1f) {
 			speed *= assistMoveMultiplier;
