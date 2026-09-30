@@ -71,7 +71,7 @@
 > 本文件的目标是避免因为聊天长度、换对话、换模型或隔了一段时间后，后续修改偏离当前项目方向。
 > 这里记录的是“当前真实项目状态、不可破坏的约束、现在做到哪里、下一步做什么”。
 >
-> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.2-stable`。
+> 如果本文档与代码冲突，以**最新稳定分支的实际代码**为准，并优先检查 `assist-0.5.3-stable`。
 > 不要凭记忆猜实现细节。
 
 ---
@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.2**
-- 当前 versionCode：**948**
-- 当前最新稳定分支：`assist-0.5.2-stable`
-- 当前发布代码 SHA：`bf27f1be1ad0ba23f9fa3eb5b65ff08c8e275fda`
-- 当前对应开发分支：`assist-0.5.2-discovery`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 12**
+- 当前最新稳定版本：**0.5.3**
+- 当前 versionCode：**949**
+- 当前最新稳定分支：`assist-0.5.3-stable`
+- 当前发布代码 SHA：`d653fedf8d6b0f183053324b3882056038a7ec1d`
+- 当前对应开发分支：`assist-0.5.3-merchants-liminal`
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 13**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -109,7 +109,7 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.5.2-stable` 和最新开发分支。
+4. 检查最新稳定分支 `assist-0.5.3-stable` 和最新开发分支。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
    - `assist-0.5.2-xxxxx`
 6. **不要覆盖历史 stable 分支。**
@@ -1408,3 +1408,42 @@ V12 地形概率发生变化，因此要完整体验商人/异境密度必须重
 - 三种异境纸条是否都能稳定看到；
 - 400 action-value 保证神器箱是否唯一、可见、可开；
 - 开箱未拾取与拾取后的 Streaming / Save-Load 状态。
+
+# 26. 0.5.3 / Generator V13 — 商人可发现性 + 六类异境
+
+用户实机确认 V12 唯一神器箱正确，但商人仍难遇到，Liminal 类后室区域仍偏少。
+
+## 26.1 商人
+- V13 lattice spacing=4 Chunk；V12=5，V11=7。
+- 出生排除约 2 Chunk。
+- 仍避开 anomaly、Primary、Secondary 无限路线。
+- Outpost 一旦进入 active window，商店房附近会直接标记 mapped，出售货堆设 seen。
+- 未提示过的据点进入 Hero 约 2 Chunk 内时，出现一次本地化商人提示。
+- 提示状态使用 per-outpost objectStates，因此不会每步刷屏。
+- 购买持久化、逃跑关闭、6 槽库存、8 格怪物刷新安全区均不改。
+
+## 26.2 异境
+V13 anomaly 5×5 macro 概率提高到约 28%，并扩展到六种：
+1. Repeating Offices
+2. Pool Halls
+3. Endless Hall
+4. Yellow Maze
+5. Service Tunnels
+6. Dark Storage
+
+V12 老世界仍按 15% / 三种，V9-V11 仍按 8% / 三种。
+
+## 26.3 新 Field Notes
+新增：
+- Yellow_Maze
+- Service_Tunnels
+- Dark_Storage
+
+六类异境都继续有 deterministic anchor note + 首次未收录时 Hero 附近可见便笺保证。
+
+## 26.4 保持不变
+- V12 400 action-value 唯一神器箱；
+- Streaming onMotionComplete 时机；
+- 24/144/3 hysteresis；
+- VBO/Water/Fog 修复；
+- Mob 无奖励距离 despawn。
