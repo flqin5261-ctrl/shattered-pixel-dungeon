@@ -84,6 +84,33 @@ public class BreakthroughCertificate extends EquipableItem {
         }
     }
 
+    public float accuracyMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 1.16f;
+            case 50: return 1.12f;
+            case 40: return 1.08f;
+            default:return 1.05f;
+        }
+    }
+
+    public float evasionMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 1.14f;
+            case 50: return 1.10f;
+            case 40: return 1.07f;
+            default:return 1.04f;
+        }
+    }
+
+    public float expMultiplier() {
+        switch (certificateLevel) {
+            case 60: return 1.15f;
+            case 50: return 1.12f;
+            case 40: return 1.08f;
+            default:return 1.05f;
+        }
+    }
+
     public float hungerMultiplier() {
         switch (certificateLevel) {
             case 60: return 0.62f;
@@ -219,6 +246,9 @@ public class BreakthroughCertificate extends EquipableItem {
                 Math.round((healthMultiplier()-1f)*100f),
                 strengthBonus(),
                 Math.round((damageMultiplier()-1f)*100f),
+                Math.round((accuracyMultiplier()-1f)*100f),
+                Math.round((evasionMultiplier()-1f)*100f),
+                Math.round((expMultiplier()-1f)*100f),
                 Math.round((1f-hungerMultiplier())*100f),
                 Math.round((goldMultiplier()-1f)*100f),
                 Math.round((speedMultiplier()-1f)*100f),
@@ -320,6 +350,19 @@ public class BreakthroughCertificate extends EquipableItem {
         return hero == null ? null : hero.belongings.breakthroughCertificate();
     }
 
+    private static int nextTier(int tier) {
+        if (tier < 40) return 40;
+        if (tier < 50) return 50;
+        if (tier < 60) return 60;
+        return 0;
+    }
+
+    private static BreakthroughCertificate previewForTier(int tier) {
+        BreakthroughCertificate preview = new BreakthroughCertificate();
+        preview.certificateLevel = tier;
+        return preview;
+    }
+
     public static class BreakthroughBlessing extends Buff {
         private BreakthroughCertificate certificate;
 
@@ -337,12 +380,23 @@ public class BreakthroughCertificate extends EquipableItem {
 
         @Override
         public int icon() {
-            return BuffIndicator.BLESS;
+            return BuffIndicator.AMULET;
+        }
+
+        @Override
+        public String iconTextDisplay() {
+            BreakthroughCertificate cert = certificate;
+            if (cert == null && target instanceof Hero) cert = equipped((Hero)target);
+            return cert == null ? "" : Integer.toString(cert.certificateLevel());
         }
 
         @Override
         public String name() {
-            return Messages.get(BreakthroughCertificate.class, "blessing_name");
+            BreakthroughCertificate cert = certificate;
+            if (cert == null && target instanceof Hero) cert = equipped((Hero)target);
+            return cert == null
+                    ? Messages.get(BreakthroughCertificate.class, "blessing_name")
+                    : Messages.get(BreakthroughCertificate.class, "blessing_name_level", cert.certificateLevel());
         }
 
         @Override
@@ -350,8 +404,43 @@ public class BreakthroughCertificate extends EquipableItem {
             BreakthroughCertificate cert = certificate;
             if (cert == null && target instanceof Hero) cert = equipped((Hero)target);
             if (cert == null) return Messages.get(BreakthroughCertificate.class, "blessing_inactive");
-            return Messages.get(BreakthroughCertificate.class, "blessing_desc",
-                    cert.certificateLevel(), cert.reviveChargePercent());
+
+            String current = Messages.get(BreakthroughCertificate.class, "blessing_desc",
+                    cert.certificateLevel(),
+                    Math.round((cert.healthMultiplier()-1f)*100f),
+                    cert.strengthBonus(),
+                    Math.round((cert.damageMultiplier()-1f)*100f),
+                    Math.round((cert.accuracyMultiplier()-1f)*100f),
+                    Math.round((cert.evasionMultiplier()-1f)*100f),
+                    Math.round((cert.expMultiplier()-1f)*100f),
+                    Math.round((1f-cert.hungerMultiplier())*100f),
+                    Math.round((cert.goldMultiplier()-1f)*100f),
+                    Math.round((cert.speedMultiplier()-1f)*100f),
+                    cert.visionBonus(),
+                    Math.round((1f-cert.shopPriceMultiplier())*100f),
+                    Math.round(cert.chestBonusChance()*100f),
+                    Math.round(cert.regenInterval()),
+                    Math.round(cert.reviveChargeRequired()),
+                    Math.round(cert.reviveHpFraction()*100f),
+                    cert.reviveChargePercent());
+
+            int next = nextTier(cert.certificateLevel());
+            if (next == 0) {
+                return current + "\n\n" + Messages.get(BreakthroughCertificate.class, "blessing_max");
+            }
+
+            BreakthroughCertificate preview = previewForTier(next);
+            return current + "\n\n" + Messages.get(BreakthroughCertificate.class, "blessing_next",
+                    next,
+                    Math.round((preview.healthMultiplier()-1f)*100f),
+                    preview.strengthBonus(),
+                    Math.round((preview.damageMultiplier()-1f)*100f),
+                    Math.round((preview.accuracyMultiplier()-1f)*100f),
+                    Math.round((preview.evasionMultiplier()-1f)*100f),
+                    Math.round((preview.expMultiplier()-1f)*100f),
+                    preview.visionBonus(),
+                    Math.round((1f-preview.shopPriceMultiplier())*100f),
+                    Math.round(preview.reviveHpFraction()*100f));
         }
     }
 }
