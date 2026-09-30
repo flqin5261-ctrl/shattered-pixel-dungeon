@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -204,10 +205,17 @@ public class Shopkeeper extends NPC {
 		// Infinite World V15 guarantees missing inventory-expansion bags at
 		// merchants. Keep those progression essentials realistically affordable
 		// instead of applying the normal greedy x5 shop markup.
+		int price;
 		if (Dungeon.infiniteWorld && item instanceof Bag) {
-			return Math.max(20, item.value() * 2);
+			price = Math.max(20, item.value() * 2);
+		} else {
+			price = item.value() * 5 * (Dungeon.depth / 5 + 1);
 		}
-		return item.value() * 5 * (Dungeon.depth / 5 + 1);
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
+		if (certificate != null) {
+			price = Math.max(1, Math.round(price * certificate.shopPriceMultiplier()));
+		}
+		return price;
 	}
 	
 	public static WndBag sell() {
