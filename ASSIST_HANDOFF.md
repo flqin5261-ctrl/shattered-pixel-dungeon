@@ -2133,3 +2133,39 @@ Infinite World 新增两层通用成长天赋：
 - 整次AOE只扣一次法杖正常充能与一次施法行动时间；
 - 未佩戴奇迹·世界时，AOE只造成伤害，不自动秒杀；
 - 已佩戴奇迹·世界时，每个AOE目标在伤害后额外继承创世回响的机制秒杀。
+
+# 47. 0.6.16 — 超距离传送与移动卡顿优化
+
+- versionName：0.6.16
+- versionCode：972
+- dev：assist-0.6.16-teleport-performance
+- target stable：assist-0.6.16-stable
+
+## 优化点
+1. 删除超距离传送中的重复工作：
+   - ScrollOfTeleportation.appear(hero, cell) 本身会调用 Hero.move(..., false)；
+   - Hero.move 已经执行 occupyCell 和 InfiniteWorldLevel.recordHeroMove；
+   - 旧实现随后又手动 occupyCell、recordHeroMove 一次，造成重复逻辑；
+   - Dungeon.observe() 本身已经执行必要 fog 更新，旧实现又额外全局 GameScene.updateFog() 一次。
+   0.6.16 全部去重，只保留一次位置更新、一次世界记录和一次 observe。
+
+2. 传送后清除旧导航缓存：
+   - path = null；
+   - curAction / lastAction 清空；
+   - walkingToVisibleTrapInFog 清空；
+   - 避免传送前的长路径在新位置触发重新寻路或恢复旧移动目标。
+
+3. 缩短创世传送视觉淡入：
+   - 普通传送卷轴仍保持0.4秒；
+   - 超距离传送使用0.12秒淡入，仅改变视觉响应，不改变规则与无冷却设定。
+
+4. Infinite World 每步维护节流：
+   - 后室信息与商人发现只在英雄真正进入新 chunk 时执行，不再每走1格重复扫描；
+   - 怪物裁剪改为每移动约4个世界格或跨 chunk 时检查；
+   - 进度门槛/奇迹装备确保逻辑仍保留，不改变玩法。
+
+5. 传送后的流式地图宽限：
+   - 如果传送落点位于普通流式触发边带（24格安全边带）内，下一步不立刻重建168×168窗口；
+   - 临时使用8格硬安全边带，玩家向地图内部移动时不会触发重建；
+   - 如果继续向真正地图边缘移动，达到8格边带时仍会正常重建窗口，保证不会走出加载区；
+   - 一旦回到正常安全区或完成一次重建，宽限自动解除。
