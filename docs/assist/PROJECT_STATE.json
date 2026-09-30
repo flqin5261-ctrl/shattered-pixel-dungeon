@@ -13,12 +13,8 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.5.1-stable",
     "development_branch": "assist-0.5.1-merchants",
-    "release_code_sha": "e14bac5c266d6b0cad3189ace9dc7492967ac74b",
-    "world_generator_version": 11,
-    "build_run_id": 36652519842,
-    "artifact_id": 11071242855,
-    "artifact_zip_sha256": "ab8a78facc9447d287b5b3627173d6b459dc7e05f1deb13d19ac7a816bb2b003",
-    "apk_sha256": "4baab2a0ce442d9e52cddf0fa4f0750cdc47e926fa8cf5c36cdd5cfa2d1fe177"
+    "release_code_sha": "d9e0d06829d61674d4bb96a52f649cfea45fe90c",
+    "world_generator_version": 11
   },
   "build": {
     "workflow": ".github/workflows/build-assist.yml",
@@ -105,6 +101,19 @@
       "merchant_flee_persists": true,
       "merchant_is_not_subject_to_enemy_distance_despawn": true,
       "enemy_spawn_sanctuary_radius_cells": 8
+    },
+    "merchants": {
+      "enabled": true,
+      "boss_related": false,
+      "generation": "deterministic merchant outposts",
+      "spacing_chunks": 9,
+      "max_active_in_7x7_window": 1,
+      "stock_slots": 6,
+      "stock_persists_after_purchase": true,
+      "merchant_flee_persists": true,
+      "immune_to_enemy_distance_despawn": true,
+      "local_enemy_spawn_exclusion_radius": 8,
+      "requires_new_world_for_v11": true
     }
   },
   "current_content": {
@@ -257,6 +266,9 @@
     "Static room environment overlays can become visually stale after destructive terrain changes such as wall explosions; local overlay invalidation is a future improvement."
   ],
   "next_priorities": [
+    "Real-device test merchant frequency, pricing and stock balance.",
+    "Verify merchant/stock persistence through streaming, save/load and revisits.",
+    "Keep merchants sparse and secondary to exploration.",
     "Real-device test merchant encounter rate, stock usefulness, buying/selling, streaming and persistence before adding more merchant variants.",
     "Tune merchant spacing or stock count only from playtest feedback; do not turn shops into another high-density loot source.",
     "Real-device tune 0.5.0 mob density, spawn interval, despawn radius and elite rarity before adding more enemy types.",
