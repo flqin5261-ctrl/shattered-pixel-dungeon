@@ -200,7 +200,20 @@ public enum Talent {
 	//universal T4
 	HEROIC_ENERGY(26, 4), //See icon() and title() for special logic for this one
 	//Ratmogrify T4
-	RATSISTANCE(215, 4), RATLOMACY(216, 4), RATFORCEMENTS(217, 4);
+	RATSISTANCE(215, 4), RATLOMACY(216, 4), RATFORCEMENTS(217, 4),
+
+	//Assist Infinite World T5
+	ASCENDANT_VITALITY(26, 3), ASCENDANT_FORCE(58, 3),
+	ASCENDANT_FOCUS(90, 3), ASCENDANT_REFLEX(122, 3),
+
+	//Assist Infinite World T6
+	TRANSCENDENT_STRENGTH(154, 4), TRANSCENDENT_SPEED(186, 4),
+	TRANSCENDENT_VISION(57, 3), TRANSCENDENT_GUARD(89, 3),
+	TRANSCENDENT_REGEN(121, 3),
+
+	//Genesis Echo exclusive T7. Exactly one can be selected at a time.
+	GENESIS_REACH(17, 1), GENESIS_TELEPORT(55, 1),
+	GENESIS_SPELLCAST(52, 1), GENESIS_FORTUNE(73, 1);
 
 	public static class ImprovisedProjectileCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -432,8 +445,9 @@ public enum Talent {
 	int icon;
 	int maxPoints;
 
-	// tiers 1/2/3/4 start at levels 2/7/13/21
-	public static int[] tierLevelThresholds = new int[]{0, 2, 7, 13, 21, 31};
+	// Infinite World extends the original four tiers with T5/T6 and a
+	// Genesis-Echo-gated T7. The extra sentinel keeps point math simple.
+	public static int[] tierLevelThresholds = new int[]{0, 2, 7, 13, 21, 31, 43, 60, 61};
 
 	Talent( int icon ){
 		this(icon, 2);
@@ -957,7 +971,7 @@ public enum Talent {
 		}
 	};
 
-	public static final int MAX_TALENT_TIERS = 4;
+	public static final int MAX_TALENT_TIERS = 7;
 
 	public static void initClassTalents( Hero hero ){
 		initClassTalents( hero.heroClass, hero.talents, hero.metamorphedTalents );
@@ -1063,6 +1077,31 @@ public enum Talent {
 
 		//tier4
 		//TBD
+
+		// Assist Infinite World tier 5
+		Collections.addAll(tierTalents,
+				ASCENDANT_VITALITY, ASCENDANT_FORCE, ASCENDANT_FOCUS, ASCENDANT_REFLEX);
+		for (Talent talent : tierTalents) {
+			talents.get(4).put(talent, 0);
+		}
+		tierTalents.clear();
+
+		// Assist Infinite World tier 6
+		Collections.addAll(tierTalents,
+				TRANSCENDENT_STRENGTH, TRANSCENDENT_SPEED, TRANSCENDENT_VISION,
+				TRANSCENDENT_GUARD, TRANSCENDENT_REGEN);
+		for (Talent talent : tierTalents) {
+			talents.get(5).put(talent, 0);
+		}
+		tierTalents.clear();
+
+		// Genesis Echo exclusive tier 7
+		Collections.addAll(tierTalents,
+				GENESIS_REACH, GENESIS_TELEPORT, GENESIS_SPELLCAST, GENESIS_FORTUNE);
+		for (Talent talent : tierTalents) {
+			talents.get(6).put(talent, 0);
+		}
+		tierTalents.clear();
 	}
 
 	public static void initSubclassTalents( Hero hero ){
