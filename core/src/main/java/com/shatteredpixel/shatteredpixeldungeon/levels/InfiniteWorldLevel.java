@@ -115,9 +115,9 @@ public class InfiniteWorldLevel extends Level {
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
 
-    // V12 pacing guarantees: after 400 positive hero action-time the run receives
-    // exactly one visible, nearby crystal chest containing an artifact.
-    private static final float GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE = 400f;
+    // V17 pacing guarantees: after 1000 positive hero action-time the run receives
+    // exactly one visible crystal chest in the Hero-centered 3x3 neighbourhood.
+    private static final float GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE = 1000f;
 
     // Keep recently generated chunks in memory. The world itself is still seed-driven;
     // this cache only avoids rebuilding chunks when the player walks back and forth.
@@ -801,8 +801,10 @@ public class InfiniteWorldLevel extends Level {
     private void spawnGuaranteedArtifactChest() {
         if (Dungeon.hero == null || state().artifactChestState != 0) return;
 
-        int cell = findNearbyVisibleObjectCell(Dungeon.hero, 2, 5);
-        if (cell < 0) cell = findNearbyVisibleObjectCell(Dungeon.hero, 1, 7);
+        // Keep the guaranteed chest inside the Hero-centered 3x3 cell neighbourhood.
+        // If all eight adjacent cells are temporarily invalid, defer spawning and
+        // retry on the next positive Hero action instead of placing it farther away.
+        int cell = findNearbyVisibleObjectCell(Dungeon.hero, 1, 1);
         if (cell < 0) return;
 
         InfiniteWorldState st = state();
@@ -5108,7 +5110,7 @@ public class InfiniteWorldLevel extends Level {
                 v16DecorationPlan(terrain, cx, cy, ox, oy, anomaly, true);
 
         for (V16DecorationPlacement placement : plan) {
-            if (InfiniteWorldDecorationLayer.isBlockingKind(placement.kind)) {
+            if (InfiniteWorldDecorationLayer.isBlockingKind(placement.kind, state().generatorVersion)) {
                 terrain[placement.cell] = Terrain.CUSTOM_DECO;
             }
         }
@@ -5135,7 +5137,7 @@ public class InfiniteWorldLevel extends Level {
                 for (V16DecorationPlacement placement : plan) {
                     int cell = placement.cell;
                     int kind = placement.kind;
-                    boolean blocking = InfiniteWorldDecorationLayer.isBlockingKind(kind);
+                    boolean blocking = InfiniteWorldDecorationLayer.isBlockingKind(kind, state().generatorVersion);
 
                     if (state().generatorVersion >= 16 && blocking) {
                         // Physical props are represented by invisible CUSTOM_DECO
@@ -5186,7 +5188,7 @@ public class InfiniteWorldLevel extends Level {
                 kind = previousKind;
             }
 
-            boolean hard = physicalMode && InfiniteWorldDecorationLayer.isBlockingKind(kind);
+            boolean hard = physicalMode && InfiniteWorldDecorationLayer.isBlockingKind(kind, state().generatorVersion);
             if (hard && (cx == 0 && cy == 0 || isV11MerchantChunk(cx, cy))) {
                 // Keep the origin plaza and merchant outposts free of new physical
                 // blockers. They still receive pass-through visual clutter.
