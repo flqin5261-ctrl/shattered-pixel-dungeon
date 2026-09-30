@@ -13,7 +13,8 @@ fetch_and_verify_git_blob() {
   local out="$2"
   local expected_blob="$3"
 
-  curl -L --fail --retry 3 --retry-delay 2 -o "$out" "$url"
+  curl -L --fail --retry 6 --retry-delay 2 --retry-all-errors \
+    --connect-timeout 15 --max-time 120 -o "$out" "$url"
 
   local size actual
   size="$(wc -c < "$out" | tr -d ' ')"
