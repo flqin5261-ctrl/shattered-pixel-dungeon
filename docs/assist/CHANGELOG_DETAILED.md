@@ -2281,3 +2281,62 @@ Integration:
 - V15 Backrooms generation and merchant progression remain unchanged.
 - Water/VBO/Fog/Streaming invariants remain unchanged.
 
+# 0.5.9 / Generator V16 — Rich Environment Scenery
+
+Version:
+- versionName: 0.5.9
+- versionCode: 955
+- dev: assist-0.5.9-environment-rich
+- stable: assist-0.5.9-stable
+- WORLD_GEN_VERSION: 16
+
+## Why V16
+0.5.8 proved the CC0 overlay pipeline but only exposed five sparse sprites and all were pass-through.
+0.5.9 turns scenery into a real environment system. Bulky scenery now participates in ordinary movement/pathfinding, so new worlds use Generator V16.
+
+## 30 inspectable scenery kinds
+Town/natural/road props include round/green/amber trees, fern, mushrooms, fence pieces, wooden posts, signs, warning markers, rocks, logs, barrels, sealed crates, tubs and troughs.
+Dungeon/interior props include old caskets, torches, rubble, bookshelves, stone crosses, gravestones, tables, stools, stone basins, cabinets, iron railings, cold firepits and weapon displays.
+All remain non-interactive. Magnifier inspection still shows each prop's own sprite, localized name and description.
+
+## Density / authored grouping
+- ordinary chunk: deterministic 2-4 props
+- Level 0: 4-6
+- Levels 1/2/3: 6-9
+- Levels 4/5: 6-9
+- Level 6: 4-6
+- Level 7: 3-5
+- Level 8: 7-10
+- Level 9: 8-11
+- Level 10: 9-13
+- Level 11: 8-11
+- Level 37: 4-6
+- Level 94: 9-13
+Compatible families form small deterministic clusters instead of appearing only as isolated single sprites.
+
+## Regional prop pools
+- industrial/service: barrels, crates, cabinets, rails, warnings, torches, rubble
+- office/hotel: tables, stools, shelves, cabinets, signs
+- Lights Out: rubble, caskets, gravestones, crosses
+- ocean: logs, barrels, rocks, signs
+- caves: mushrooms, rocks, rubble, firepits
+- suburbs: trees, fences, signs, barrels, logs, crates
+- fields: trees, ferns, mushrooms, fences, logs
+- city: signs, warnings, barrels, crates, iron rails, tables
+- Poolrooms: stone basins, tubs, troughs, signs, rocks
+- Motion: green/amber trees, fences, ferns, mushrooms, logs, signs
+
+## Physical scenery
+Generator V16 uses Terrain.CUSTOM_DECO for bulky physical scenery.
+Bulky props block normal Hero movement and Mob pathing, remain non-interactive, and remain phaseable in Infinite spectator mode.
+Pass-through ground clutter is limited to mushrooms, ferns, torches and rubble.
+
+## Connectivity protection
+Physical placement rejects origin-plaza blockers, merchant-chunk blockers, center crossing lanes, room-access cells, chest cells/vicinity, doors/transitions/wells/alchemy/pedestals, and local chokepoints.
+The chokepoint test removes the candidate virtually and verifies its immediately adjacent walkable cells can still reconnect within a 7x7 neighborhood while respecting already selected hard props.
+
+## Compatibility
+- Existing V15 saves get the expanded catalog, higher visual density and regional grouping, but no new solid blockers.
+- New V16 worlds gain physical blockers.
+- 0.5.8 spectator flight still phases through all scenery.
+- Monster strength/stats remain untouched in 0.5.9.
