@@ -127,6 +127,7 @@ public final class InfiniteWorldProgression {
         int ring2;
         int artifactVisible;
         int artifactCount;
+        int certificatePower;
     }
 
     private static PowerProfile powerProfile(Hero hero) {
@@ -141,6 +142,11 @@ public final class InfiniteWorldProgression {
                 p.artifactVisible = Math.max(p.artifactVisible,
                         Math.min(POST_BREAKTHROUGH_ARTIFACT_CAP,
                                 Math.max(0, ((Artifact)item).buffedVisiblyUpgraded())));
+                continue;
+            }
+            if (item instanceof BreakthroughCertificate) {
+                int certLevel = ((BreakthroughCertificate)item).certificateLevel();
+                p.certificatePower = certLevel >= 60 ? 20 : certLevel >= 50 ? 16 : certLevel >= 40 ? 12 : 8;
                 continue;
             }
 
@@ -191,7 +197,8 @@ public final class InfiniteWorldProgression {
                 + 0.18f * p.wand
                 + 0.12f * (p.ring1 + p.ring2)
                 + 0.30f * p.artifactVisible
-                + 1.5f * p.artifactCount;
+                + 1.5f * p.artifactCount
+                + p.certificatePower;
         return Math.max(0, Math.round(score));
     }
 
@@ -200,7 +207,8 @@ public final class InfiniteWorldProgression {
         return Math.max(p.weapon, 0.85f * p.wand)
                 + 0.20f * (p.ring1 + p.ring2)
                 + 0.45f * p.artifactVisible
-                + p.artifactCount;
+                + p.artifactCount
+                + 0.55f * p.certificatePower;
     }
 
     private static float defensiveUpgradeScore(Hero hero) {
@@ -208,7 +216,8 @@ public final class InfiniteWorldProgression {
         return p.armor
                 + 0.20f * (p.ring1 + p.ring2)
                 + 0.35f * p.artifactVisible
-                + 0.75f * p.artifactCount;
+                + 0.75f * p.artifactCount
+                + 0.55f * p.certificatePower;
     }
 
     public static int dynamicMonsterLevel(Hero hero) {
