@@ -199,22 +199,29 @@ public class WndAssist extends Window {
     }
 
     private void addLevelTestRow() {
-        RedButton levelUp = new RedButton("测试：角色升1级", 9) {
+        float y = pos + GAP;
+        float half = (WIDTH - GAP) / 2f;
+
+        RedButton levelUp = new RedButton("测试：等级+1", 8) {
             @Override
             protected void onClick() {
                 if (Dungeon.hero == null) return;
                 InfiniteWorldProgression.testLevelUp(Dungeon.hero);
-                if (Dungeon.infiniteWorld
-                        && Dungeon.hero.lvl >= InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP
-                        && !InfiniteWorldProgression.breakthroughCompleted()) {
-                    text("测试：30级突破");
-                } else {
-                    text("测试：角色升1级");
-                }
             }
         };
         add(levelUp);
-        levelUp.setRect(0, pos + GAP, WIDTH, BTN_H);
+        levelUp.setRect(0, y, half, BTN_H);
+
+        RedButton stageCap = new RedButton("测试：直升上限", 8) {
+            @Override
+            protected void onClick() {
+                if (Dungeon.hero == null) return;
+                InfiniteWorldProgression.testLevelToStageCap(Dungeon.hero);
+            }
+        };
+        add(stageCap);
+        stageCap.setRect(levelUp.right() + GAP, y, half, BTN_H);
+
         pos = levelUp.bottom();
     }
 
