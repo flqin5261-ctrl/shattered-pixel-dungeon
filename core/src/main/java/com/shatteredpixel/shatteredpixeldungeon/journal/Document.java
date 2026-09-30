@@ -292,6 +292,9 @@ public enum Document {
 		INFINITE_WORLD_NOTES.pagesStates.put("Liminal_Offices",  debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Pool_Halls",       debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Endless_Hall",     debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Yellow_Maze",      debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Service_Tunnels",  debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Dark_Storage",     debug ? READ : NOT_FOUND);
 
 		INTROS.pagesStates.put("Dungeon",                       READ);
 		INTROS.pagesStates.put("Sewers",                        debug ? READ : NOT_FOUND);
