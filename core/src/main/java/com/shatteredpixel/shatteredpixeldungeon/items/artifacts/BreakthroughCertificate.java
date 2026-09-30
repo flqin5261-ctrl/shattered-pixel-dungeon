@@ -480,6 +480,16 @@ public class BreakthroughCertificate extends EquipableItem {
     }
 
     @Override
+    public void doDrop(Hero hero) {
+        GLog.w("破界之印无法被丢弃。");
+    }
+
+    @Override
+    public void cast(final Hero user, int dst) {
+        GLog.w("破界之印无法被投掷或摧毁。");
+    }
+
+    @Override
     public String name() {
         if (certificateLevel >= 60) return Messages.get(this, "miracle_name");
         return Messages.get(this, "name", certificateLevel);
@@ -576,6 +586,7 @@ public class BreakthroughCertificate extends EquipableItem {
 
     @Override
     public boolean doUnequip(Hero hero, boolean collect, boolean single) {
+        if (collect) makeRoomForSelfBeforeUnequip(hero);
         if (super.doUnequip(hero, collect, single)) {
             hero.belongings.breakthroughCertificate = null;
             BreakthroughBlessing buff = hero.buff(BreakthroughBlessing.class);
@@ -637,6 +648,35 @@ public class BreakthroughCertificate extends EquipableItem {
         regenProgress = bundle.contains(REGEN_PROGRESS) ? bundle.getFloat(REGEN_PROGRESS) : 0f;
         immunityIndex = bundle.contains(IMMUNITY_INDEX) ? bundle.getInt(IMMUNITY_INDEX) : -1;
         ensureImmunity();
+    }
+
+    private void makeRoomForSelfBeforeUnequip(Hero hero) {
+        if (hero == null || Dungeon.level == null) return;
+        Bag backpack = hero.belongings.backpack;
+        if (backpack.items.size() < backpack.capacity()) return;
+
+        Item chosen = null;
+        for (Item item : backpack.items) {
+            if (item == this) continue;
+            if (!item.unique && !(item instanceof Bag)) {
+                chosen = item;
+                break;
+            }
+        }
+        if (chosen == null) {
+            for (Item item : backpack.items) {
+                if (item != this) {
+                    chosen = item;
+                    break;
+                }
+            }
+        }
+
+        if (chosen != null) {
+            chosen.detachAll(backpack);
+            Dungeon.level.drop(chosen, hero.pos).sprite.drop();
+            GLog.i("背包已满，为收回破界装备腾出的物品已安全放在角色身边。");
+        }
     }
 
     private static void spillBackpackOverflow(Hero hero) {
