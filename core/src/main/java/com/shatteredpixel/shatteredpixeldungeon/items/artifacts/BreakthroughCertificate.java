@@ -473,6 +473,32 @@ public class BreakthroughCertificate extends EquipableItem {
 
     @Override
     public String desc() {
+        if (certificateLevel >= 60) {
+            return Messages.get(this, "miracle_desc",
+                    Math.round((healthMultiplier()-1f)*100f),
+                    strengthBonus(),
+                    Math.round((damageMultiplier()-1f)*100f),
+                    Math.round((accuracyMultiplier()-1f)*100f),
+                    Math.round((evasionMultiplier()-1f)*100f),
+                    Math.round((1f-damageTakenMultiplier())*100f),
+                    Math.round((1f-negativeEffectMultiplier())*100f),
+                    immunityName(),
+                    Math.round((1f-hungerMultiplier())*100f),
+                    Math.round((goldMultiplier()-1f)*100f),
+                    Math.round((speedMultiplier()-1f)*100f),
+                    visionBonus(),
+                    searchDistanceBonus(),
+                    Math.round(searchChanceBonus()*100f),
+                    Math.round((wandChargeMultiplier()-1f)*100f),
+                    Math.round((consumableDurationMultiplier()-1f)*100f),
+                    Math.round((1f-shopPriceMultiplier())*100f),
+                    Math.round(chestBonusChance()*100f),
+                    Math.round(regenInterval()),
+                    Math.round(reviveChargeRequired()),
+                    Math.round(reviveHpFraction()*100f),
+                    reviveChargePercent());
+        }
+
         return Messages.get(this, "desc",
                 Math.round((healthMultiplier()-1f)*100f),
                 strengthBonus(),
@@ -649,9 +675,11 @@ public class BreakthroughCertificate extends EquipableItem {
         public String name() {
             BreakthroughCertificate cert = certificate;
             if (cert == null && target instanceof Hero) cert = equipped((Hero)target);
-            return cert == null
-                    ? Messages.get(BreakthroughCertificate.class, "blessing_name")
-                    : Messages.get(BreakthroughCertificate.class, "blessing_name_level", cert.certificateLevel());
+            if (cert == null) return Messages.get(BreakthroughCertificate.class, "blessing_name");
+            if (cert.certificateLevel() >= 60) {
+                return Messages.get(BreakthroughCertificate.class, "miracle_blessing_name");
+            }
+            return Messages.get(BreakthroughCertificate.class, "blessing_name_level", cert.certificateLevel());
         }
 
         @Override
@@ -660,31 +688,58 @@ public class BreakthroughCertificate extends EquipableItem {
             if (cert == null && target instanceof Hero) cert = equipped((Hero)target);
             if (cert == null) return Messages.get(BreakthroughCertificate.class, "blessing_inactive");
 
-            String current = Messages.get(BreakthroughCertificate.class, "blessing_desc",
-                    cert.certificateLevel(),
-                    Math.round((cert.healthMultiplier()-1f)*100f),
-                    cert.strengthBonus(),
-                    Math.round((cert.damageMultiplier()-1f)*100f),
-                    Math.round((cert.accuracyMultiplier()-1f)*100f),
-                    Math.round((cert.evasionMultiplier()-1f)*100f),
-                    Math.round((1f-cert.damageTakenMultiplier())*100f),
-                    Math.round((1f-cert.negativeEffectMultiplier())*100f),
-                    cert.immunityName(),
-                    Math.round((cert.expMultiplier()-1f)*100f),
-                    Math.round((1f-cert.hungerMultiplier())*100f),
-                    Math.round((cert.goldMultiplier()-1f)*100f),
-                    Math.round((cert.speedMultiplier()-1f)*100f),
-                    cert.visionBonus(),
-                    cert.searchDistanceBonus(),
-                    Math.round(cert.searchChanceBonus()*100f),
-                    Math.round((cert.wandChargeMultiplier()-1f)*100f),
-                    Math.round((cert.consumableDurationMultiplier()-1f)*100f),
-                    Math.round((1f-cert.shopPriceMultiplier())*100f),
-                    Math.round(cert.chestBonusChance()*100f),
-                    Math.round(cert.regenInterval()),
-                    Math.round(cert.reviveChargeRequired()),
-                    Math.round(cert.reviveHpFraction()*100f),
-                    cert.reviveChargePercent());
+            String current;
+            if (cert.certificateLevel() >= 60) {
+                current = Messages.get(BreakthroughCertificate.class, "miracle_blessing_desc",
+                        Math.round((cert.healthMultiplier()-1f)*100f),
+                        cert.strengthBonus(),
+                        Math.round((cert.damageMultiplier()-1f)*100f),
+                        Math.round((cert.accuracyMultiplier()-1f)*100f),
+                        Math.round((cert.evasionMultiplier()-1f)*100f),
+                        Math.round((1f-cert.damageTakenMultiplier())*100f),
+                        Math.round((1f-cert.negativeEffectMultiplier())*100f),
+                        cert.immunityName(),
+                        Math.round((1f-cert.hungerMultiplier())*100f),
+                        Math.round((cert.goldMultiplier()-1f)*100f),
+                        Math.round((cert.speedMultiplier()-1f)*100f),
+                        cert.visionBonus(),
+                        cert.searchDistanceBonus(),
+                        Math.round(cert.searchChanceBonus()*100f),
+                        Math.round((cert.wandChargeMultiplier()-1f)*100f),
+                        Math.round((cert.consumableDurationMultiplier()-1f)*100f),
+                        Math.round((1f-cert.shopPriceMultiplier())*100f),
+                        Math.round(cert.chestBonusChance()*100f),
+                        Math.round(cert.regenInterval()),
+                        Math.round(cert.reviveChargeRequired()),
+                        Math.round(cert.reviveHpFraction()*100f),
+                        cert.reviveChargePercent());
+            } else {
+                current = Messages.get(BreakthroughCertificate.class, "blessing_desc",
+                        cert.certificateLevel(),
+                        Math.round((cert.healthMultiplier()-1f)*100f),
+                        cert.strengthBonus(),
+                        Math.round((cert.damageMultiplier()-1f)*100f),
+                        Math.round((cert.accuracyMultiplier()-1f)*100f),
+                        Math.round((cert.evasionMultiplier()-1f)*100f),
+                        Math.round((1f-cert.damageTakenMultiplier())*100f),
+                        Math.round((1f-cert.negativeEffectMultiplier())*100f),
+                        cert.immunityName(),
+                        Math.round((cert.expMultiplier()-1f)*100f),
+                        Math.round((1f-cert.hungerMultiplier())*100f),
+                        Math.round((cert.goldMultiplier()-1f)*100f),
+                        Math.round((cert.speedMultiplier()-1f)*100f),
+                        cert.visionBonus(),
+                        cert.searchDistanceBonus(),
+                        Math.round(cert.searchChanceBonus()*100f),
+                        Math.round((cert.wandChargeMultiplier()-1f)*100f),
+                        Math.round((cert.consumableDurationMultiplier()-1f)*100f),
+                        Math.round((1f-cert.shopPriceMultiplier())*100f),
+                        Math.round(cert.chestBonusChance()*100f),
+                        Math.round(cert.regenInterval()),
+                        Math.round(cert.reviveChargeRequired()),
+                        Math.round(cert.reviveHpFraction()*100f),
+                        cert.reviveChargePercent());
+            }
 
             int next = nextTier(cert.certificateLevel());
             if (next == 0) {
