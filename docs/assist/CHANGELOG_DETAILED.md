@@ -37,6 +37,7 @@
 | 无限骨架/阈限异常区 | 0.4.3 | 944 | assist-0.4.3-stable | a513fc1a099d272c356c3127f874c3dd861e2799 |
 | 多层无限支线网络 | 0.4.4 | 945 | assist-0.4.4-stable | 02689bb5b1ed0d91424de21779d6f94cc96c8c83 |
 | 玩家中心怪物生态 | 0.5.0 | 946 | assist-0.5.0-stable | c01cabebd7e9c453c11b3dc0f886a1579d9543fd |
+| 稀有商人据点 | 0.5.1 | 947 | assist-0.5.1-stable | e14bac5c266d6b0cad3189ace9dc7492967ac74b |
 
 特别说明：
 
@@ -1724,3 +1725,51 @@ Infinite World 每次 Window shift 会移动 3 Chunk，即 72 cell。
 - result：success
 - artifact ZIP SHA-256：`441b1baca7fc84867ce66f58612e9f6c42a57d9bd02edc98d3544175495a3f90`
 - APK SHA-256：`6f350229df052ccc38ff66d8c1ac2d2b3eaaf10cd40f4b24d528fc8c679dc683`
+
+
+# 23. 0.5.1 — 稀有流浪商人据点
+
+版本：
+- 0.5.1
+- versionCode 947
+- dev：`assist-0.5.1-merchants`
+- stable：`assist-0.5.1-stable`
+- Generator V11
+- release code SHA：`e14bac5c266d6b0cad3189ace9dc7492967ac74b`
+
+## 商人生成
+Infinite World 新增固定世界坐标的流浪商人据点，不把商人当作普通随机怪生成。
+
+- 商人据点使用 7-Chunk 间距的 seed 驱动格点。
+- 7×7 活动窗口的坐标跨度只有 6 Chunk，因此同时最多一个商人。
+- 出生附近 4 Chunk 不生成商店。
+- Liminal anomaly 不生成商店。
+- Primary/Secondary infinite road 所在 Chunk 不生成商店，避免 V10 最后刻路时切穿商店墙体。
+- 商店占用该 Chunk 的第一个主题房，入口固定为普通门。
+
+## 商店库存
+每家店最多 6 个出售堆：
+1. 治疗药剂
+2. 小份口粮
+3. 随机安全药剂
+4. 随机安全卷轴（不包含探地图卷轴）
+5. 随世界距离提高档位的随机装备
+6. 炸弹/火把/闪现符石/稿子/祛邪卷轴之一
+
+库存使用 `Heap.Type.FOR_SALE` 和原版 `WndTradeItem`，购买/出售继续走原版交易逻辑。
+
+## 持久化
+- 商品位置和内容由 seed/世界坐标确定。
+- 已购买商品写入 InfiniteWorldState.objectStates。
+- 走远、Streaming、Save/Load 后不会补货。
+- 商人被攻击或偷窃失败逃跑时，记录“该据点永久关闭”，回来不会重新生成商人和库存。
+- 商人正常离开活动窗口只是 unload，不视为逃跑。
+
+## Streaming
+新增 `InfiniteWorldShopkeeper` 保存据点 Chunk 坐标。
+商人如果在 Window shift 后仍位于新活动窗口，会同步 rebase local pos；离开窗口则无死亡逻辑地卸载。重新进入对应 Chunk 时按固定世界据点恢复。
+
+## 怪物关系
+- 商人是 NEUTRAL NPC，不参与 0.5.0 的 40 格敌人 despawn。
+- 普通生态刷怪不会在商人 8 格范围内直接生成。
+- 暂不做 Boss 商店、特殊货币或多商人同时存在。
