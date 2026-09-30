@@ -3,6 +3,9 @@
  *
  * Additional Infinite World decoration sprites are sourced from Kenney's
  * Tiny Town / Tiny Dungeon packs under CC0 1.0. See docs/assist/THIRD_PARTY_ASSETS.md.
+ *
+ * This layer is presentation-only: props never alter terrain collision,
+ * pathfinding or interaction state.
  */
 package com.shatteredpixel.shatteredpixeldungeon.tiles.custom;
 
@@ -21,11 +24,32 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public static final int SOURCE_TOWN = 0;
     public static final int SOURCE_DUNGEON = 1;
 
-    public static final int BUSH = 1;
-    public static final int MUSHROOMS = 2;
-    public static final int SIGN = 3;
-    public static final int BARREL = 4;
-    public static final int CRATE = 5;
+    // Tiny Town nature / roadside props.
+    public static final int WEEDS = 1;
+    public static final int FLOWERS = 2;
+    public static final int TREE_GREEN = 3;
+    public static final int TREE_SLENDER = 4;
+    public static final int TREE_AUTUMN = 5;
+    public static final int MUSHROOMS = 6;
+    public static final int STONE_PATCH = 7;
+    public static final int SIGN = 8;
+    public static final int ROCK = 9;
+    public static final int STUMP = 10;
+    public static final int BARREL = 11;
+
+    // Tiny Dungeon interior / ruin props.
+    public static final int RUBBLE = 12;
+    public static final int BRAZIER = 13;
+    public static final int ARCANE_BRAZIER = 14;
+    public static final int PEDESTAL = 15;
+    public static final int SARCOPHAGUS = 16;
+    public static final int CRYSTAL_ORB = 17;
+    public static final int TABLE = 18;
+    public static final int STOOL = 19;
+    public static final int SHELF = 20;
+    public static final int ARMOR_STAND = 21;
+    public static final int FENCE = 22;
+    public static final int VASE = 23;
 
     private static final String SOURCE = "source";
     private static final String CELLS = "cells";
@@ -42,6 +66,10 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
         this.source = source;
         setRect(0, 0, width, height);
         updateTexture();
+    }
+
+    public static boolean usesDungeonAtlas(int kind) {
+        return kind >= RUBBLE;
     }
 
     private void updateTexture() {
@@ -67,16 +95,36 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     }
 
     private int visualForKind(int kind) {
-        // Packed sheets are 12 columns, 16x16 px per tile.
-        // Tiny Town: bush=5, mushrooms=29, sign=83, barrel=107.
-        // Tiny Dungeon: crate=66.
+        // Both packed CC0 sheets are 12x11 tightly packed 16x16 tiles.
+        // Indices were verified against the actual pinned PNGs used by CI.
         switch (kind) {
-            case BUSH:      return source == SOURCE_TOWN ? 5 : -1;
-            case MUSHROOMS: return source == SOURCE_TOWN ? 29 : -1;
-            case SIGN:      return source == SOURCE_TOWN ? 83 : -1;
-            case BARREL:    return source == SOURCE_TOWN ? 107 : -1;
-            case CRATE:     return source == SOURCE_DUNGEON ? 66 : -1;
-            default:        return -1;
+            // Tiny Town.
+            case WEEDS:         return source == SOURCE_TOWN ? 3 : -1;
+            case FLOWERS:       return source == SOURCE_TOWN ? 2 : -1;
+            case TREE_GREEN:    return source == SOURCE_TOWN ? 5 : -1;
+            case TREE_SLENDER:  return source == SOURCE_TOWN ? 7 : -1;
+            case TREE_AUTUMN:   return source == SOURCE_TOWN ? 11 : -1;
+            case MUSHROOMS:     return source == SOURCE_TOWN ? 29 : -1;
+            case STONE_PATCH:   return source == SOURCE_TOWN ? 43 : -1;
+            case SIGN:          return source == SOURCE_TOWN ? 83 : -1;
+            case ROCK:          return source == SOURCE_TOWN ? 105 : -1;
+            case STUMP:         return source == SOURCE_TOWN ? 106 : -1;
+            case BARREL:        return source == SOURCE_TOWN ? 107 : -1;
+
+            // Tiny Dungeon.
+            case RUBBLE:        return source == SOURCE_DUNGEON ? 12 : -1;
+            case BRAZIER:       return source == SOURCE_DUNGEON ? 29 : -1;
+            case ARCANE_BRAZIER:return source == SOURCE_DUNGEON ? 32 : -1;
+            case PEDESTAL:      return source == SOURCE_DUNGEON ? 43 : -1;
+            case SARCOPHAGUS:   return source == SOURCE_DUNGEON ? 66 : -1;
+            case CRYSTAL_ORB:   return source == SOURCE_DUNGEON ? 68 : -1;
+            case TABLE:         return source == SOURCE_DUNGEON ? 73 : -1;
+            case STOOL:         return source == SOURCE_DUNGEON ? 74 : -1;
+            case SHELF:         return source == SOURCE_DUNGEON ? 75 : -1;
+            case ARMOR_STAND:   return source == SOURCE_DUNGEON ? 76 : -1;
+            case FENCE:         return source == SOURCE_DUNGEON ? 78 : -1;
+            case VASE:          return source == SOURCE_DUNGEON ? 113 : -1;
+            default:            return -1;
         }
     }
 
@@ -97,24 +145,60 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     @Override
     public String name(int x, int y) {
         switch (kindAt(x, y)) {
-            case BUSH:      return Messages.get(this, "bush_name");
-            case MUSHROOMS: return Messages.get(this, "mushrooms_name");
-            case SIGN:      return Messages.get(this, "sign_name");
-            case BARREL:    return Messages.get(this, "barrel_name");
-            case CRATE:     return Messages.get(this, "crate_name");
-            default:        return null;
+            case WEEDS:          return Messages.get(this, "weeds_name");
+            case FLOWERS:        return Messages.get(this, "flowers_name");
+            case TREE_GREEN:     return Messages.get(this, "tree_green_name");
+            case TREE_SLENDER:   return Messages.get(this, "tree_slender_name");
+            case TREE_AUTUMN:    return Messages.get(this, "tree_autumn_name");
+            case MUSHROOMS:      return Messages.get(this, "mushrooms_name");
+            case STONE_PATCH:    return Messages.get(this, "stone_patch_name");
+            case SIGN:           return Messages.get(this, "sign_name");
+            case ROCK:           return Messages.get(this, "rock_name");
+            case STUMP:          return Messages.get(this, "stump_name");
+            case BARREL:         return Messages.get(this, "barrel_name");
+            case RUBBLE:         return Messages.get(this, "rubble_name");
+            case BRAZIER:        return Messages.get(this, "brazier_name");
+            case ARCANE_BRAZIER: return Messages.get(this, "arcane_brazier_name");
+            case PEDESTAL:       return Messages.get(this, "pedestal_name");
+            case SARCOPHAGUS:    return Messages.get(this, "sarcophagus_name");
+            case CRYSTAL_ORB:    return Messages.get(this, "crystal_orb_name");
+            case TABLE:          return Messages.get(this, "table_name");
+            case STOOL:          return Messages.get(this, "stool_name");
+            case SHELF:          return Messages.get(this, "shelf_name");
+            case ARMOR_STAND:    return Messages.get(this, "armor_stand_name");
+            case FENCE:          return Messages.get(this, "fence_name");
+            case VASE:           return Messages.get(this, "vase_name");
+            default:             return null;
         }
     }
 
     @Override
     public String desc(int x, int y) {
         switch (kindAt(x, y)) {
-            case BUSH:      return Messages.get(this, "bush_desc");
-            case MUSHROOMS: return Messages.get(this, "mushrooms_desc");
-            case SIGN:      return Messages.get(this, "sign_desc");
-            case BARREL:    return Messages.get(this, "barrel_desc");
-            case CRATE:     return Messages.get(this, "crate_desc");
-            default:        return null;
+            case WEEDS:          return Messages.get(this, "weeds_desc");
+            case FLOWERS:        return Messages.get(this, "flowers_desc");
+            case TREE_GREEN:     return Messages.get(this, "tree_green_desc");
+            case TREE_SLENDER:   return Messages.get(this, "tree_slender_desc");
+            case TREE_AUTUMN:    return Messages.get(this, "tree_autumn_desc");
+            case MUSHROOMS:      return Messages.get(this, "mushrooms_desc");
+            case STONE_PATCH:    return Messages.get(this, "stone_patch_desc");
+            case SIGN:           return Messages.get(this, "sign_desc");
+            case ROCK:           return Messages.get(this, "rock_desc");
+            case STUMP:          return Messages.get(this, "stump_desc");
+            case BARREL:         return Messages.get(this, "barrel_desc");
+            case RUBBLE:         return Messages.get(this, "rubble_desc");
+            case BRAZIER:        return Messages.get(this, "brazier_desc");
+            case ARCANE_BRAZIER: return Messages.get(this, "arcane_brazier_desc");
+            case PEDESTAL:       return Messages.get(this, "pedestal_desc");
+            case SARCOPHAGUS:    return Messages.get(this, "sarcophagus_desc");
+            case CRYSTAL_ORB:    return Messages.get(this, "crystal_orb_desc");
+            case TABLE:          return Messages.get(this, "table_desc");
+            case STOOL:          return Messages.get(this, "stool_desc");
+            case SHELF:          return Messages.get(this, "shelf_desc");
+            case ARMOR_STAND:    return Messages.get(this, "armor_stand_desc");
+            case FENCE:          return Messages.get(this, "fence_desc");
+            case VASE:           return Messages.get(this, "vase_desc");
+            default:             return null;
         }
     }
 
