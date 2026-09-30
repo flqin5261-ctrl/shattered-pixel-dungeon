@@ -45,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.DivineSense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -126,6 +127,34 @@ public abstract class Wand extends Item {
 			GameScene.selectCell( zapper );
 			
 		}
+	}
+
+	public boolean genesisScreenCast(Hero hero) {
+		if (hero == null || !GenesisEcho.ultraSpellcast(hero)) return false;
+
+		curUser = hero;
+		curItem = this;
+
+		if (!tryToZap(hero, hero.pos)) return false;
+
+		hero.busy();
+		if (hero.sprite != null) {
+			hero.sprite.operate(hero.pos);
+		}
+		Sample.INSTANCE.play(Assets.Sounds.ZAP);
+
+		int affected = 0;
+		for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
+			if (mob == null || !mob.isAlive() || mob.alignment == Char.Alignment.ALLY) continue;
+			if (mob.sprite == null || !mob.sprite.isVisible()) continue;
+
+			GenesisEcho.forceSlay(hero, mob);
+			affected++;
+		}
+
+		GLog.p("超极限施法：全屏AOE命中%d个敌人。", affected);
+		wandUsed();
+		return true;
 	}
 
 	@Override
