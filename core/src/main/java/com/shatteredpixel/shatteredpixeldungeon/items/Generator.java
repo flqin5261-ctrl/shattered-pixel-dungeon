@@ -573,9 +573,10 @@ public class Generator {
 					SkeletonKey.class,
 					TalismanOfForesight.class,
 					TimekeepersHourglass.class,
-					UnstableSpellbook.class
+					UnstableSpellbook.class,
+					WandOfAllLaws.class
 			};
-			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1 };
+			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
 			ARTIFACT.probs = ARTIFACT.defaultProbs.clone();
 
 			//Trinkets are unique like artifacts, but unlike them you can only have one at once
@@ -682,15 +683,14 @@ public class Generator {
 	 * without generator-array migration.
 	 *
 	 * Two mimic rings behave like two additional equally weighted ring types:
-	 * each has an effective 1/14 chance when a ring is generated. 万法之法 is
-	 * one additional equally weighted wand type: effective 1/14 per wand.
+	 * each has an effective 1/14 chance when a ring is generated.
+	 *
+	 * 万法之法 is no longer injected into the wand pool; it is now a real unique
+	 * Artifact and therefore participates in artifact chests and uniqueness rules.
 	 */
 	private static Item instantiateWithAssistSpecial(Category cat, Class<?> vanillaClass) {
 		if (cat == Category.RING && Random.Int(7) == 0) {
 			return (Random.Int(2) == 0 ? new MimicScrollRing() : new MimicPotionRing()).random();
-		}
-		if (cat == Category.WAND && Random.Int(14) == 0) {
-			return new WandOfAllLaws().random();
 		}
 		return ((Item) Reflection.newInstance(vanillaClass)).random();
 	}
@@ -976,17 +976,25 @@ public class Generator {
 					cat.dropped = bundle.getInt(cat.name().toLowerCase() + CATEGORY_DROPPED);
 				}
 
-				//pre-v3.3.0 conversion for artifacts (addition of tome and key)
 				if (cat == Category.ARTIFACT && probs.length != cat.defaultProbs.length){
-					int keyIDX = 9;
-					int j = 0;
-					for (int i = 0; i < probs.length; i++){
-						if (j == keyIDX){
-							cat.probs[j] = 1;
-							j++;
+					// Assist 0.9.6 adds 万法之法 at the end of the artifact deck.
+					// 0.9.5 saves have the immediately previous 13-element layout, so
+					// preserve every old probability exactly and expose only the new slot.
+					if (probs.length == cat.defaultProbs.length - 1
+							&& cat.classes[cat.classes.length - 1] == WandOfAllLaws.class) {
+						for (int i = 0; i < probs.length; i++) cat.probs[i] = probs[i];
+						cat.probs[cat.probs.length - 1] = 1;
+					} else {
+						// Legacy pre-v3.3.0 conversion for artifacts (addition of tome/key).
+						int keyIDX = 9;
+						int j = 0;
+						for (int i = 0; i < probs.length && j < cat.probs.length; i++){
+							if (j == keyIDX && j < cat.probs.length){
+								cat.probs[j] = 1;
+								j++;
+							}
+							if (j < cat.probs.length) cat.probs[j++] = probs[i];
 						}
-						cat.probs[j] = probs[i];
-						j++;
 					}
 				}
 
