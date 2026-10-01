@@ -215,6 +215,11 @@ public class GenesisEcho extends Buff {
             if (hero.buff(EquipmentSummary.class) == null) {
                 Buff.affect(hero, EquipmentSummary.class);
             }
+            // Repair/keep alive every stacked artifact's own native runtime.
+            // This preserves each artifact's original recharge/cooldown formula.
+            for (Artifact artifact : hero.belongings.equippedArtifacts()) {
+                if (artifact != null) artifact.ensurePassiveRuntime(hero);
+            }
         }
         spend(TICK);
         return true;
@@ -279,6 +284,9 @@ public class GenesisEcho extends Buff {
             identifyOwnedItems(hero);
             hero.HP = hero.HT;
             Buff.affect(hero, EquipmentSummary.class);
+            for (Artifact artifact : hero.belongings.equippedArtifacts()) {
+                if (artifact != null) artifact.ensurePassiveRuntime(hero);
+            }
             syncTier7Buff(hero);
         }
     }
