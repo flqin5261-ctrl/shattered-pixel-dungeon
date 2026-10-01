@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
@@ -156,9 +157,13 @@ public class CrystalSpire extends Mob {
 
 					if (ch.isAlive()){
 						if (movePos != i){
-							Actor.add(new Pushing(ch, i, movePos));
-							ch.pos = movePos;
-							Dungeon.level.occupyCell(ch);
+							if (ch == Dungeon.hero && GenesisEcho.active(Dungeon.hero)) {
+								GenesisEcho.showForcedMovementDenial(Dungeon.hero);
+							} else {
+								Actor.add(new Pushing(ch, i, movePos));
+								ch.pos = movePos;
+								Dungeon.level.occupyCell(ch);
+							}
 						}
 					} else if (ch == Dungeon.hero){
 						GLog.n( Messages.capitalize(Messages.get(Char.class, "kill", name())) );
