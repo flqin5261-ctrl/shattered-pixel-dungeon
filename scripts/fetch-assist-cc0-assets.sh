@@ -40,4 +40,15 @@ fetch_and_verify_git_blob \
   "$DEST/assist_kenney_tiny_town.png" \
   "1655d1dfc918dbd450b192d95d8831b6f6155d89"
 
-echo "Verified Kenney Tiny Dungeon/Tiny Town CC0 atlases from pinned upstream commit."
+# Kenney RPG Urban Pack 1.0 (CC0), mirrored verbatim in a public repository.
+# Keep the commit and Git blob pinned so Assist builds remain reproducible.
+URBAN_REPO="AndrewDanyliuk/2d-rpg"
+URBAN_COMMIT="67b203b6f365a97b34615cfdef2ed6e9a3bd55f3"
+URBAN_BASE="https://raw.githubusercontent.com/${URBAN_REPO}/${URBAN_COMMIT}/assets/RPG%20Urban%20Pack"
+
+fetch_and_verify_git_blob \
+  "$URBAN_BASE/Tilemap/tilemap_packed.png" \
+  "$DEST/assist_kenney_rpg_urban.png" \
+  "66bf1156a23e2436473f96cf2240c301e4309faf"
+
+echo "Verified Kenney Tiny Dungeon/Tiny Town/RPG Urban CC0 atlases from pinned upstream commits."
