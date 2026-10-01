@@ -403,26 +403,23 @@ public class Ring extends KindofMisc {
 		}
 	}
 
-	//just used for ring descriptions
+	// Used by ring descriptions. Under 纵横八荒 this must mirror the real
+	// RingBuff aggregation rather than only showing the two vanilla misc slots.
 	public int combinedBonus(Hero hero){
+		if (hero == null) return soloBonus();
 		int bonus = 0;
-		if (hero.belongings.ring() != null && hero.belongings.ring().getClass() == getClass()){
-			bonus += hero.belongings.ring().soloBonus();
-		}
-		if (hero.belongings.misc() != null && hero.belongings.misc().getClass() == getClass()){
-			bonus += ((Ring)hero.belongings.misc()).soloBonus();
+		for (Ring ring : hero.belongings.equippedRings()) {
+			if (ring != null && ring.getClass() == getClass()) bonus += ring.soloBonus();
 		}
 		return bonus;
 	}
 
-	//just used for ring descriptions
+	// Used by ring descriptions; includes every simultaneously equipped copy.
 	public int combinedBuffedBonus(Hero hero){
+		if (hero == null) return soloBuffedBonus();
 		int bonus = 0;
-		if (hero.belongings.ring() != null && hero.belongings.ring().getClass() == getClass()){
-			bonus += hero.belongings.ring().soloBuffedBonus();
-		}
-		if (hero.belongings.misc() != null && hero.belongings.misc().getClass() == getClass()){
-			bonus += ((Ring)hero.belongings.misc()).soloBuffedBonus();
+		for (Ring ring : hero.belongings.equippedRings()) {
+			if (ring != null && ring.getClass() == getClass()) bonus += ring.soloBuffedBonus();
 		}
 		return bonus;
 	}
