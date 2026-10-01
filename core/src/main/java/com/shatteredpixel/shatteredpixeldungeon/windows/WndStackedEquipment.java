@@ -65,9 +65,20 @@ public class WndStackedEquipment extends Window {
         // clipping the leftmost item as shown in the user's screenshot.
         int maxWindowWidth = Math.max(SLOT + PAD * 2,
                 PixelScene.uiCamera.width - chrome.marginHor() - 4);
-        int cols = Math.max(1, (maxWindowWidth - PAD * 2 + GAP) / (SLOT + GAP));
-        cols = Math.min(MAX_COLS, cols);
-        cols = Math.min(cols, Math.max(1, items.size()));
+        int maxColsForScreen = Math.max(1,
+                (maxWindowWidth - PAD * 2 + GAP) / (SLOT + GAP));
+        maxColsForScreen = Math.min(MAX_COLS, maxColsForScreen);
+
+        // Selector windows must stay wide enough for prompts such as
+        // "选择要强化 +120 的装备". The old implementation shrank to the
+        // number of candidate items, so a one-item category became a ~28px-wide
+        // window and wrapped Chinese text one character per line.
+        int cols;
+        if (selector != null) {
+            cols = maxColsForScreen;
+        } else {
+            cols = Math.min(maxColsForScreen, Math.max(1, items.size()));
+        }
         final int width = PAD * 2 + cols * SLOT + Math.max(0, cols - 1) * GAP;
 
         RenderedTextBlock title = PixelScene.renderTextBlock(
@@ -82,9 +93,21 @@ public class WndStackedEquipment extends Window {
         Component content = new Component();
         int col = 0;
         int row = 0;
+
+        // When a selector has fewer items than available columns, keep the item
+        // row centered inside the wider prompt-safe window instead of pinning a
+        // lone slot to the left edge.
+        int visibleCols = Math.min(cols, Math.max(1, items.size()));
+        float firstRowLeft = PAD;
+        if (selector != null && items.size() < cols) {
+            float rowWidth = visibleCols * SLOT + Math.max(0, visibleCols - 1) * GAP;
+            firstRowLeft = (width - rowWidth) / 2f;
+        }
+
         for (final Item item : items) {
             StackInventorySlot slot = new StackInventorySlot(item);
-            slot.setRect(PAD + col * (SLOT + GAP), PAD + row * (SLOT + GAP), SLOT, SLOT);
+            float rowLeft = (selector != null && items.size() < cols) ? firstRowLeft : PAD;
+            slot.setRect(rowLeft + col * (SLOT + GAP), PAD + row * (SLOT + GAP), SLOT, SLOT);
             content.add(slot);
             slots.add(slot);
             slot.disableNativePointer();
