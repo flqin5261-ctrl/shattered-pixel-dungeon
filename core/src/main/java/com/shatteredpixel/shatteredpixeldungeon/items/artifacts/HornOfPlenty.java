@@ -172,6 +172,14 @@ public class HornOfPlenty extends Artifact {
 	}
 	
 	@Override
+	public void onEquippedHeroGainExp(float levelPercent, Hero hero) {
+		ensurePassiveRuntime(hero);
+		if (passiveBuff instanceof hornRecharge) {
+			((hornRecharge)passiveBuff).gainCharge(levelPercent);
+		}
+	}
+
+	@Override
 	public void charge(Hero target, float amount) {
 		if (charge < chargeCap && !cursed && target.buff(MagicImmune.class) == null){
 			partialCharge += 0.25f*amount;
