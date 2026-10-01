@@ -154,6 +154,19 @@ public abstract class MimicRing extends Ring {
         return Math.min(MAX_CHARGES, INITIAL_CHARGES + Math.max(0, chargeUpgrades));
     }
 
+    public int currentCharges() {
+        return curCharges;
+    }
+
+    public int maxChargesAfterUpgrade() {
+        return Math.min(MAX_CHARGES, maxCharges() + 1);
+    }
+
+    public int currentChargesAfterUpgrade() {
+        int nextMax = maxChargesAfterUpgrade();
+        return maxCharges() < MAX_CHARGES ? Math.min(nextMax, curCharges + 1) : curCharges;
+    }
+
     protected void rollInitialAbility() {
         Class<? extends Item>[] pool = abilityPool();
         abilityIndex = (pool == null || pool.length == 0) ? 0 : Random.Int(pool.length);
