@@ -1980,6 +1980,6 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] New Infinite World run always has, near spawn, one normal chest, one loose Crystal Key and one Crystal Chest.
 - [ ] Normal starter chest totals exactly five food units, five scroll units and five potion units before optional unrelated chest bonuses.
 - [ ] Starter Crystal Chest contains one ring and one wand.
-- [ ] New-run scroll/potion/ring/wand starter loot is not pre-identified before acquisition when the relevant type was not previously known.
+- [ ] Starter food displays as 未知食物 before identification; scroll/potion/ring/wand starter loot is likewise not pre-identified when the relevant type was not previously known.
 - [ ] Stream away from spawn and return: unopened starter cache remains exactly once; opened/taken contents do not respawn.
 - [ ] Save/load before and after opening each starter container does not duplicate or delete the cache.
