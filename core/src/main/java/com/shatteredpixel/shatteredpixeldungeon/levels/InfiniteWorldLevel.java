@@ -5870,7 +5870,9 @@ public class InfiniteWorldLevel extends Level {
                         anomalyWalls.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
                         customWalls.add(anomalyWalls);
 
-                        if (state().generatorVersion >= 18) {
+                        // Visual-only material correction is safe for existing
+                        // V17 worlds; no terrain/collision state is changed.
+                        if (state().generatorVersion >= 17) {
                             int primary = -1;
                             int alternate = -1;
                             int altPercent = 10;
@@ -6169,7 +6171,9 @@ public class InfiniteWorldLevel extends Level {
     private int v16DecorationCount(int cx, int cy, int anomaly) {
         if (cx == 0 && cy == 0) return 3;
 
-        if (state().generatorVersion >= 18) {
+        // V17 saves can safely adopt the corrected prop palette because the
+        // placement cells/collision remain unchanged; V18 alone changes counts.
+        if (state().generatorVersion >= 17) {
             switch (anomaly) {
                 case 1:  return 3 + range(cx, cy, 29080, 0, 2); // Level 0: sparse, repetitive
                 case 2:  return 7 + range(cx, cy, 29081, 0, 3); // storage/service
