@@ -381,6 +381,93 @@ public class Belongings implements Iterable<Item> {
 				|| stackedRings.contains(item));
 	}
 
+	/**
+	 * Makes an already-equipped stacked item the representative/primary item for
+	 * its category without unequipping anything. This is what the expandable
+	 * stacked-equipment row uses when the player taps a specific item.
+	 */
+	public boolean makeStackPrimary(Item item) {
+		if (item == null || !isStackEquipped(item)) return false;
+
+		if (item instanceof KindOfWeapon) {
+			KindOfWeapon selected = (KindOfWeapon)item;
+			if (weapon == selected) return true;
+			if (secondWep == selected) {
+				KindOfWeapon old = weapon;
+				weapon = selected;
+				secondWep = old;
+				return true;
+			}
+			int idx = stackedWeapons.indexOf(selected);
+			if (idx >= 0) {
+				KindOfWeapon old = weapon;
+				weapon = selected;
+				if (old == null) stackedWeapons.remove(idx);
+				else stackedWeapons.set(idx, old);
+				return true;
+			}
+		}
+
+		if (item instanceof Wand) {
+			Wand selected = (Wand)item;
+			int idx = stackedWands.indexOf(selected);
+			if (idx < 0) return false;
+			if (idx > 0) {
+				stackedWands.remove(idx);
+				stackedWands.add(0, selected);
+			}
+			return true;
+		}
+
+		if (item instanceof Artifact) {
+			Artifact selected = (Artifact)item;
+			if (artifact == selected) return true;
+			if (misc == selected) {
+				Artifact old = artifact;
+				artifact = selected;
+				misc = old;
+				return true;
+			}
+			int idx = stackedArtifacts.indexOf(selected);
+			if (idx >= 0) {
+				Artifact old = artifact;
+				artifact = selected;
+				if (old == null) stackedArtifacts.remove(idx);
+				else stackedArtifacts.set(idx, old);
+				return true;
+			}
+		}
+
+		if (item instanceof Ring) {
+			Ring selected = (Ring)item;
+			if (ring == selected) return true;
+			if (misc == selected) {
+				Ring old = ring;
+				ring = selected;
+				misc = old;
+				return true;
+			}
+			int idx = stackedRings.indexOf(selected);
+			if (idx >= 0) {
+				Ring old = ring;
+				ring = selected;
+				if (old == null) stackedRings.remove(idx);
+				else stackedRings.set(idx, old);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public Artifact cyclePrimaryArtifact() {
+		ArrayList<Artifact> items = equippedArtifacts();
+		if (items.isEmpty()) return null;
+		if (items.size() == 1) return items.get(0);
+		makeStackPrimary(items.get(1));
+		return displayArtifact();
+	}
+
 	public ArrayList<KindOfWeapon> equippedWeapons() {
 		ArrayList<KindOfWeapon> result = new ArrayList<>();
 		if (weapon != null) result.add(weapon);
