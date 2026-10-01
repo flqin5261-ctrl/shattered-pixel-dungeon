@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -93,7 +94,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	@Override
 	public boolean isEquipped( Hero hero ) {
-		return hero != null && (hero.belongings.weapon() == this || hero.belongings.secondWep() == this);
+		return hero != null && hero.belongings.isStackEquipped(this);
 	}
 
 	private static boolean isSwiftEquipping = false;
@@ -120,6 +121,24 @@ abstract public class KindOfWeapon extends EquipableItem {
 			cursedKnown = true;
 			GLog.p(Messages.get(this, "curse_detected"));
 			return false;
+		}
+
+		if (GenesisEcho.unrestrictedEquipment(hero)) {
+			detachAll(hero.belongings.backpack);
+			if (!hero.belongings.equipStackedWeapon(this)) {
+				return true;
+			}
+			activate(hero);
+			Talent.onItemEquipped(hero, this);
+			Badges.validateDuelistUnlock();
+			updateQuickslot();
+			cursedKnown = true;
+			if (cursed) {
+				equipCursed(hero);
+				GLog.n(Messages.get(KindOfWeapon.class, "equip_cursed"));
+			}
+			hero.spendAndNext(timeToEquip(hero));
+			return true;
 		}
 
 		detachAll( hero.belongings.backpack );
@@ -159,6 +178,10 @@ abstract public class KindOfWeapon extends EquipableItem {
 	}
 
 	public boolean equipSecondary( Hero hero ){
+
+		if (GenesisEcho.unrestrictedEquipment(hero)) {
+			return doEquip(hero);
+		}
 
 		isSwiftEquipping = false;
 		if (hero.belongings.contains(this) && hero.hasTalent(Talent.SWIFT_EQUIP)){
@@ -207,6 +230,15 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
+		if (GenesisEcho.unrestrictedEquipment(hero) && hero.belongings.isStackEquipped(this)) {
+			if (super.doUnequip(hero, collect, single)) {
+				hero.belongings.removeStackedEquipment(this);
+				updateQuickslot();
+				return true;
+			}
+			return false;
+		}
+
 		boolean second = hero.belongings.secondWep == this;
 
 		if (second){
