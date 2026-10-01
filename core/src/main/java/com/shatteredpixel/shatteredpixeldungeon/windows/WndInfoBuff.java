@@ -54,11 +54,13 @@ public class WndInfoBuff extends Window {
 
 		RenderedTextBlock txtInfo = PixelScene.renderTextBlock(buff.desc(), 6);
 		txtInfo.maxWidth(width);
-		txtInfo.setPos(0, 0);
+		// A small internal top inset prevents the first highlighted heading from
+		// being clipped by the ScrollPane camera at y=0.
+		txtInfo.setPos(0, 2);
 
 		Component content = new Component();
 		content.add(txtInfo);
-		content.setSize(width, txtInfo.height() + 2);
+		content.setSize(width, txtInfo.height() + 5);
 
 		float paneY = titlebar.bottom() + 2*GAP;
 		int maxWindowHeight = Math.max(64, PixelScene.uiCamera.height - chrome.marginVer() - 6);
