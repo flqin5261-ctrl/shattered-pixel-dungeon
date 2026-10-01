@@ -694,7 +694,7 @@ public class BreakthroughCertificate extends EquipableItem {
             String current;
             if (cert.certificateLevel() >= 60) {
                 Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
-                int liveCopies = hero == null ? 1 : copies(hero);
+                int liveCopies = hero == null ? 1 : cert.copies(hero);
                 current = Messages.get(BreakthroughCertificate.class, "miracle_blessing_desc",
                         Math.round((cert.effectiveHealthMultiplier(hero)-1f)*100f),
                         cert.effectiveStrengthBonus(hero),
