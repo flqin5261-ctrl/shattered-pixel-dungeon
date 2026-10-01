@@ -4234,7 +4234,7 @@ public class InfiniteWorldLevel extends Level {
 
         if (state().generatorVersion < 15) {
             // Preserve the exact six legacy layouts used by V9-V14 saves.
-            if (anomaly == 1 && state().generatorVersion < 19) {
+            if (anomaly == 1) {
                 carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
                 for (int x = 5; x < CHUNK_SIZE - 2; x += 6) {
                     for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
@@ -4628,9 +4628,10 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
-        // Level 0 description explicitly calls out damp flooring. Add only tiny,
-        // scattered patches so they read as moisture rather than a pool district.
-        if (anomaly == 1) {
+        // V18 saves retain the old logical water cells for compatibility, but the
+        // new material layer paints them as darker damp carpet. V19 worlds no
+        // longer create literal water inside Level 0.
+        if (anomaly == 1 && state().generatorVersion < 19) {
             for (int i = 0; i < 4; i++) {
                 int lx = 3 + range(cx, cy, 30200 + i * 2, 0, CHUNK_SIZE - 7);
                 int ly = 3 + range(cx, cy, 30201 + i * 2, 0, CHUNK_SIZE - 7);
@@ -6274,6 +6275,9 @@ public class InfiniteWorldLevel extends Level {
         final InfiniteWorldDecorationLayer urbanLayer =
                 new InfiniteWorldDecorationLayer(
                         InfiniteWorldDecorationLayer.SOURCE_URBAN, width(), height());
+        final InfiniteWorldDecorationLayer backroomsLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_BACKROOMS, width(), height());
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
@@ -6304,7 +6308,10 @@ public class InfiniteWorldLevel extends Level {
                     int source = InfiniteWorldDecorationLayer.sourceForKind(kind);
                     InfiniteWorldDecorationLayer layer = source == InfiniteWorldDecorationLayer.SOURCE_DUNGEON
                             ? dungeonLayer
-                            : (source == InfiniteWorldDecorationLayer.SOURCE_URBAN ? urbanLayer : townLayer);
+                            : (source == InfiniteWorldDecorationLayer.SOURCE_URBAN
+                            ? urbanLayer
+                            : (source == InfiniteWorldDecorationLayer.SOURCE_BACKROOMS
+                            ? backroomsLayer : townLayer));
                     layer.put(cell, kind, InfiniteWorldLevel.this);
                 }
             }
@@ -6313,6 +6320,7 @@ public class InfiniteWorldLevel extends Level {
         if (!townLayer.isEmpty()) customTiles.add(townLayer);
         if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
         if (!urbanLayer.isEmpty()) customTiles.add(urbanLayer);
+        if (!backroomsLayer.isEmpty()) customTiles.add(backroomsLayer);
     }
 
     private ArrayList<V16DecorationPlacement> v16DecorationPlan(
