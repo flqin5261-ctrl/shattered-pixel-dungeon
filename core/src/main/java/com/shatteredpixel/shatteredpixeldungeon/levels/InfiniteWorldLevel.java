@@ -836,8 +836,14 @@ public class InfiniteWorldLevel extends Level {
         InfiniteWorldState st = state();
         st.heroActionValue += time;
 
+        int oldDay = InfiniteWorldCycle.day(st);
+        int oldSeason = InfiniteWorldCycle.season(st);
+        int oldWeather = st.worldWeather;
+        int oldLightBand = InfiniteWorldCycle.lightBand(st);
+
         int cycleChanges = InfiniteWorldCycle.advance(st, time, Dungeon.seed);
         if (cycleChanges != 0) {
+            announceWorldCycleChanges(cycleChanges, oldDay, oldSeason, oldWeather, oldLightBand);
             boolean refreshSeason = (cycleChanges
                     & (InfiniteWorldCycle.CHANGE_WEATHER | InfiniteWorldCycle.CHANGE_SEASON)) != 0;
             refreshWorldCyclePresentation(refreshSeason);
@@ -850,6 +856,36 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+
+    private void announceWorldCycleChanges(int changes, int oldDay, int oldSeason,
+                                           int oldWeather, int oldLightBand) {
+        InfiniteWorldState st = state();
+        int anomaly = currentWorldCycleAnomaly();
+
+        if ((changes & InfiniteWorldCycle.CHANGE_SEASON) != 0) {
+            GLog.p("季节变化：" + InfiniteWorldCycle.seasonName(oldSeason)
+                    + " → " + InfiniteWorldCycle.seasonName(InfiniteWorldCycle.season(st)));
+        }
+
+        if ((changes & InfiniteWorldCycle.CHANGE_DAY) != 0) {
+            GLog.i("新的一天开始了：第" + InfiniteWorldCycle.day(st) + "天");
+        }
+
+        if ((changes & InfiniteWorldCycle.CHANGE_LIGHT) != 0 && anomaly == 0) {
+            GLog.i("时段变化：" + InfiniteWorldCycle.lightBandName(st)
+                    + "（"
+                    + String.format(java.util.Locale.US, "%02d:%02d",
+                    InfiniteWorldCycle.hour(st), InfiniteWorldCycle.minute(st))
+                    + "）");
+        }
+
+        if ((changes & InfiniteWorldCycle.CHANGE_WEATHER) != 0 && anomaly == 0) {
+            GLog.w("天气变化：" + InfiniteWorldCycle.weatherName(oldWeather)
+                    + " → " + InfiniteWorldCycle.weatherName(st.worldWeather));
+        }
+
+        GameScene.refreshInfiniteWorldHud();
+    }
 
     public int currentWorldCycleAnomaly() {
         if (state().generatorVersion < 9) return 0;
