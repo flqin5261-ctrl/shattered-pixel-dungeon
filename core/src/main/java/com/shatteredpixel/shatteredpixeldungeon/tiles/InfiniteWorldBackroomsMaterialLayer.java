@@ -81,10 +81,10 @@ public class InfiniteWorldBackroomsMaterialLayer extends CustomTilemap {
 
         if (terrain == Terrain.GRASS || terrain == Terrain.HIGH_GRASS || terrain == Terrain.FURROWED_GRASS) {
             switch (scheme) {
-                case 10: return variation(26, 18, x, y, 18);
-                case 11: return variation(18, 26, x, y, 28);
-                case 14: return variation(26, 18, x, y, 22);
-                case 19: return variation(26, 28, x, y, 12);
+                case 10: return variation(26, 27, x, y, 10); // Level 9: mostly dark midnight grass
+                case 11: return variation(18, 26, x, y, 24); // Level 10: wheat/barley with dark green breaks
+                case 14: return variation(27, 26, x, y, 25); // Level 94: crafted green hills
+                case 19: return variation(27, 26, x, y, 20); // Level 48: tropical vegetation
                 default: return variation(26, 18, x, y, 12);
             }
         }
@@ -109,7 +109,7 @@ public class InfiniteWorldBackroomsMaterialLayer extends CustomTilemap {
             case 11: return variation(20, 18, x, y, 15);
             case 12: return variation(19, 23, x, y, 18);
             case 13: return variation(4, 5, x, y, 16);
-            case 14: return variation(18, 26, x, y, 18);
+            case 14: return variation(28, 30, x, y, 18); // Level 94: pale model-town paths
             case 15: return variation(10, 28, x, y, 18);
             case 16: return variation(22, 30, x, y, 24);
             case 17: return variation(11, 17, x, y, 12);
@@ -126,10 +126,10 @@ public class InfiniteWorldBackroomsMaterialLayer extends CustomTilemap {
         switch (scheme) {
             case 1:  return variation(2, 3, x, y, 16);
             case 2:  return variation(8, 9, x, y, 12);
-            case 3:  return variation(9, 11, x, y, 12);
-            case 4:  return variation(9, 14, x, y, 10);
+            case 3:  return variation(10, 11, x, y, 22); // Level 2: dirty brick + dark concrete
+            case 4:  return variation(10, 9, x, y, 28);  // Level 3: brick electrical halls
             case 5:  return variation(4, 5, x, y, 12);
-            case 6:  return variation(20, 22, x, y, 14);
+            case 6:  return variation(10, 3, x, y, 20); // Level 5: dark wood/mahogany + gold
             case 7:  return variation(14, 9, x, y, 10);
             case 8:  return variation(15, 17, x, y, 12);
             case 9:  return variation(17, 16, x, y, 14);
@@ -140,7 +140,7 @@ public class InfiniteWorldBackroomsMaterialLayer extends CustomTilemap {
             case 14: return variation(22, 28, x, y, 16);
             case 15: return variation(22, 28, x, y, 18);
             case 16: return variation(22, 4, x, y, 18);
-            case 17: return variation(17, 11, x, y, 12);
+            case 17: return variation(10, 17, x, y, 28); // Level 34: brick over stone
             case 18: return variation(9, 14, x, y, 14);
             case 19: return variation(28, 20, x, y, 15);
             case 20: return variation(13, 21, x, y, 18);
