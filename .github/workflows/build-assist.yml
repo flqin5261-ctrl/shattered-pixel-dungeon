@@ -43,6 +43,7 @@ on:
       - assist-0.6.7-genesis-authority
       - assist-0.6.17-eternal-edict
       - assist-0.6.18-eternal-edict
+      - assist-0.6.19-eternal-edict
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
