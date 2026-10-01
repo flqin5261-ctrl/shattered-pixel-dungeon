@@ -16,6 +16,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.InventorySlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.ui.Component;
 
@@ -24,11 +25,10 @@ import java.util.ArrayList;
 /**
  * 纵横八荒 stacked-equipment picker.
  *
- * IMPORTANT: InventorySlot's own pointer area cannot be trusted while nested in
- * a ScrollPane on mobile. WndBag already solved this by disabling each slot's
- * native pointer and forwarding ScrollPane.onClick(x,y) to the matching slot.
- * Keep the same interaction path here so both normal switching and inventory
- * selectors (upgrade/identify/etc.) receive the exact tapped item.
+ * Touch handling mirrors WndBag: ScrollPane owns pointer events and forwards
+ * taps to the exact item slot. In normal mode a single tap opens/selects that
+ * item, while a double tap quickly unequips it. Selector mode remains immediate
+ * single-tap so upgrade/identify/etc. always receive the exact chosen item.
  */
 public class WndStackedEquipment extends Window {
 
@@ -38,12 +38,16 @@ public class WndStackedEquipment extends Window {
 
     private static final int SLOT = 24;
     private static final int GAP = 2;
-    private static final int COLS = 6;
-    private static final int WIDTH = COLS * SLOT + (COLS - 1) * GAP;
+    private static final int PAD = 2;
+    private static final int MAX_COLS = 5;
+    private static final float EQUIP_DOUBLE_TAP_WINDOW = 0.28f;
 
     private final Window owner;
     private final WndBag.ItemSelector selector;
     private final ArrayList<StackInventorySlot> slots = new ArrayList<>();
+
+    private StackInventorySlot pendingTapSlot;
+    private float pendingTapTimer;
 
     public WndStackedEquipment(Category category) {
         this(null, category, null);
@@ -56,11 +60,21 @@ public class WndStackedEquipment extends Window {
 
         final ArrayList<Item> items = itemsFor(category);
 
+        // Never build a picker wider than the active UI camera. The old fixed
+        // six-column width could center partly off-screen on narrow phones,
+        // clipping the leftmost item as shown in the user's screenshot.
+        int maxWindowWidth = Math.max(SLOT + PAD * 2,
+                PixelScene.uiCamera.width - chrome.marginHor() - 4);
+        int cols = Math.max(1, (maxWindowWidth - PAD * 2 + GAP) / (SLOT + GAP));
+        cols = Math.min(MAX_COLS, cols);
+        cols = Math.min(cols, Math.max(1, items.size()));
+        final int width = PAD * 2 + cols * SLOT + Math.max(0, cols - 1) * GAP;
+
         RenderedTextBlock title = PixelScene.renderTextBlock(
                 selector != null ? selector.textPrompt() : titleFor(category), 8);
         title.hardlight(TITLE_COLOR);
-        title.maxWidth(WIDTH);
-        title.setPos(0, 1);
+        title.maxWidth(width - PAD * 2);
+        title.setPos(PAD, 1);
         add(title);
 
         float paneY = title.bottom() + 3;
@@ -70,7 +84,7 @@ public class WndStackedEquipment extends Window {
         int row = 0;
         for (final Item item : items) {
             StackInventorySlot slot = new StackInventorySlot(item);
-            slot.setRect(col * (SLOT + GAP), row * (SLOT + GAP), SLOT, SLOT);
+            slot.setRect(PAD + col * (SLOT + GAP), PAD + row * (SLOT + GAP), SLOT, SLOT);
             content.add(slot);
             slots.add(slot);
             slot.disableNativePointer();
@@ -81,17 +95,17 @@ public class WndStackedEquipment extends Window {
             }
 
             col++;
-            if (col >= COLS) {
+            if (col >= cols) {
                 col = 0;
                 row++;
             }
         }
 
         int rows = Math.max(1, row + (col > 0 ? 1 : 0));
-        int contentHeight = rows * SLOT + Math.max(0, rows - 1) * GAP;
-        content.setSize(WIDTH, contentHeight);
+        int contentHeight = PAD * 2 + rows * SLOT + Math.max(0, rows - 1) * GAP;
+        content.setSize(width, contentHeight);
 
-        int maxViewport = Math.max(SLOT,
+        int maxViewport = Math.max(SLOT + PAD * 2,
                 PixelScene.uiCamera.height - chrome.marginVer() - (int)paneY - 8);
         int viewportHeight = Math.min(contentHeight, maxViewport);
 
@@ -104,10 +118,9 @@ public class WndStackedEquipment extends Window {
         };
         add(scroll);
 
-        // Same safe lifecycle as the fixed backpack:
-        // new ScrollPane -> add -> resize -> setRect.
-        resize(WIDTH, (int)Math.ceil(paneY + viewportHeight + 2));
-        scroll.setRect(0, paneY, WIDTH, viewportHeight);
+        // Safe ScrollPane lifecycle: construct -> add -> resize -> setRect.
+        resize(width, (int)Math.ceil(paneY + viewportHeight + 2));
+        scroll.setRect(0, paneY, width, viewportHeight);
     }
 
     private StackInventorySlot slotAt(float x, float y) {
@@ -115,6 +128,20 @@ public class WndStackedEquipment extends Window {
             if (slot.active && slot.inside(x, y)) return slot;
         }
         return null;
+    }
+
+    @Override
+    public void update() {
+        super.update();
+        if (pendingTapSlot != null && pendingTapTimer > 0f) {
+            pendingTapTimer -= Game.elapsed;
+            if (pendingTapTimer <= 0f) {
+                StackInventorySlot slot = pendingTapSlot;
+                pendingTapSlot = null;
+                pendingTapTimer = 0f;
+                if (slot != null && slot.active) slot.performSingleTap();
+            }
+        }
     }
 
     private class StackInventorySlot extends InventorySlot {
@@ -134,7 +161,6 @@ public class WndStackedEquipment extends Window {
         @Override
         public void update() {
             super.update();
-            // ScrollPane owns touch handling; keep child pointer areas disabled.
             disableNativePointer();
         }
 
@@ -154,14 +180,29 @@ public class WndStackedEquipment extends Window {
                     if (owner != null) owner.hide();
                 }
 
-                // Pass the EXACT stacked item to the original selector. Upgrade
-                // scrolls therefore upgrade item #2/#3/etc., not the representative.
                 selector.onSelect(stackItem);
                 return;
             }
 
-            // Normal bag use: tapping a concrete stacked item makes it the
-            // representative/primary item, then opens THAT item's action window.
+            if (pendingTapSlot == this && pendingTapTimer > 0f) {
+                pendingTapSlot = null;
+                pendingTapTimer = 0f;
+                if (WndBag.quickToggleEquipment(stackItem)) {
+                    hide();
+                    if (owner != null) owner.hide();
+                } else {
+                    performSingleTap();
+                }
+                return;
+            }
+
+            pendingTapSlot = this;
+            pendingTapTimer = EQUIP_DOUBLE_TAP_WINDOW;
+        }
+
+        void performSingleTap() {
+            if (stackItem == null || Dungeon.hero == null) return;
+
             Dungeon.hero.belongings.makeStackPrimary(stackItem);
             Item.updateQuickslot();
 
