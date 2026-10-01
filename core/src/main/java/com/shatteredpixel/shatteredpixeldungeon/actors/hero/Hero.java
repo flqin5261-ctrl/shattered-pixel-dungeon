@@ -2282,10 +2282,12 @@ public class Hero extends Char {
 				&& source != AscensionChallenge.class
 				&& source != PotionOfExperience.class) {
 			float multiplier;
-			if (lvl <= 10) multiplier = 2.0f;
-			else if (lvl <= 20) multiplier = 1.5f;
-			else if (lvl < InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP) multiplier = 1.25f;
-			else multiplier = 1.0f;
+			if (lvl <= 10) multiplier = 3.0f;
+			else if (lvl <= 20) multiplier = 2.5f;
+			else if (lvl < InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP) multiplier = 2.0f;
+			else if (lvl < 40) multiplier = 2.0f;
+			else if (lvl < 50) multiplier = 1.75f;
+			else multiplier = 1.5f;
 			exp = Math.max(exp, Math.round(exp * multiplier));
 		}
 
@@ -2419,11 +2421,9 @@ public class Hero extends Char {
 	}
 	
 	public static int maxExp( int lvl ){
-		if (Dungeon.infiniteWorld && lvl == 59) {
-			// Level 60 grants 奇迹·世界 + 八荒·亘古元敕, so this final step is
-			// intentionally a much longer endgame grind.
-			return 3600;
-		}
+		// Infinite World is a 60-level single-player progression mode. Do not add
+		// an MMO-style final grind: level 59 -> 60 follows the same smooth curve
+		// as every other level (300 XP before Infinite World XP multipliers).
 		return 5 + lvl * 5;
 	}
 	
