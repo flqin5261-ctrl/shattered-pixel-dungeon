@@ -92,6 +92,8 @@ public class AllLawsArtifact extends Artifact {
 
     private WandOfAllLaws preparedDelegate() {
         WandOfAllLaws wand = new WandOfAllLaws();
+        // Use the Artifact effective level, not only its native +10 state, so the
+        // Assist post-breakthrough artifact overlevel (+11..+30) remains real power.
         int level = Math.max(0, buffedLvl());
         wand.level(level);
         wand.updateLevel();
