@@ -49,6 +49,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
@@ -111,6 +112,9 @@ public abstract class Wand extends Item {
 		if (curCharges > 0 || !curChargeKnown) {
 			actions.add( AC_ZAP );
 		}
+		if (GenesisEcho.unrestrictedEquipment(hero)) {
+			actions.add(isEquipped(hero) ? EquipableItem.AC_UNEQUIP : EquipableItem.AC_EQUIP);
+		}
 
 		return actions;
 	}
@@ -120,13 +124,59 @@ public abstract class Wand extends Item {
 
 		super.execute( hero, action );
 
-		if (action.equals( AC_ZAP )) {
-			
+		if (action.equals(EquipableItem.AC_EQUIP) && GenesisEcho.unrestrictedEquipment(hero)) {
+			doGenesisEquip(hero);
+		} else if (action.equals(EquipableItem.AC_UNEQUIP) && isEquipped(hero)) {
+			doGenesisUnequip(hero);
+		} else if (action.equals( AC_ZAP )) {
 			curUser = hero;
 			curItem = this;
 			GameScene.selectCell( zapper );
-			
 		}
+	}
+
+	private boolean doGenesisEquip(Hero hero) {
+		if (hero == null || !GenesisEcho.unrestrictedEquipment(hero)) return false;
+		if (isEquipped(hero)) return true;
+
+		detach(hero.belongings.backpack);
+		if (!hero.belongings.equipStackedWand(this)) {
+			collect(hero.belongings.backpack);
+			return false;
+		}
+		charge(hero);
+		cursedKnown = true;
+		updateQuickslot();
+		hero.spendAndNext(1f);
+		return true;
+	}
+
+	private boolean doGenesisUnequip(Hero hero) {
+		if (hero == null || !isEquipped(hero)) return false;
+		hero.belongings.removeStackedEquipment(this);
+		stopCharging();
+		if (!collect(hero.belongings.backpack)) {
+			hero.belongings.equipStackedWand(this);
+			charge(hero);
+			return false;
+		}
+		updateQuickslot();
+		hero.spendAndNext(1f);
+		return true;
+	}
+
+	@Override
+	public boolean isEquipped(Hero hero) {
+		return hero != null && hero.belongings.isStackEquipped(this);
+	}
+
+	@Override
+	public void doDrop(Hero hero) {
+		if (isEquipped(hero)) {
+			hero.belongings.removeStackedEquipment(this);
+			stopCharging();
+		}
+		super.doDrop(hero);
 	}
 
 	public boolean genesisScreenCast(Hero hero) {
