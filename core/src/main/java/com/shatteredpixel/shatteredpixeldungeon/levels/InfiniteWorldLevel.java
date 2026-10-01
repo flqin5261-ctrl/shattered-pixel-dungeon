@@ -1629,6 +1629,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item chestItem(int cx, int cy) {
+        if (state().generatorVersion >= 22) {
+            return v22BalancedSupplyItem(cx, cy, 0, 7001);
+        }
         if (state().generatorVersion >= 18) {
             int roll = range(cx, cy, 7001, 0, 99);
             if (roll < 16) return new PotionOfHealing();
@@ -1876,6 +1879,10 @@ public class InfiniteWorldLevel extends Level {
             return v6EquipmentItem(cx, cy, 18600 + index);
         }
 
+        if (state().generatorVersion >= 22) {
+            return v22BalancedSupplyItem(cx, cy, index, 18500);
+        }
+
         if (state().generatorVersion >= 18) {
             int roll = range(cx, cy, 18500 + index, 0, 99);
             if (roll < 14) return new PotionOfHealing();
@@ -1933,7 +1940,9 @@ public class InfiniteWorldLevel extends Level {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
                 int count;
-                if (state().generatorVersion >= 9) {
+                if (state().generatorVersion >= 22) {
+                    count = v22LooseLootCount(cx, cy);
+                } else if (state().generatorVersion >= 9) {
                     if (v9AnomalyType(cx, cy) == 0) {
                         if (state().generatorVersion >= 18) {
                             long roll = Math.floorMod(hash(cx, cy, 19000), 100L);
@@ -2011,7 +2020,9 @@ public class InfiniteWorldLevel extends Level {
             @Override
             public void visit(int cx, int cy, int ox, int oy) {
                 int count;
-                if (state().generatorVersion >= 9) {
+                if (state().generatorVersion >= 22) {
+                    count = v22LooseLootCount(cx, cy);
+                } else if (state().generatorVersion >= 9) {
                     if (v9AnomalyType(cx, cy) == 0) {
                         if (state().generatorVersion >= 18) {
                             long roll = Math.floorMod(hash(cx, cy, 19000), 100L);
@@ -2166,6 +2177,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v6LooseItem(int cx, int cy, int index) {
+        if (state().generatorVersion >= 22) {
+            return v22BalancedSupplyItem(cx, cy, index, 19800);
+        }
+
         int roll = range(cx, cy, 19800 + index, 0, 99);
         if (roll < 20) return v6RandomFood(cx, cy, 19850 + index);
         if (roll < 39) return v6EquipmentItem(cx, cy, 19860 + index);
@@ -2192,6 +2207,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v6RandomFood(int cx, int cy, int salt) {
+        if (state().generatorVersion >= 22) {
+            return v22FoodItem(v22VariantOrdinal(cx, cy, salt));
+        }
         switch (range(cx, cy, salt, 0, 5)) {
             case 0: return new Food();
             case 1: return new SmallRation();
@@ -2203,6 +2221,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v6SafeScroll(int cx, int cy, int salt) {
+        if (state().generatorVersion >= 22) {
+            return v22CategoryItem(Generator.Category.SCROLL,
+                    v22VariantOrdinal(cx, cy, salt), 0);
+        }
         switch (range(cx, cy, salt, 0, 8)) {
             case 0: return new ScrollOfIdentify();
             case 1: return new ScrollOfRemoveCurse();
@@ -2217,6 +2239,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v6RandomPotion(int cx, int cy, int salt) {
+        if (state().generatorVersion >= 22) {
+            return v22CategoryItem(Generator.Category.POTION,
+                    v22VariantOrdinal(cx, cy, salt), 0);
+        }
         switch (range(cx, cy, salt, 0, 5)) {
             case 0: return new PotionOfHealing();
             case 1: return new PotionOfInvisibility();
@@ -2232,6 +2258,11 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Plant.Seed v6PlantSeed(int cx, int cy, int salt) {
+        if (state().generatorVersion >= 22) {
+            Item item = v22CategoryItem(Generator.Category.SEED,
+                    v22VariantOrdinal(cx, cy, 19900 + salt), 1);
+            return (Plant.Seed)item;
+        }
         switch (range(cx, cy, 19900 + salt, 0, 10)) {
             case 0: return new Firebloom.Seed();
             case 1: return new Icecap.Seed();
@@ -2244,6 +2275,152 @@ public class InfiniteWorldLevel extends Level {
             case 8: return new Stormvine.Seed();
             case 9: return new Mageroyal.Seed();
             default:return new Starflower.Seed();
+        }
+    }
+
+    /**
+     * V22 resource coverage.
+     *
+     * Loot identity is no longer chosen by a chain of independent percentage
+     * rolls. Each chunk has a stable square-spiral ordinal, then supply families
+     * and sub-types advance through fixed complete cycles. This means a run can
+     * still look varied in space, but bad luck cannot produce seven Blink stones
+     * while every other runestone is absent.
+     */
+    private long v22SpiralOrdinal(int x, int y) {
+        int r = Math.max(Math.abs(x), Math.abs(y));
+        if (r == 0) return 0L;
+
+        long side = 2L * r;
+        long width = 2L * r + 1L;
+        long max = width * width - 1L;
+
+        if (y == -r) {
+            return max - (r - x);
+        } else if (x == -r) {
+            return max - side - (y + r);
+        } else if (y == r) {
+            return max - 2L * side - (x + r);
+        } else {
+            return max - 3L * side - (r - y);
+        }
+    }
+
+    private long v22VariantOrdinal(int cx, int cy, int salt) {
+        long ordinal = v22SpiralOrdinal(cx, cy);
+        return ordinal + (long)salt * 31L;
+    }
+
+    private int v22LooseLootCount(int cx, int cy) {
+        if (v9AnomalyType(cx, cy) != 0) return 0;
+
+        long ordinal = v22SpiralOrdinal(cx, cy);
+        int slot = (int)Math.floorMod(ordinal, 5L);
+
+        // Exactly 40% of ordinary chunks carry one loose supply item; every
+        // 37th spiral slot gets a second. Density is fixed, not a chance roll.
+        int count = slot < 2 ? 1 : 0;
+        if (Math.floorMod(ordinal, 37L) == 0L) count++;
+        return count;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Item v22CategoryItem(Generator.Category category, long ordinal, int firstClass) {
+        Class<?>[] classes = category.classes;
+        int available = classes.length - firstClass;
+        if (available <= 0) return null;
+
+        int index = firstClass + (int)Math.floorMod(ordinal, (long)available);
+        Item item = (Item)Reflection.newInstance((Class<? extends Item>)classes[index]);
+        return item == null ? null : item.random();
+    }
+
+    private Item v22FoodItem(long ordinal) {
+        switch ((int)Math.floorMod(ordinal, 6L)) {
+            case 0: return new Food();
+            case 1: return new SmallRation();
+            case 2: return new Pasty();
+            case 3: return new MysteryMeat();
+            case 4: return new MeatPie();
+            default:return new SupplyRation();
+        }
+    }
+
+    private Item v22StoneItem(int cx, int cy, int salt) {
+        return v22CategoryItem(Generator.Category.STONE,
+                v22VariantOrdinal(cx, cy, salt), 0);
+    }
+
+    private Generator.Category v22MeleeTier(long ordinal) {
+        switch ((int)Math.floorMod(ordinal, 5L)) {
+            case 0: return Generator.Category.WEP_T1;
+            case 1: return Generator.Category.WEP_T2;
+            case 2: return Generator.Category.WEP_T3;
+            case 3: return Generator.Category.WEP_T4;
+            default:return Generator.Category.WEP_T5;
+        }
+    }
+
+    private Generator.Category v22MissileTier(long ordinal) {
+        switch ((int)Math.floorMod(ordinal, 5L)) {
+            case 0: return Generator.Category.MIS_T1;
+            case 1: return Generator.Category.MIS_T2;
+            case 2: return Generator.Category.MIS_T3;
+            case 3: return Generator.Category.MIS_T4;
+            default:return Generator.Category.MIS_T5;
+        }
+    }
+
+    private Item v22EquipmentItem(long ordinal) {
+        int family = (int)Math.floorMod(ordinal, 5L);
+        long variant = Math.floorDiv(ordinal, 5L);
+
+        switch (family) {
+            case 0:
+                return v22CategoryItem(v22MeleeTier(variant), variant / 5L, 0);
+            case 1:
+                // Only the five ordinary armor tiers are world loot; class armor
+                // remains tied to its own progression systems.
+                return v22CategoryItem(Generator.Category.ARMOR, variant, 0);
+            case 2:
+                return v22CategoryItem(Generator.Category.WAND, variant, 0);
+            case 3:
+                return v22CategoryItem(Generator.Category.RING, variant, 0);
+            default:
+                return v22CategoryItem(v22MissileTier(variant), variant / 5L, 0);
+        }
+    }
+
+    private Item v22BalancedSupplyItem(int cx, int cy, int index, int salt) {
+        long seq = v22SpiralOrdinal(cx, cy) * 2L + index + (long)salt * 13L;
+        int slot = (int)Math.floorMod(seq, 12L);
+        long cycle = Math.floorDiv(seq, 12L);
+
+        switch (slot) {
+            case 0:
+                return v22FoodItem(cycle);
+            case 1:
+                return v22EquipmentItem(cycle);
+            case 2:
+                return v22CategoryItem(Generator.Category.SCROLL, cycle, 0);
+            case 3:
+                return v22CategoryItem(Generator.Category.POTION, cycle, 0);
+            case 4:
+                return v22CategoryItem(Generator.Category.SEED, cycle, 1);
+            case 5:
+                return v22CategoryItem(Generator.Category.STONE, cycle * 2L, 0);
+            case 6:
+                return new Bomb();
+            case 7:
+                return new Torch();
+            case 8:
+                return new Gold(8 + (int)Math.floorMod(cycle, 25L));
+            case 9:
+                return v22CategoryItem(Generator.Category.STONE, cycle * 2L + 1L, 0);
+            case 10:
+                return new Pickaxe();
+            default:
+                return v22EquipmentItem(cycle + 1L);
         }
     }
 
