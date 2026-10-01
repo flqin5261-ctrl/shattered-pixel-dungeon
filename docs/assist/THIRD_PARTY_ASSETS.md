@@ -77,3 +77,40 @@ Tiny Dungeon indices used:
 Generator V16 worlds, bulky scenery is backed by the game's native
 `Terrain.CUSTOM_DECO` solid terrain while the Kenney sprite remains a
 `CustomTilemap` visual. These props remain non-interactive.
+
+
+## Assist 0.9.0 — Kenney RPG Urban Pack
+
+Assist 0.9.0 adds a small, curated subset of **RPG Urban Pack 1.0** by
+Kenney for modern/industrial Infinite World districts.
+
+- License: **Creative Commons Zero (CC0 1.0)**
+- Official page: https://kenney.nl/assets/rpg-urban-pack
+- Tile size: 16×16
+- The official pack contains 480+ files/tiles.
+
+For reproducible CI builds, the packed atlas is fetched from public mirror
+`AndrewDanyliuk/2d-rpg`, pinned to commit:
+
+`67b203b6f365a97b34615cfdef2ed6e9a3bd55f3`
+
+Verified Git blob:
+
+- `assets/RPG Urban Pack/Tilemap/tilemap_packed.png`
+- `66bf1156a23e2436473f96cf2240c301e4309faf`
+
+Curated packed-atlas indices used by Assist:
+- 164 curved street lamp
+- 165 straight street lamp
+- 166 red utility/hydrant fixture
+- 168 blue utility fixture
+- 221 / 222 road-work barriers
+- 223 small street sign
+- 250 freestanding signboard
+- 254 refuse/debris bags
+- 270 city bench
+- 272 bollard/post
+- 279 / 280 refuse bins
+
+The source art remains unmodified. Assist uses these as sparse physical scenery
+for office, industrial, suburban, city, and pool-hall districts.
