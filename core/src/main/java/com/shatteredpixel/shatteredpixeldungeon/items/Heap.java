@@ -197,6 +197,7 @@ public class Heap implements Bundlable {
 				if (x < 0 || y < 0 || x >= Dungeon.level.width() || y >= Dungeon.level.height()) continue;
 				int cell = x + y * width;
 				if (cell == hero.pos) continue;
+				if (advertisedCrystalPrize != null && cell == advertisedPos) continue;
 				if ((Dungeon.level.passable[cell] || Dungeon.level.avoid[cell])
 						&& com.shatteredpixel.shatteredpixeldungeon.actors.Actor.findChar(cell) == null) {
 					cells.add(cell);
