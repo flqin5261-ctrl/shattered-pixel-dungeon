@@ -122,6 +122,17 @@ public abstract class Wand extends Item {
 
 		return actions;
 	}
+
+	@Override
+	public String actionName(String action, Hero hero) {
+		if (EquipableItem.AC_EQUIP.equals(action)) {
+			return Messages.get(EquipableItem.class, "ac_equip");
+		}
+		if (EquipableItem.AC_UNEQUIP.equals(action)) {
+			return Messages.get(EquipableItem.class, "ac_unequip");
+		}
+		return super.actionName(action, hero);
+	}
 	
 	@Override
 	public void execute( Hero hero, String action ) {
@@ -181,6 +192,35 @@ public abstract class Wand extends Item {
 			stopCharging();
 		}
 		super.doDrop(hero);
+	}
+
+	/**
+	 * 纵横八荒 wand fusion: the wand the player actually fires pays the charge and
+	 * action cost, while every other equipped wand contributes its normal onZap
+	 * payload to the same shot. This means real damage/status effects such as
+	 * burning, chilling/freezing, disintegration, corrosion, regrowth, etc. are
+	 * applied by their original implementations instead of being simulated text.
+	 */
+	private void applyStackedWandEffects(Hero hero, int target) {
+		if (hero == null || !GenesisEcho.unrestrictedEquipment(hero)) return;
+		ArrayList<Wand> equipped = hero.belongings.equippedWands();
+		if (equipped.size() <= 1) return;
+
+		Hero previousUser = curUser;
+		Item previousItem = curItem;
+		try {
+			for (Wand wand : equipped) {
+				if (wand == null || wand == this) continue;
+				Ballistica extraShot = new Ballistica(hero.pos, target, wand.collisionProperties(target));
+				if (extraShot.collisionPos == hero.pos) continue;
+				curUser = hero;
+				curItem = wand;
+				wand.onZap(extraShot);
+			}
+		} finally {
+			curUser = previousUser;
+			curItem = previousItem;
+		}
 	}
 
 	public boolean genesisScreenCast(Hero hero) {
@@ -871,6 +911,7 @@ public abstract class Wand extends Item {
 								new Callback() {
 									@Override
 									public void call() {
+										curWand.applyStackedWandEffects(curUser, target);
 										GenesisEcho.onUltraWandZap(curUser, target, shot.collisionPos);
 										curWand.wandUsed();
 									}
@@ -879,6 +920,7 @@ public abstract class Wand extends Item {
 						curWand.fx(shot, new Callback() {
 							public void call() {
 								curWand.onZap(shot);
+								curWand.applyStackedWandEffects(curUser, target);
 								GenesisEcho.onUltraWandZap(curUser, target, shot.collisionPos);
 								if (Random.Float() < WondrousResin.extraCurseEffectChance()){
 									WondrousResin.forcePositive = true;
