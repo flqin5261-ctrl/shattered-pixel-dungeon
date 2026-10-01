@@ -83,6 +83,7 @@ public class InfiniteWorldLevel extends Level {
     private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
     private boolean shifting;
+    private int streamingShiftsSinceCheckpoint;
 
     // Runtime-only throttles for per-step Infinite World housekeeping.
     private int lastProcessedHeroChunkX = Integer.MIN_VALUE;
@@ -1154,6 +1155,22 @@ public class InfiniteWorldLevel extends Level {
         GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
         genesisTeleportGrace = false;
         shifting = false;
+        checkpointAfterStreaming();
+    }
+
+    private void checkpointAfterStreaming() {
+        streamingShiftsSinceCheckpoint++;
+        int interval = assistSpectatorActive() ? 2 : 4;
+        if (streamingShiftsSinceCheckpoint < interval) return;
+
+        streamingShiftsSinceCheckpoint = 0;
+        try {
+            // snapshotForSave() alone only updates RAM. A process crash would
+            // otherwise roll the player back to the last pause/exit save.
+            Dungeon.saveAll();
+        } catch (java.io.IOException e) {
+            ShatteredPixelDungeon.reportException(e);
+        }
     }
 
     private boolean isCellAction(HeroAction action) {
@@ -4211,12 +4228,24 @@ public class InfiniteWorldLevel extends Level {
         int startBuffer = state().generatorVersion >= 15 ? 2 : 4;
         if (Math.abs(cx) <= startBuffer && Math.abs(cy) <= startBuffer) return 0;
 
-        final int macro = state().generatorVersion >= 15 ? 4 : 5;
+        final int macro = state().generatorVersion >= 20 ? 3
+                : (state().generatorVersion >= 15 ? 4 : 5);
         int mx = Math.floorDiv(cx, macro);
         int my = Math.floorDiv(cy, macro);
 
-        // V15 increases both frequency and variety: 42% of 4x4 macro-regions use
-        // one of fourteen Backrooms-inspired environments. Older generators stay exact.
+        if (state().generatorVersion >= 20) {
+            // V20 uses a balanced 29-slot lattice instead of two unrelated random
+            // hashes. Twenty slots are the twenty Backrooms themes and nine slots
+            // remain ordinary Infinite World. 7 and 11 are both coprime with 29,
+            // so cardinal and ordinary diagonal travel cycles through all 29 slots
+            // before repeating. In practice this guarantees that a long straight
+            // spectator run actually encounters every Backrooms theme.
+            long seedOffset = Math.floorMod(hash(0, 0, 23002), 29L);
+            long slot = Math.floorMod(mx * 7L + my * 11L + seedOffset, 29L);
+            return slot < 20L ? (int)slot + 1 : 0;
+        }
+
+        // V15-V19 keep their exact historic distribution for save compatibility.
         int anomalyChance = state().generatorVersion >= 19 ? 48
                 : (state().generatorVersion >= 15 ? 42
                 : (state().generatorVersion >= 13 ? 28
