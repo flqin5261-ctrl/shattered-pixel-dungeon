@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldUrbanSurfaceLayer;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldBackroomsMaterialLayer;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.custom.InfiniteWorldDecorationLayer;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
@@ -344,9 +345,11 @@ public class InfiniteWorldLevel extends Level {
 
                 int heroChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
                 int heroChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
-                if (v9AnomalyType(heroChunkX, heroChunkY) != 0) {
-                    // Liminal macro-regions are intentionally quieter and emptier.
-                    chance *= 0.45f;
+                int anomaly = v9AnomalyType(heroChunkX, heroChunkY);
+                if (anomaly != 0) {
+                    // Every Backrooms district now has its own ecology instead of
+                    // sharing one generic spawn multiplier.
+                    chance *= v19AnomalyMobFactor(anomaly);
                 }
 
                 if (Random.Float() < chance) {
@@ -358,6 +361,32 @@ public class InfiniteWorldLevel extends Level {
             float max = mobRespawnMaxTurns();
             spend(min + Random.Float() * (max - min));
             return true;
+        }
+    }
+
+    private float v19AnomalyMobFactor(int anomaly) {
+        switch (anomaly) {
+            case 1:  return 0.30f;
+            case 2:  return 0.50f;
+            case 3:  return 0.62f;
+            case 4:  return 0.72f;
+            case 5:  return 0.38f;
+            case 6:  return 0.50f;
+            case 7:  return 0.24f;
+            case 8:  return 0.35f;
+            case 9:  return 0.62f;
+            case 10: return 0.42f;
+            case 11: return 0.34f;
+            case 12: return 0.55f;
+            case 13: return 0.14f;
+            case 14: return 0.32f;
+            case 15: return 0.28f;
+            case 16: return 0.08f;
+            case 17: return 0.78f;
+            case 18: return 0.22f;
+            case 19: return 0.12f;
+            case 20: return 0.00f;
+            default: return 0.45f;
         }
     }
 
@@ -1686,9 +1715,24 @@ public class InfiniteWorldLevel extends Level {
                 return roll < 2 ? new GeyserTrap()
                         : (roll == 2 ? new ChillingTrap() : new FrostTrap());
             case 14: // Level 94 — Motion
-            default:
                 return roll < 2 ? new ConfusionTrap()
                         : (roll == 2 ? new TeleportationTrap() : new AlarmTrap());
+            case 15: // Level 13
+                return roll < 2 ? new AlarmTrap()
+                        : (roll == 2 ? new TeleportationTrap() : new ConfusionTrap());
+            case 16: // Level 18
+                return new ConfusionTrap();
+            case 17: // Level 34
+                return roll < 2 ? new PoisonDartTrap()
+                        : (roll == 2 ? new GrippingTrap() : new OozeTrap());
+            case 18: // Level 40
+                return roll < 2 ? new FlashingTrap()
+                        : (roll == 2 ? new ConfusionTrap() : new AlarmTrap());
+            case 19: // Level 48
+                return new GeyserTrap();
+            case 20: // Level 974
+            default:
+                return new ConfusionTrap();
         }
     }
 
@@ -3583,27 +3627,47 @@ public class InfiniteWorldLevel extends Level {
 
     private int v18AnomalyLooseChance(int anomaly) {
         switch (anomaly) {
-            case 6: return 34; // hotel
-            case 7: return 28; // lights out
-            case 8: return 22; // ocean
-            case 13:return 28; // poolrooms
-            default:return 42;
+            case 1: return 24;
+            case 6: return 34;
+            case 7: return 24;
+            case 8: return 20;
+            case 13:return 20;
+            case 15:return 38;
+            case 16:return 50;
+            case 17:return 24;
+            case 18:return 36;
+            case 19:return 44;
+            case 20:return 55;
+            default:return 40;
         }
     }
 
     private int v18AnomalyContainerChance(int anomaly) {
         switch (anomaly) {
-            case 7: return 10;
-            case 8: return 9;
-            case 13:return 12;
+            case 1: return 6;
+            case 7: return 8;
+            case 8: return 8;
+            case 13:return 8;
+            case 15:return 28;
+            case 16:return 24;
+            case 17:return 10;
+            case 18:return 22;
+            case 19:return 16;
+            case 20:return 34;
             case 2: case 5: case 6: case 10: case 12:
                 return 22;
-            default:return 16;
+            default:return 15;
         }
     }
 
     private Heap.Type v18AnomalyContainerType(int anomaly) {
         switch (anomaly) {
+            case 1:
+            case 13:
+            case 16:
+            case 19:
+            case 20:
+                return Heap.Type.HEAP;
             case 9:
                 return Heap.Type.SKELETON;
             case 3:
@@ -3715,12 +3779,49 @@ public class InfiniteWorldLevel extends Level {
                 return v6SafeScroll(cx, cy, salt + 23);
 
             case 14: // Level 94
-            default:
                 if (roll == 0) return v6RandomFood(cx, cy, salt + 24);
                 if (roll == 1) return v6RandomPotion(cx, cy, salt + 25);
                 if (roll == 2) return v6SafeScroll(cx, cy, salt + 26);
                 if (roll == 3) return new Gold(8 + range(cx, cy, salt + 27, 0, 22));
                 return new StoneOfBlink();
+
+            case 15: // Level 13 apartments
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 28);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return new Gold(8 + range(cx, cy, salt + 29, 0, 20));
+                return v6SafeScroll(cx, cy, salt + 30);
+
+            case 16: // Level 18 memories
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 31);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return v6RandomPotion(cx, cy, salt + 32);
+                return new StoneOfBlink();
+
+            case 17: // Level 34 sewer
+                if (roll <= 1) return new Torch();
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return new Pickaxe();
+                return new Bomb();
+
+            case 18: // Level 40 arcade
+                if (roll == 0) return new Gold(10 + range(cx, cy, salt + 33, 0, 28));
+                if (roll == 1) return v6RandomFood(cx, cy, salt + 34);
+                if (roll == 2) return v6SafeScroll(cx, cy, salt + 35);
+                if (roll == 3) return new PotionOfInvisibility();
+                return new StoneOfBlink();
+
+            case 19: // Level 48 beach
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 36);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return v6SeedItem(cx, cy, salt + 37);
+                return new com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation();
+
+            case 20: // Level 974
+            default:
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 38);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return v6RandomPotion(cx, cy, salt + 39);
+                return v6SafeScroll(cx, cy, salt + 40);
         }
     }
 
@@ -3811,7 +3912,13 @@ public class InfiniteWorldLevel extends Level {
                 case 11: return "Level_10";
                 case 12: return "Level_11";
                 case 13: return "Level_37";
-                default: return "Level_94";
+                case 14: return "Level_94";
+                case 15: return "Level_13";
+                case 16: return "Level_18";
+                case 17: return "Level_34";
+                case 18: return "Level_40";
+                case 19: return "Level_48";
+                default: return "Level_974";
             }
         }
 
@@ -4108,13 +4215,15 @@ public class InfiniteWorldLevel extends Level {
 
         // V15 increases both frequency and variety: 42% of 4x4 macro-regions use
         // one of fourteen Backrooms-inspired environments. Older generators stay exact.
-        int anomalyChance = state().generatorVersion >= 15 ? 42
+        int anomalyChance = state().generatorVersion >= 19 ? 48
+                : (state().generatorVersion >= 15 ? 42
                 : (state().generatorVersion >= 13 ? 28
-                : (state().generatorVersion >= 12 ? 15 : 8));
+                : (state().generatorVersion >= 12 ? 15 : 8)));
         if (Math.floorMod(hash(mx, my, 23000), 100L) >= anomalyChance) return 0;
 
-        int anomalyTypes = state().generatorVersion >= 15 ? 14
-                : (state().generatorVersion >= 13 ? 6 : 3);
+        int anomalyTypes = state().generatorVersion >= 19 ? 20
+                : (state().generatorVersion >= 15 ? 14
+                : (state().generatorVersion >= 13 ? 6 : 3));
         return 1 + (int)Math.floorMod(hash(mx, my, 23001), (long)anomalyTypes);
     }
 
@@ -4125,7 +4234,7 @@ public class InfiniteWorldLevel extends Level {
 
         if (state().generatorVersion < 15) {
             // Preserve the exact six legacy layouts used by V9-V14 saves.
-            if (anomaly == 1) {
+            if (anomaly == 1 && state().generatorVersion < 19) {
                 carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
                 for (int x = 5; x < CHUNK_SIZE - 2; x += 6) {
                     for (int y = 1; y < CHUNK_SIZE - 1; y++) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL;
@@ -4393,7 +4502,6 @@ public class InfiniteWorldLevel extends Level {
                     break;
 
                 case 14: // Level 94 - Motion: toy-like town blocks surrounded by grass.
-                default:
                     carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.GRASS);
                     carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
                     carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY);
@@ -4406,6 +4514,76 @@ public class InfiniteWorldLevel extends Level {
                         }
                     }
                     out[ox + 11 + (oy + 11) * MAP_SIZE] = Terrain.WELL;
+                    break;
+
+                case 15: // Level 13 - Apartment Complex.
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY_SP);
+                    for (int y = 2; y <= 16; y += 7) {
+                        carveRect(out, ox + 2, oy + y, ox + 8, oy + Math.min(y + 5, CHUNK_SIZE - 2), Terrain.EMPTY_DECO);
+                        carveRect(out, ox + 15, oy + y, ox + 21, oy + Math.min(y + 5, CHUNK_SIZE - 2), Terrain.EMPTY_DECO);
+                        out[ox + 9 + (oy + Math.min(y + 2, CHUNK_SIZE - 2)) * MAP_SIZE] = Terrain.DOOR;
+                        out[ox + 14 + (oy + Math.min(y + 2, CHUNK_SIZE - 2)) * MAP_SIZE] = Terrain.DOOR;
+                    }
+                    break;
+
+                case 16: // Level 18 - Memories / daycare-like rooms.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    for (int x = 6; x < CHUNK_SIZE - 3; x += 7) {
+                        for (int y = 3; y < CHUNK_SIZE - 3; y++) {
+                            if ((y % 7) < 4) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL_DECO;
+                        }
+                    }
+                    for (int y = 7; y < CHUNK_SIZE - 3; y += 7) {
+                        for (int x = 2; x < CHUNK_SIZE - 2; x++) {
+                            if ((x % 8) > 3) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL_DECO;
+                        }
+                    }
+                    carveRect(out, ox + 9, oy + 9, ox + 14, oy + 14, Terrain.EMPTY_SP);
+                    break;
+
+                case 17: // Level 34 - Sewer System.
+                    carveRect(out, ox + 1, oy + 8, ox + CHUNK_SIZE - 2, oy + 15, Terrain.EMPTY_DECO);
+                    carveRect(out, ox + 1, oy + 11, ox + CHUNK_SIZE - 2, oy + 12, Terrain.WATER);
+                    carveRect(out, ox + 9, oy + 1, ox + 14, oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    carveRect(out, ox + 11, oy + 1, ox + 12, oy + CHUNK_SIZE - 2, Terrain.WATER);
+                    break;
+
+                case 18: // Level 40 - arcade hall.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_DECO);
+                    for (int y = 4; y < CHUNK_SIZE - 3; y += 5) {
+                        for (int x = 3; x < CHUNK_SIZE - 3; x += 5) {
+                            if (((x + y + cx + cy) & 1) == 0) {
+                                out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL_DECO;
+                            }
+                        }
+                    }
+                    carveRect(out, ox + 10, oy + 1, ox + 13, oy + CHUNK_SIZE - 2, Terrain.EMPTY);
+                    carveRect(out, ox + 1, oy + 10, ox + CHUNK_SIZE - 2, oy + 13, Terrain.EMPTY);
+                    break;
+
+                case 19: // Level 48 - Sunset Beach.
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + 7, Terrain.GRASS);
+                    carveRect(out, ox + 1, oy + 8, ox + CHUNK_SIZE - 2, oy + 15, Terrain.EMPTY);
+                    carveRect(out, ox + 1, oy + 16, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.WATER);
+                    break;
+
+                case 20: // Level 974 - Kitty's House, pink domestic rooms.
+                default:
+                    carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.EMPTY_SP);
+                    for (int x = 8; x <= 15; x += 7) {
+                        for (int y = 1; y < CHUNK_SIZE - 1; y++) {
+                            if (y != 6 && y != 17) out[ox + x + (oy + y) * MAP_SIZE] = Terrain.WALL_DECO;
+                        }
+                        out[ox + x + (oy + 6) * MAP_SIZE] = Terrain.DOOR;
+                        out[ox + x + (oy + 17) * MAP_SIZE] = Terrain.DOOR;
+                    }
+                    for (int x = 1; x < CHUNK_SIZE - 1; x++) {
+                        if (x != 4 && x != 12 && x != 19) out[ox + x + (oy + 11) * MAP_SIZE] = Terrain.WALL_DECO;
+                    }
+                    out[ox + 4 + (oy + 11) * MAP_SIZE] = Terrain.DOOR;
+                    out[ox + 12 + (oy + 11) * MAP_SIZE] = Terrain.DOOR;
+                    out[ox + 19 + (oy + 11) * MAP_SIZE] = Terrain.DOOR;
                     break;
             }
         }
@@ -4467,10 +4645,10 @@ public class InfiniteWorldLevel extends Level {
         // identity instead of making every special district safer than normal.
         int trapCount;
         switch (anomaly) {
-            case 3: case 4: case 7: case 13:
+            case 3: case 4: case 7: case 13: case 17:
                 trapCount = 2; break;
-            case 8:
-                trapCount = 0; break; // ocean itself is already the obstacle
+            case 8: case 16: case 19: case 20:
+                trapCount = 0; break;
             default:
                 trapCount = 1; break;
         }
@@ -5801,6 +5979,24 @@ public class InfiniteWorldLevel extends Level {
         return -1;
     }
 
+    private void addBackroomsMaterialLayers(int cx, int cy, int localX, int localY, int anomaly) {
+        InfiniteWorldBackroomsMaterialLayer ground =
+                new InfiniteWorldBackroomsMaterialLayer(
+                        anomaly,
+                        (int)hash(cx, cy, 22560 + anomaly),
+                        InfiniteWorldBackroomsMaterialLayer.MODE_GROUND);
+        ground.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+        customTiles.add(ground);
+
+        InfiniteWorldBackroomsMaterialLayer wallsLayer =
+                new InfiniteWorldBackroomsMaterialLayer(
+                        anomaly,
+                        (int)hash(cx, cy, 22580 + anomaly),
+                        InfiniteWorldBackroomsMaterialLayer.MODE_WALLS);
+        wallsLayer.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+        customWalls.add(wallsLayer);
+    }
+
     private void rebuildAccentTiles() {
         if (state().generatorVersion < 4 || customTiles == null) return;
 
@@ -5823,6 +6019,11 @@ public class InfiniteWorldLevel extends Level {
                 if (state().generatorVersion >= 9) {
                     int anomaly = v9AnomalyType(cx, cy);
                     if (anomaly != 0) {
+                        if (state().generatorVersion >= 18) {
+                            addBackroomsMaterialLayers(cx, cy, localX, localY, anomaly);
+                            continue;
+                        }
+
                         int alt;
                         if (state().generatorVersion >= 15) {
                             switch (anomaly) {
@@ -6175,7 +6376,7 @@ public class InfiniteWorldLevel extends Level {
         // placement cells/collision remain unchanged; V18 alone changes counts.
         if (state().generatorVersion >= 17) {
             switch (anomaly) {
-                case 1:  return 3 + range(cx, cy, 29080, 0, 2); // Level 0: sparse, repetitive
+                case 1:  return 2 + range(cx, cy, 29080, 0, 2); // Level 0: sparse, repetitive
                 case 2:  return 7 + range(cx, cy, 29081, 0, 3); // storage/service
                 case 3:  return 8 + range(cx, cy, 29082, 0, 3); // hot utility
                 case 4:  return 9 + range(cx, cy, 29083, 0, 3); // electrical machinery
@@ -6187,8 +6388,14 @@ public class InfiniteWorldLevel extends Level {
                 case 10: return 9 + range(cx, cy, 29089, 0, 4); // suburbs
                 case 11: return 8 + range(cx, cy, 29090, 0, 3); // fields
                 case 12: return 10 + range(cx, cy, 29091, 0, 4); // city
-                case 13: return 4 + range(cx, cy, 29092, 0, 2); // poolrooms
+                case 13: return 1 + range(cx, cy, 29092, 0, 2); // Poolrooms
                 case 14: return 10 + range(cx, cy, 29093, 0, 4); // Motion
+                case 15: return 7 + range(cx, cy, 29095, 0, 3); // apartments
+                case 16: return 5 + range(cx, cy, 29096, 0, 3); // memories
+                case 17: return 4 + range(cx, cy, 29097, 0, 2); // sewer
+                case 18: return 8 + range(cx, cy, 29098, 0, 4); // arcade
+                case 19: return 4 + range(cx, cy, 29099, 0, 3); // beach
+                case 20: return 6 + range(cx, cy, 29112, 0, 3); // Kitty house
                 default: return 3 + range(cx, cy, 29094, 0, 3);
             }
         }
@@ -6423,11 +6630,11 @@ public class InfiniteWorldLevel extends Level {
 
         if (state().generatorVersion >= 18) {
             switch (anomaly) {
-                case 1: // Level 0: minimal office clutter, no medieval props.
-                    if (roll < 30) return InfiniteWorldDecorationLayer.SIGNBOARD;
-                    if (roll < 55) return InfiniteWorldDecorationLayer.CITY_BENCH;
-                    if (roll < 75) return InfiniteWorldDecorationLayer.CUPBOARD;
-                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+                case 1: // Level 0: sparse office objects only.
+                    if (roll < 28) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    if (roll < 54) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 78) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    return InfiniteWorldDecorationLayer.OFFICE_CHAIR;
 
                 case 2: // Level 1: concrete storage/service halls.
                     if (roll < 18) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
@@ -6457,27 +6664,24 @@ public class InfiniteWorldLevel extends Level {
                     return InfiniteWorldDecorationLayer.REFUSE_BIN;
 
                 case 5: // Level 4: abandoned office.
-                    if (roll < 24) return InfiniteWorldDecorationLayer.TABLE;
-                    if (roll < 42) return InfiniteWorldDecorationLayer.STOOL;
-                    if (roll < 58) return InfiniteWorldDecorationLayer.CUPBOARD;
-                    if (roll < 72) return InfiniteWorldDecorationLayer.CITY_BENCH;
-                    if (roll < 84) return InfiniteWorldDecorationLayer.REFUSE_BIN;
-                    if (roll < 93) return InfiniteWorldDecorationLayer.SIGNBOARD;
-                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+                    if (roll < 24) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 43) return InfiniteWorldDecorationLayer.OFFICE_CHAIR;
+                    if (roll < 60) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    if (roll < 75) return InfiniteWorldDecorationLayer.SERVICE_COUNTER;
+                    if (roll < 88) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    return InfiniteWorldDecorationLayer.BLUE_LOCKER;
 
-                case 6: // Level 5: hotel; furniture, not storage/industrial clutter.
-                    if (roll < 26) return InfiniteWorldDecorationLayer.TABLE;
-                    if (roll < 46) return InfiniteWorldDecorationLayer.STOOL;
-                    if (roll < 64) return InfiniteWorldDecorationLayer.CUPBOARD;
-                    if (roll < 78) return InfiniteWorldDecorationLayer.CITY_BENCH;
-                    if (roll < 89) return InfiniteWorldDecorationLayer.SIGNBOARD;
-                    return InfiniteWorldDecorationLayer.EMPTY_TUB;
+                case 6: // Level 5: hotel.
+                    if (roll < 30) return InfiniteWorldDecorationLayer.BED;
+                    if (roll < 50) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    if (roll < 68) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    return InfiniteWorldDecorationLayer.SERVICE_COUNTER;
 
-                case 7: // Level 6: lights out — sparse obstacles, absolutely no torches/graves.
-                    if (roll < 34) return InfiniteWorldDecorationLayer.RUBBLE;
-                    if (roll < 60) return InfiniteWorldDecorationLayer.IRON_RAIL;
-                    if (roll < 80) return InfiniteWorldDecorationLayer.REFUSE_BAGS;
-                    return InfiniteWorldDecorationLayer.BOLLARD;
+                case 7: // Level 6: lights out — sparse, dark, no light-emitting props.
+                    if (roll < 42) return InfiniteWorldDecorationLayer.RUBBLE;
+                    if (roll < 72) return InfiniteWorldDecorationLayer.METAL_RAIL;
+                    return InfiniteWorldDecorationLayer.BLUE_LOCKER;
 
                 case 8: // Level 7: ocean — almost nothing artificial.
                     if (roll < 45) return InfiniteWorldDecorationLayer.ROCK;
@@ -6521,23 +6725,65 @@ public class InfiniteWorldLevel extends Level {
                     if (roll < 95) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
                     return InfiniteWorldDecorationLayer.REFUSE_BAGS;
 
-                case 13: // Level 37: Poolrooms — clean architecture, very little clutter.
-                    if (roll < 30) return InfiniteWorldDecorationLayer.STONE_BASIN;
-                    if (roll < 55) return InfiniteWorldDecorationLayer.CITY_BENCH;
-                    if (roll < 75) return InfiniteWorldDecorationLayer.BOLLARD;
-                    if (roll < 90) return InfiniteWorldDecorationLayer.SIGNBOARD;
-                    return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+                case 13: // Level 37: Poolrooms — white tile and blue water carry the scene.
+                    if (roll < 48) return InfiniteWorldDecorationLayer.BATH_FIXTURE;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.WAYFINDING_PILLAR;
+                    return InfiniteWorldDecorationLayer.METAL_RAIL;
 
                 case 14: // Level 94: toy-like staged town.
-                    if (roll < 15) return InfiniteWorldDecorationLayer.ROUND_TREE;
-                    if (roll < 28) return InfiniteWorldDecorationLayer.ROUND_TREE_AUTUMN;
-                    if (roll < 40) return InfiniteWorldDecorationLayer.STREET_LAMP;
-                    if (roll < 52) return InfiniteWorldDecorationLayer.CITY_BENCH;
-                    if (roll < 64) return InfiniteWorldDecorationLayer.FENCE_RAIL;
-                    if (roll < 75) return InfiniteWorldDecorationLayer.URBAN_SIGN;
-                    if (roll < 86) return InfiniteWorldDecorationLayer.FERN;
-                    if (roll < 94) return InfiniteWorldDecorationLayer.REFUSE_BIN;
-                    return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    if (roll < 18) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 34) return InfiniteWorldDecorationLayer.ROUND_TREE_AUTUMN;
+                    if (roll < 48) return InfiniteWorldDecorationLayer.STREET_LAMP;
+                    if (roll < 62) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.PLAY_BLOCKS;
+                    if (roll < 90) return InfiniteWorldDecorationLayer.FERN;
+                    return InfiniteWorldDecorationLayer.WAYFINDING_PILLAR;
+
+                case 15: // Level 13 apartments.
+                    if (roll < 24) return InfiniteWorldDecorationLayer.BED;
+                    if (roll < 44) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 61) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    if (roll < 89) return InfiniteWorldDecorationLayer.OFFICE_CHAIR;
+                    return InfiniteWorldDecorationLayer.SERVICE_COUNTER;
+
+                case 16: // Level 18 memories/daycare.
+                    if (roll < 30) return InfiniteWorldDecorationLayer.PLAY_BLOCKS;
+                    if (roll < 50) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 68) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    return InfiniteWorldDecorationLayer.BED;
+
+                case 17: // Level 34 sewer.
+                    if (roll < 24) return InfiniteWorldDecorationLayer.LADDER;
+                    if (roll < 44) return InfiniteWorldDecorationLayer.SAFETY_PYLON;
+                    if (roll < 64) return InfiniteWorldDecorationLayer.METAL_RAIL;
+                    if (roll < 80) return InfiniteWorldDecorationLayer.BLUE_LOCKER;
+                    if (roll < 92) return InfiniteWorldDecorationLayer.RED_LOCKER;
+                    return InfiniteWorldDecorationLayer.RUBBLE;
+
+                case 18: // Level 40 arcade.
+                    if (roll < 42) return InfiniteWorldDecorationLayer.ARCADE_CABINET;
+                    if (roll < 58) return InfiniteWorldDecorationLayer.SERVICE_COUNTER;
+                    if (roll < 70) return InfiniteWorldDecorationLayer.PLAY_BLOCKS;
+                    if (roll < 82) return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    if (roll < 92) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+
+                case 19: // Level 48 sunset beach.
+                    if (roll < 28) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 48) return InfiniteWorldDecorationLayer.FERN;
+                    if (roll < 66) return InfiniteWorldDecorationLayer.LOG;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.ROCK;
+                    return InfiniteWorldDecorationLayer.BARREL;
+
+                case 20: // Level 974 Kitty's House.
+                    if (roll < 25) return InfiniteWorldDecorationLayer.BED;
+                    if (roll < 43) return InfiniteWorldDecorationLayer.FLOOR_LAMP;
+                    if (roll < 60) return InfiniteWorldDecorationLayer.LOW_DESK;
+                    if (roll < 75) return InfiniteWorldDecorationLayer.BACKROOMS_SHELF;
+                    if (roll < 88) return InfiniteWorldDecorationLayer.PLAY_BLOCKS;
+                    return InfiniteWorldDecorationLayer.OFFICE_CHAIR;
 
                 default:
                     if (roll < 12) return InfiniteWorldDecorationLayer.ROUND_TREE;
