@@ -221,9 +221,10 @@ public class GenesisEcho extends Buff {
         InfiniteWorldState st = InfiniteWorldProgression.state();
         boolean first = !st.genesisEchoUnlocked;
         st.genesisEchoUnlocked = true;
-        migratePermanentGrowth(st);
+        boolean growthMigrated = migratePermanentGrowth(st);
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
+        if (growthMigrated) hero.updateHT(true);
         cleanseBlockedEffects(hero);
         identifyOwnedItems(hero);
         hero.HP = hero.HT;
@@ -236,7 +237,8 @@ public class GenesisEcho extends Buff {
     public static void ensure(Hero hero) {
         if (hero == null || !Dungeon.infiniteWorld) return;
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        if (st.genesisEchoUnlocked) migratePermanentGrowth(st);
+        boolean growthMigrated = st.genesisEchoUnlocked && migratePermanentGrowth(st);
+        if (growthMigrated) hero.updateHT(true);
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
         }
@@ -442,10 +444,14 @@ public class GenesisEcho extends Buff {
                 || !"ScrollOfTeleportation".equals(source.getSimpleName());
     }
 
-    private static void migratePermanentGrowth(InfiniteWorldState st) {
-        if (st == null) return;
+    private static boolean migratePermanentGrowth(InfiniteWorldState st) {
+        if (st == null) return false;
         int expectedHp = Math.max(0, st.genesisKillStrBonus) * 10;
-        if (st.genesisKillHpBonus < expectedHp) st.genesisKillHpBonus = expectedHp;
+        if (st.genesisKillHpBonus < expectedHp) {
+            st.genesisKillHpBonus = expectedHp;
+            return true;
+        }
+        return false;
     }
 
     public static void onEnemySlain(Hero hero) {
