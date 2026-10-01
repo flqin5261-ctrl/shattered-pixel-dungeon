@@ -5,14 +5,19 @@ package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.watabou.noosa.tweeners.Delayer;
+import com.watabou.noosa.tweeners.Tweener;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
+
+import java.util.ArrayList;
 
 /**
  * 万法之法: each paid cast chains real effects from randomly selected vanilla
@@ -78,61 +83,92 @@ public class WandOfAllLaws extends DamageWand {
         return effect;
     }
 
+    private float launchInterval(int total) {
+        // Keep every native animation, but avoid creating too many projectile/
+        // particle systems in the same frame. High-count casts get a slightly
+        // wider cadence so fast phones still show the whole spell storm cleanly.
+        if (total <= 5) return 0.09f;
+        if (total <= 15) return 0.11f;
+        return 0.13f;
+    }
+
     @Override
-    public void fx(Ballistica bolt, Callback callback) {
-        final int total = effectCount();
+    public void fx(Ballistica bolt, final Callback callback) {
+        final Hero caster = curUser;
         final int target = bolt.collisionPos;
+        final ArrayList<Wand> effects = new ArrayList<>();
 
-        // Do not serialize dozens of native projectile callbacks. That made high
-        // level casts visibly stop after one effect and continue only when each
-        // animation finished. Instead, all mechanics resolve in this cast, while
-        // only a small visual budget uses full native fx animations.
-        final int visualBudget = total <= 9 ? 3 : 2;
+        for (int i = 0; i < effectCount(); i++) {
+            Wand effect = prepareRandomEffect();
+            if (effect != null) effects.add(effect);
+        }
 
-        HeroState old = new HeroState();
-        old.user = curUser;
-        old.item = curItem;
+        if (effects.isEmpty() || caster == null || caster.sprite == null || caster.sprite.parent == null) {
+            curItem = this;
+            callback.call();
+            return;
+        }
 
-        try {
-            for (int i = 0; i < total; i++) {
-                Wand effect = prepareRandomEffect();
-                if (effect == null) continue;
+        final float interval = launchInterval(effects.size());
+        final int[] completed = new int[]{0};
+        final boolean[] parentFinished = new boolean[]{false};
 
-                Ballistica effectShot =
-                        new Ballistica(curUser.pos, target, effect.collisionProperties(target));
+        for (int i = 0; i < effects.size(); i++) {
+            final Wand effect = effects.get(i);
+            Delayer launch = new Delayer(i * interval);
+            launch.listener = new Tweener.Listener() {
+                @Override
+                public void onComplete(Tweener tweener) {
+                    if (parentFinished[0] || caster == null || !caster.isAlive()) {
+                        if (++completed[0] >= effects.size() && !parentFinished[0]) {
+                            parentFinished[0] = true;
+                            curUser = caster;
+                            curItem = WandOfAllLaws.this;
+                            callback.call();
+                        }
+                        return;
+                    }
 
-                curItem = effect;
+                    curUser = caster;
+                    curItem = effect;
 
-                if (i < visualBudget) {
-                    // Native fx prepares any wand-specific geometry/state and
-                    // starts a visual, but its callback must never gate the next
-                    // random effect.
+                    final Ballistica effectShot =
+                            new Ballistica(caster.pos, target, effect.collisionProperties(target));
+
+                    // Every random wand gets its complete native fx. Its own
+                    // callback resolves its own onZap, but that callback does NOT
+                    // control when the next random wand launches; the Delayer
+                    // queue above does. This preserves full animation and normal
+                    // damage timing without serial stalls.
                     effect.fx(effectShot, new Callback() {
                         @Override
                         public void call() {
-                            // Intentionally empty: mechanics are resolved below.
+                            Item previous = curItem;
+                            Hero previousUser = curUser;
+                            try {
+                                curUser = caster;
+                                curItem = effect;
+                                effect.onZap(effectShot);
+                            } finally {
+                                curUser = previousUser;
+                                curItem = previous;
+                            }
+
+                            completed[0]++;
+                            if (completed[0] >= effects.size() && !parentFinished[0]) {
+                                parentFinished[0] = true;
+                                curUser = caster;
+                                curItem = WandOfAllLaws.this;
+                                callback.call();
+                            }
                         }
                     });
-                } else {
-                    // Stateful wands (fireblast, lightning, regrowth) prepare the
-                    // data onZap needs without spawning another expensive visual.
-                    effect.prepareForFastZap(effectShot);
                 }
-
-                effect.onZap(effectShot);
-            }
-        } finally {
-            curUser = old.user;
-            curItem = this;
+            };
+            caster.sprite.parent.add(launch);
         }
-
-        callback.call();
     }
 
-    private static class HeroState {
-        com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero user;
-        Item item;
-    }
 
     @Override
     public void onZap(Ballistica attack) {
