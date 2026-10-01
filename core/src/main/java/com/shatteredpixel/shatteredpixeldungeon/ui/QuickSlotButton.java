@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicRing;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -62,10 +63,13 @@ public class QuickSlotButton extends Button {
 
 	private static final float GENESIS_WAND_DOUBLE_TAP = 0.35f;
 	private static final float GENESIS_ARTIFACT_DOUBLE_TAP = 0.28f;
+	private static final float MIMIC_RING_DOUBLE_TAP = 0.28f;
 	private Wand genesisTapWand;
 	private float genesisTapTimer;
 	private Artifact genesisTapArtifact;
 	private float genesisArtifactTapTimer;
+	private MimicRing mimicTapRing;
+	private float mimicRingTapTimer;
 	
 	public QuickSlotButton( int slotNum ) {
 		super();
@@ -101,6 +105,25 @@ public class QuickSlotButton extends Button {
 				}
 
 				Item tappedItem = select(slotNum);
+
+				// Active mimic rings work before level 60 as low-level equipment.
+				// Single tap invokes the stored consumable; double tap opens a picker
+				// for the other equipped mimic ring.
+				if (tappedItem instanceof MimicRing
+						&& Dungeon.hero.belongings.isStackEquipped(tappedItem)) {
+					MimicRing ring = (MimicRing)tappedItem;
+
+					if (mimicTapRing == ring && mimicRingTapTimer > 0f) {
+						mimicTapRing = null;
+						mimicRingTapTimer = 0f;
+						openMimicRingSelector();
+						return;
+					}
+
+					mimicTapRing = ring;
+					mimicRingTapTimer = MIMIC_RING_DOUBLE_TAP;
+					return;
+				}
 
 				// 纵横八荒 artifacts use the normal quickslots. A single tap uses the
 				// current artifact; a double tap opens the equipped-artifact picker so
@@ -250,6 +273,16 @@ public class QuickSlotButton extends Button {
 				genesisArtifactTapTimer = 0f;
 				genesisTapArtifact = null;
 				useArtifactFromQuickslot(artifact);
+			}
+		}
+
+		if (mimicRingTapTimer > 0f) {
+			mimicRingTapTimer -= Game.elapsed;
+			if (mimicRingTapTimer <= 0f) {
+				MimicRing ring = mimicTapRing;
+				mimicRingTapTimer = 0f;
+				mimicTapRing = null;
+				useMimicRingFromQuickslot(ring);
 			}
 		}
 		if (targetingSlot != -1 && lastTarget != null && lastTarget.sprite != null){
