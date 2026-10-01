@@ -406,7 +406,10 @@ public class WndBag extends WndTabbed {
 				pendingTapSlot = null;
 				pendingTapTimer = 0f;
 				if (quickToggleEquipment(bagItem)) {
-					hide();
+					// Keep the backpack open for bulk equipment management. Rebuild
+					// the visible slots immediately because equip/unequip moves items
+					// between the backpack and the equipped collections.
+					refreshAfterEquipmentToggle();
 				} else {
 					performSingleTap();
 				}
@@ -445,6 +448,36 @@ public class WndBag extends WndTabbed {
 				if (slot != null && slot.active) slot.performSingleTap();
 			}
 		}
+	}
+
+	float currentScrollY() {
+		if (itemScroll == null || itemScroll.content() == null
+				|| itemScroll.content().camera == null) {
+			return 0f;
+		}
+		return itemScroll.content().camera.scroll.y;
+	}
+
+	WndBag refreshAfterEquipmentToggle() {
+		float oldScrollY = currentScrollY();
+		ItemSelector keepSelector = selector;
+
+		Bag targetBag = lastBag;
+		if (targetBag == null
+				|| (targetBag != Dungeon.hero.belongings.backpack
+				&& !Dungeon.hero.belongings.backpack.contains(targetBag))) {
+			targetBag = Dungeon.hero.belongings.backpack;
+		}
+
+		// The constructor hides the existing WndBag INSTANCE. Recreate it in-place
+		// and restore the old scroll offset so ten consecutive equips/unequips do
+		// not force the player back to the top each time.
+		WndBag fresh = new WndBag(targetBag, keepSelector);
+		Game.scene().addToFront(fresh);
+		if (fresh.itemScroll != null) {
+			fresh.itemScroll.scrollTo(0, oldScrollY);
+		}
+		return fresh;
 	}
 
 	static boolean quickToggleEquipment(Item item) {
