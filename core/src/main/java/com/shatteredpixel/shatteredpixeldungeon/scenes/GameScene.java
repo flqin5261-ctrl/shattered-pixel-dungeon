@@ -378,7 +378,7 @@ public class GameScene extends PixelScene {
 
 		// Assist 0.9.6 World Cycle: screen-space lighting and weather live above the
 		// world/fog but below UI. They never mutate Terrain or Streaming state.
-		infiniteWorldAmbientLight = new ColorBlock(uiCamera.width, uiCamera.height, 0x000000);
+		infiniteWorldAmbientLight = new ColorBlock(uiCamera.width, uiCamera.height, 0xFFFFFF);
 		infiniteWorldAmbientLight.camera = uiCamera;
 		infiniteWorldAmbientLight.visible = false;
 		add(infiniteWorldAmbientLight);
@@ -1459,6 +1459,16 @@ public class GameScene extends PixelScene {
 			refreshInfiniteWorldEnvironment();
 
 		}
+	}
+
+	public static void flashInfiniteWorldLightning() {
+		if (scene == null || !Dungeon.infiniteWorld || !(Dungeon.level instanceof InfiniteWorldLevel)) return;
+		Game.runOnRenderThread(new Callback() {
+			@Override
+			public void call() {
+				if (scene != null) scene.add(new Fader(0xA8E8F4FF, true));
+			}
+		});
 	}
 
 	public static void refreshInfiniteWorldEnvironment() {
