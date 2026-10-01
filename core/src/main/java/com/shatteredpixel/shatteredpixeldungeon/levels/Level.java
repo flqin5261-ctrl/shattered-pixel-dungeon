@@ -1382,10 +1382,14 @@ public abstract class Level implements Bundlable {
 
 			float viewDist = c.viewDistance;
 			if (c instanceof Hero){
-				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
+				Hero hero = (Hero)c;
+				viewDist *= 1f + 0.25f*hero.pointsInTalent(Talent.FARSIGHT);
 				viewDist *= EyeOfNewt.visionRangeMultiplier();
-				BreakthroughCertificate certificate = BreakthroughCertificate.equipped((Hero)c);
-				if (certificate != null) viewDist += certificate.effectiveVisionBonus((Hero)c);
+				// Tier-6 超越视界 promises a flat +2 cells per point. Apply it after
+				// multiplicative base-vision effects so the displayed +2/+4/+6 is exact.
+				viewDist += 2f * hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
+				BreakthroughCertificate certificate = BreakthroughCertificate.equipped(hero);
+				if (certificate != null) viewDist += certificate.effectiveVisionBonus(hero);
 
 				// Infinite World spectator mode is a map QA tool, not normal
 				// gameplay. Use the shadow caster's full supported radius so the
