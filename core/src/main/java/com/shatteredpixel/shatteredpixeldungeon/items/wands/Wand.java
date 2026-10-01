@@ -201,25 +201,40 @@ public abstract class Wand extends Item {
 	 * burning, chilling/freezing, disintegration, corrosion, regrowth, etc. are
 	 * applied by their original implementations instead of being simulated text.
 	 */
-	private void applyStackedWandEffects(Hero hero, int target) {
+	private void applyStackedWandEffects(final Hero hero, final int target) {
 		if (hero == null || !GenesisEcho.unrestrictedEquipment(hero) || !isEquipped(hero)) return;
 		ArrayList<Wand> equipped = hero.belongings.equippedWands();
 		if (equipped.size() <= 1) return;
 
-		Hero previousUser = curUser;
-		Item previousItem = curItem;
-		try {
-			for (Wand wand : equipped) {
-				if (wand == null || wand == this) continue;
-				Ballistica extraShot = new Ballistica(hero.pos, target, wand.collisionProperties(target));
-				if (extraShot.collisionPos == hero.pos) continue;
-				curUser = hero;
-				curItem = wand;
-				wand.onZap(extraShot);
-			}
-		} finally {
-			curUser = previousUser;
-			curItem = previousItem;
+		for (final Wand wand : equipped) {
+			if (wand == null || wand == this) continue;
+			final Ballistica extraShot = new Ballistica(hero.pos, target, wand.collisionProperties(target));
+			if (extraShot.collisionPos == hero.pos) continue;
+
+			// Some wands (notably fireblast) prepare important geometry inside fx().
+			// Run their normal fx stage, but deliberately do NOT call wandUsed():
+			// only the wand the player actually fired pays charge/action cost.
+			Hero oldUser = curUser;
+			Item oldItem = curItem;
+			curUser = hero;
+			curItem = wand;
+			wand.fx(extraShot, new Callback() {
+				@Override
+				public void call() {
+					Hero callbackOldUser = curUser;
+					Item callbackOldItem = curItem;
+					try {
+						curUser = hero;
+						curItem = wand;
+						wand.onZap(extraShot);
+					} finally {
+						curUser = callbackOldUser;
+						curItem = callbackOldItem;
+					}
+				}
+			});
+			curUser = oldUser;
+			curItem = oldItem;
 		}
 	}
 
