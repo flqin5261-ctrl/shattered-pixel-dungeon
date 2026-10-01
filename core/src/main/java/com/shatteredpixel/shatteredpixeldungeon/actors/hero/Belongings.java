@@ -279,6 +279,18 @@ public class Belongings implements Iterable<Item> {
 				}
 			}
 		}
+		// Repair any unusual/legacy state where the Broken Seal ended up on a
+		// secondary armor. The sealed armor becomes primary before gameplay resumes.
+		if (armor != null && armor.checkSeal() == null) {
+			for (Armor candidate : new ArrayList<>(stackedArmors)) {
+				if (candidate != null && candidate.checkSeal() != null) {
+					makeArmorPrimary(candidate);
+					break;
+				}
+			}
+		}
+		if (armor != null) armor.activate(owner);
+
 		if (bundle.contains(STACKED_WANDS)) {
 			for (Bundlable item : bundle.getCollection(STACKED_WANDS)) {
 				if (item instanceof Wand) {
@@ -334,8 +346,29 @@ public class Belongings implements Iterable<Item> {
 
 	public boolean equipStackedArmor(Armor item) {
 		if (item == null || isStackEquipped(item)) return false;
-		if (armor == null) armor = item;
-		else stackedArmors.add(item);
+		if (armor == null) {
+			armor = item;
+		} else if (item.checkSeal() != null && armor.checkSeal() == null) {
+			// The one legitimate Broken Seal must always live on the classic
+			// primary armor slot. A sealed armor therefore becomes primary when
+			// equipped, while the former primary becomes an ordinary stacked armor.
+			stackedArmors.add(armor);
+			armor = item;
+		} else {
+			stackedArmors.add(item);
+		}
+		return true;
+	}
+
+	public boolean makeArmorPrimary(Armor selected) {
+		if (selected == null || !isStackEquipped(selected)) return false;
+		if (armor == selected) return true;
+		int idx = stackedArmors.indexOf(selected);
+		if (idx < 0) return false;
+		Armor old = armor;
+		armor = selected;
+		if (old == null) stackedArmors.remove(idx);
+		else stackedArmors.set(idx, old);
 		return true;
 	}
 
@@ -372,7 +405,19 @@ public class Belongings implements Iterable<Item> {
 		}
 		if (stackedWeapons.remove(item)) return true;
 		if (armor == item) {
-			armor = stackedArmors.isEmpty() ? null : stackedArmors.remove(0);
+			if (stackedArmors.isEmpty()) {
+				armor = null;
+			} else {
+				int promote = 0;
+				for (int i = 0; i < stackedArmors.size(); i++) {
+					Armor candidate = stackedArmors.get(i);
+					if (candidate != null && candidate.checkSeal() != null) {
+						promote = i;
+						break;
+					}
+				}
+				armor = stackedArmors.remove(promote);
+			}
 			return true;
 		}
 		if (stackedArmors.remove(item)) return true;
