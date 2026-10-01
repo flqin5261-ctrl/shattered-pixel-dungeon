@@ -236,22 +236,22 @@ public final class InfiniteWorldCycle {
         float alpha;
         int band = lightBand(state);
         switch (band) {
-            case 1:  alpha = 0.13f; break;
-            case 2:  alpha = 0.015f; break;
-            case 3:  alpha = 0.13f; break;
-            default: alpha = 0.31f; break;
+            case 1:  alpha = 0.22f; break;
+            case 2:  alpha = 0.035f; break;
+            case 3:  alpha = 0.25f; break;
+            default: alpha = 0.42f; break;
         }
 
         switch (state.worldWeather) {
-            case WEATHER_CLOUDY: alpha += 0.06f; break;
-            case WEATHER_RAIN:   alpha += 0.10f; break;
-            case WEATHER_STORM:  alpha += 0.20f; break;
-            case WEATHER_FOG:    alpha += 0.08f; break;
-            case WEATHER_SNOW:   alpha += 0.05f; break;
-            case WEATHER_WIND:   alpha += 0.04f; break;
+            case WEATHER_CLOUDY: alpha += 0.10f; break;
+            case WEATHER_RAIN:   alpha += 0.16f; break;
+            case WEATHER_STORM:  alpha += 0.26f; break;
+            case WEATHER_FOG:    alpha += 0.18f; break;
+            case WEATHER_SNOW:   alpha += 0.10f; break;
+            case WEATHER_WIND:   alpha += 0.06f; break;
             default: break;
         }
-        return Math.min(0.52f, alpha);
+        return Math.min(0.62f, alpha);
     }
 
     public static String seasonName(int season) {
@@ -273,8 +273,34 @@ public final class InfiniteWorldCycle {
             case WEATHER_FOG:    return "雾";
             case WEATHER_SNOW:   return "雪";
             case WEATHER_WIND:   return "大风";
-            default: return "";
+            default: return "固定环境";
         }
+    }
+
+    public static String lightBandName(InfiniteWorldState state) {
+        switch (lightBand(state)) {
+            case 1: return "黎明";
+            case 2: return "白天";
+            case 3: return "黄昏";
+            default:return "夜晚";
+        }
+    }
+
+    public static String statusLine(InfiniteWorldState state, int anomaly) {
+        ensureInitialized(state, 0L);
+        String time = String.format(java.util.Locale.US, "%02d:%02d", hour(state), minute(state));
+        int weather = presentationWeather(state, anomaly);
+        return "第" + day(state) + "天 · "
+                + seasonName(season(state)) + " · "
+                + time + " · "
+                + weatherName(weather);
+    }
+
+    public static String environmentLine(InfiniteWorldState state, int anomaly) {
+        if (anomaly == 0) {
+            return "普通世界 · " + lightBandName(state);
+        }
+        return "后室区域 · 固定环境";
     }
 
     private static int deterministicInt(long seed, int a, int b, int salt, int bound) {
