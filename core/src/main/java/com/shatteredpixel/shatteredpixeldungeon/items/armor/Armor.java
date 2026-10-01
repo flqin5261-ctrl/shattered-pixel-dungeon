@@ -563,7 +563,14 @@ public class Armor extends EquipableItem {
 	
 	public int procStackedSecondary(Char attacker, Char defender, int damage) {
 		if (defender.buff(MagicImmune.class) == null && glyph != null) {
-			damage = glyph.proc(this, attacker, defender, damage);
+			// Match the armor's normal Holy Ward glyph rule, but do not re-run
+			// hero-wide Holy Ward blocking or Body Form for every extra armor.
+			if (!(defender instanceof Hero)
+					|| defender.buff(HolyWard.HolyArmBuff.class) == null
+					|| ((Hero)defender).subClass == HeroSubClass.PALADIN
+					|| hasCurseGlyph()) {
+				damage = glyph.proc(this, attacker, defender, damage);
+			}
 			damage = Math.max(damage, 0);
 		}
 		recordIdentificationUse(defender);
