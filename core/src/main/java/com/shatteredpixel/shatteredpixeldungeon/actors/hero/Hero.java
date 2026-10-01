@@ -1781,6 +1781,13 @@ public class Hero extends Char {
 	public void damage( int dmg, Object src ) {
 		if (SPDSettings.assistInvincible() || InfiniteWorldLevel.assistSpectatorActive()) return;
 		if (GenesisEcho.damageImmune(this)) {
+			// Eternal Edict cancels the actual damage, but passive artifacts which
+			// react to an incoming hit must still see that attempted hit. Otherwise
+			// Cape of Thorns can never charge/reflect once the Hero becomes immortal.
+			CapeOfThorns.Thorns thorns = buff(CapeOfThorns.Thorns.class);
+			if (thorns != null && dmg > 0) {
+				thorns.proc(dmg, src instanceof Char ? (Char)src : null, this);
+			}
 			HP = HT;
 			GenesisEcho.showDamageDenial(this, src);
 			return;
