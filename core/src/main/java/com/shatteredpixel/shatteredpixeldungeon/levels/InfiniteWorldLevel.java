@@ -2178,7 +2178,8 @@ public class InfiniteWorldLevel extends Level {
 
     private Item v6LooseItem(int cx, int cy, int index) {
         if (state().generatorVersion >= 22) {
-            return v22BalancedSupplySequence(v22LooseSupplySequence(cx, cy, index));
+            if (index > 0) return v22BonusSupplyItem(cx, cy, index);
+            return v22BalancedSupplySequence(v22LooseSupplySequence(cx, cy));
         }
 
         int roll = range(cx, cy, 19800 + index, 0, 99);
@@ -2414,7 +2415,7 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
-    private long v22LooseSupplySequence(int cx, int cy, int index) {
+    private long v22LooseSupplySequence(int cx, int cy) {
         long ordinal = v22SpiralOrdinal(cx, cy);
         long block = Math.floorDiv(ordinal, 5L);
         int remainder = (int)Math.floorMod(ordinal, 5L);
@@ -2422,14 +2423,22 @@ public class InfiniteWorldLevel extends Level {
         // Main loose drops occur only at remainder 0/1, so map them back to a
         // gap-free sequence: 0,1,2,3,4,5... This is the key piece that prevents
         // spatial sparsity from biasing the item-family cycle.
-        long sequence = block * 2L + Math.min(remainder, 1);
+        return block * 2L + Math.min(remainder, 1);
+    }
 
-        // The rare second drop uses a separate deterministic continuation. It is
-        // bonus variety and does not disturb the primary coverage order.
-        if (index > 0) {
-            sequence += 1_000_000L + Math.floorDiv(ordinal, 37L) + index - 1L;
+    private Item v22BonusSupplyItem(int cx, int cy, int index) {
+        long ordinal = v22SpiralOrdinal(cx, cy) + index;
+        switch ((int)Math.floorMod(ordinal, 9L)) {
+            case 0: return v22FoodItem(ordinal);
+            case 1: return v22EquipmentItem(ordinal);
+            case 2: return v22CategoryItem(Generator.Category.SCROLL, ordinal, 0);
+            case 3: return v22CategoryItem(Generator.Category.POTION, ordinal, 0);
+            case 4: return v22CategoryItem(Generator.Category.SEED, ordinal, 1);
+            case 5: return new Bomb();
+            case 6: return new Torch();
+            case 7: return new Gold(10 + (int)Math.floorMod(ordinal, 20L));
+            default:return new Pickaxe();
         }
-        return sequence;
     }
 
     private Item v22BalancedSupplyItem(int cx, int cy, int index, int salt) {
