@@ -191,6 +191,18 @@ public class Artifact extends KindofMisc {
 		return base;
 	}
 
+	/**
+	 * Native artifact level, clamped to the original class cap. Assist visible
+	 * overlevels (+11..+30) may safely improve high-level power where subclasses
+	 * explicitly use level(), but native recharge denominators/state-machine
+	 * thresholds must never receive an out-of-range level.
+	 */
+	public int nativeLevel() {
+		int base = super.level();
+		if (levelCap > 0) base = Math.min(levelCap, base);
+		return Math.max(0, base);
+	}
+
 	@Override
 	public int visiblyUpgraded() {
 		if (!levelKnown || levelCap <= 0) return 0;
@@ -264,8 +276,11 @@ public class Artifact extends KindofMisc {
 	}
 
 	public void resetForTrinity(int visibleLevel){
-		level(Math.round((visibleLevel*levelCap)/10f));
-		exp = Integer.MIN_VALUE; //ensures no levelling
+		int clampedVisible = Math.max(0, visibleLevel);
+		int naturalVisible = Math.min(10, clampedVisible);
+		level(Math.min(levelCap, Math.round((naturalVisible*levelCap)/10f)));
+		assistVisibleOverlevel = Math.max(0, clampedVisible - 10);
+		exp = Integer.MIN_VALUE; //ensures no native levelling
 		charge = chargeCap;
 		cooldown = 0;
 	}
