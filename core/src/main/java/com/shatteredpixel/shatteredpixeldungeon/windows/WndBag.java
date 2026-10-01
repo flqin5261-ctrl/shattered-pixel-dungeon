@@ -333,7 +333,7 @@ public class WndBag extends WndTabbed {
 		itemSlots.add(slot);
 		slot.disableNativePointer();
 
-		if (item == null || (selector != null && !selector.itemSelectable(item))){
+		if (item == null || (selector != null && stackCategory == null && !selector.itemSelectable(item))){
 			slot.enable(false);
 			slot.disableNativePointer();
 		}
@@ -382,9 +382,8 @@ public class WndBag extends WndTabbed {
 		protected void onClick() {
 			if (bagItem == null) return;
 
-			if (stackCategory != null && selector == null
-					&& GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
-				Game.scene().addToFront(new WndStackedEquipment(stackCategory));
+			if (stackCategory != null && GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+				Game.scene().addToFront(new WndStackedEquipment(WndBag.this, stackCategory, selector));
 				return;
 			}
 
