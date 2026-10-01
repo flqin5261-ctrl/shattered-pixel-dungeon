@@ -65,7 +65,6 @@ public class Toolbar extends Component {
 	private Tool btnInventory;
 	private QuickslotTool[] btnQuick;
 	private SlotSwapTool btnSwap;
-	private GenesisArtifactButton genesisArtifact;
 	
 	private PickedUpItem pickedUp;
 	
@@ -103,7 +102,6 @@ public class Toolbar extends Component {
 		for (int i = 0; i < btnQuick.length; i++){
 			add( btnQuick[i] = new QuickslotTool(64, 0, 22, 24, i) );
 		}
-		add(genesisArtifact = new GenesisArtifactButton());
 
 		//hidden button for quickslot selector keybind
 		add(new Button(){
@@ -540,8 +538,6 @@ public class Toolbar extends Component {
 			}
 
 			//swap button never appears on larger interface sizes
-			layoutGenesisArtifact(startingSlot, endingSlot);
-
 			return;
 		}
 
@@ -646,31 +642,8 @@ public class Toolbar extends Component {
 
 		}
 
-		layoutGenesisArtifact(startingSlot, endingSlot);
 	}
 
-	private void layoutGenesisArtifact(int startingSlot, int endingSlot) {
-		if (genesisArtifact == null) return;
-
-		float left = Float.MAX_VALUE;
-		float right = -Float.MAX_VALUE;
-		for (int i = startingSlot; i <= endingSlot; i++) {
-			if (!btnQuick[i].visible) continue;
-			left = Math.min(left, btnQuick[i].left());
-			right = Math.max(right, btnQuick[i].right());
-		}
-
-		if (left == Float.MAX_VALUE || right == -Float.MAX_VALUE) {
-			genesisArtifact.setRect(0, PixelScene.uiCamera.height, 20, 20);
-			return;
-		}
-
-		float size = 20;
-		float center = (left + right) / 2f;
-		// Sits directly above the visible quickslot row, matching the user's
-		// requested one-extra-slot layout without consuming a normal quickslot.
-		genesisArtifact.setRect(center - size/2f, y - size + 1, size, size);
-	}
 
 	public static void updateLayout(){
 		if (instance != null) instance.layout();
@@ -703,7 +676,6 @@ public class Toolbar extends Component {
 			tool.alpha(value);
 		}
 		btnSwap.alpha( value );
-		if (genesisArtifact != null) genesisArtifact.alpha(value);
 	}
 
 	public void pickup( Item item, int cell ) {
