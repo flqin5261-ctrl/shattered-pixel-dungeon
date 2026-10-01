@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldCycle;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldState;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.noosa.Tilemap;
+import com.watabou.utils.Bundle;
 
 import java.util.Arrays;
 
@@ -19,7 +20,13 @@ import java.util.Arrays;
  */
 public class InfiniteWorldSeasonTilemap extends CustomTilemap {
 
-    private final int salt;
+    private static final String SALT = "iw_season_salt";
+
+    private int salt;
+
+    public InfiniteWorldSeasonTilemap() {
+        texture = Assets.Environment.ASSIST_BACKROOMS_MATERIALS;
+    }
 
     public InfiniteWorldSeasonTilemap(int salt) {
         this.salt = salt;
@@ -131,5 +138,18 @@ public class InfiniteWorldSeasonTilemap extends CustomTilemap {
     @Override
     public String desc(int tileX, int tileY) {
         return null;
+    }
+
+    @Override
+    public void storeInBundle(Bundle bundle) {
+        super.storeInBundle(bundle);
+        bundle.put(SALT, salt);
+    }
+
+    @Override
+    public void restoreFromBundle(Bundle bundle) {
+        super.restoreFromBundle(bundle);
+        salt = bundle.getInt(SALT);
+        texture = Assets.Environment.ASSIST_BACKROOMS_MATERIALS;
     }
 }
