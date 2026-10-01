@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
@@ -214,8 +215,14 @@ public class Necromancer extends Mob {
 			if (pushPos != pos) {
 
 				Char ch = Actor.findChar(summoningPos);
-				//no push if char is immovable, move our skeleton instead
-				if (ch == null || Char.hasProp(ch, Property.IMMOVABLE)){
+				// No push if the blocker is immovable or protected by 万法·不羁.
+				// In either case move the skeleton's summon cell instead, so the AI can
+				// continue normally without forcing the Hero out of place.
+				if (ch == null || Char.hasProp(ch, Property.IMMOVABLE)
+						|| (ch == Dungeon.hero && GenesisEcho.active(Dungeon.hero))){
+					if (ch == Dungeon.hero && GenesisEcho.active(Dungeon.hero)) {
+						GenesisEcho.showForcedMovementDenial(Dungeon.hero);
+					}
 					summoningPos = pushPos;
 				} else {
 					Actor.add(new Pushing(ch, ch.pos, pushPos));
