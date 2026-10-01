@@ -511,6 +511,11 @@ public class TimekeepersHourglass extends Artifact {
 			Statistics.itemTypesDiscovered.add(getClass());
 			TimekeepersHourglass hourglass = hero.belongings.getItem( TimekeepersHourglass.class );
 			if (hourglass != null && !hourglass.cursed) {
+				if (hourglass.nativeLevel() >= hourglass.levelCap) {
+					GLog.p(Messages.get(this, "maxlevel"));
+					hero.spendAndNext(pickupDelay());
+					return true;
+				}
 				hourglass.upgrade();
 				Catalog.countUses(hourglass.getClass(), 2);
 				Sample.INSTANCE.play( Assets.Sounds.DEWDROP );
