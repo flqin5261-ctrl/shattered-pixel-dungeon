@@ -3015,6 +3015,12 @@ public class InfiniteWorldLevel extends Level {
                                 new CrystalKey(Dungeon.depth));
                     }
 
+                    // V18 gives a genuinely hidden room a visible payoff instead
+                    // of only scattering a few loose items on its floor.
+                    if (state().generatorVersion >= 18 && spec.length > 10 && spec[10] == 1) {
+                        generateV18SecretCacheChest(cx, cy, ox, oy, roomIndex, spec);
+                    }
+
                     switch (theme) {
                         case 0:
                             generateV7PlantRoom(cx, cy, ox, oy, roomIndex);
@@ -3235,6 +3241,76 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    private void generateV18SecretCacheChest(
+            int cx, int cy, int ox, int oy, int roomIndex, int[] spec) {
+        int cell = v18SecretCacheCell(cx, cy, ox, oy, roomIndex, spec);
+        if (cell < 0) return;
+
+        long key = v7RoomObjectKey(cell, roomIndex, 31, 12);
+        int chestState = state().chestState(key);
+        if (chestState >= 2 || heaps.get(cell) != null || traps.get(cell) != null) return;
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.seen = mapped[cell] || visited[cell];
+        heap.type = chestState == 0 ? Heap.Type.CHEST : Heap.Type.HEAP;
+        heap.drop(v18SecretCacheItem(cx, cy, roomIndex));
+        heaps.put(cell, heap);
+    }
+
+    private void snapshotV18SecretCacheChest(
+            int cx, int cy, int ox, int oy, int roomIndex, int[] spec) {
+        int cell = v18SecretCacheCell(cx, cy, ox, oy, roomIndex, spec);
+        if (cell < 0) return;
+
+        long key = v7RoomObjectKey(cell, roomIndex, 31, 12);
+        Heap heap = heaps.get(cell);
+        if (heap == null) {
+            state().setChestState(key, 2);
+        } else if (heap.type == Heap.Type.CHEST) {
+            state().setChestState(key, 0);
+        } else {
+            state().setChestState(key, 1);
+        }
+    }
+
+    private int v18SecretCacheCell(
+            int cx, int cy, int ox, int oy, int roomIndex, int[] spec) {
+        int chosen = -1;
+        long best = Long.MAX_VALUE;
+
+        for (int y = spec[1] + 1; y <= spec[3] - 1; y++) {
+            for (int x = spec[0] + 1; x <= spec[2] - 1; x++) {
+                int cell = ox + x + (oy + y) * width();
+                int t = map[cell];
+                if (!(t == Terrain.EMPTY || t == Terrain.EMPTY_SP || t == Terrain.EMPTY_DECO
+                        || t == Terrain.GRASS || t == Terrain.HIGH_GRASS || t == Terrain.EMBERS)) {
+                    continue;
+                }
+                if (solid[cell] || pit[cell]) continue;
+
+                long score = hash(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y,
+                        22380 + roomIndex);
+                if (score < best) {
+                    best = score;
+                    chosen = cell;
+                }
+            }
+        }
+        return chosen;
+    }
+
+    private Item v18SecretCacheItem(int cx, int cy, int roomIndex) {
+        int salt = 22480 + roomIndex * 17;
+        int roll = range(cx, cy, salt, 0, 99);
+        if (roll < 34) return v6EquipmentItem(cx, cy, salt + 1);
+        if (roll < 58) return v6SafeScroll(cx, cy, salt + 2);
+        if (roll < 77) return v6RandomPotion(cx, cy, salt + 3);
+        if (roll < 89) return new Gold(18 + range(cx, cy, salt + 4, 0, 32));
+        if (roll < 95) return new Bomb();
+        return new StoneOfBlink();
+    }
+
     private void generateV8SecretBonus(int cx, int cy, int ox, int oy, int roomIndex) {
         // Secret rooms remain richer than ordinary rooms, but V9 deliberately
         // avoids handing out an entire inventory every few chunks.
@@ -3294,6 +3370,10 @@ public class InfiniteWorldLevel extends Level {
                     if (theme == MERCHANT_ROOM_THEME) {
                         snapshotV11MerchantStock(cx, cy, ox, oy);
                         continue;
+                    }
+
+                    if (state().generatorVersion >= 18 && spec.length > 10 && spec[10] == 1) {
+                        snapshotV18SecretCacheChest(cx, cy, ox, oy, roomIndex, spec);
                     }
 
                     if (spec[9] == Terrain.LOCKED_DOOR) {
