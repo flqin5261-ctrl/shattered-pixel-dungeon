@@ -82,6 +82,14 @@ public class InfiniteWorldLevel extends Level {
     private static final int SHIFT_LOW = CHUNK_SIZE;
     private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
+    // V20 balanced Backrooms cycle: all 20 themes exactly once, with nine
+    // ordinary Infinite World bands interleaved between them.
+    private static final int[] V20_BACKROOMS_CYCLE = {
+            1, 0, 8, 2, 0, 15, 3, 0, 10, 4,
+            17, 0, 5, 12, 0, 6, 18, 7, 0, 13,
+            9, 0, 19, 11, 14, 0, 16, 20, 0
+    };
+
     private boolean shifting;
     private int streamingShiftsSinceCheckpoint;
 
@@ -4234,15 +4242,33 @@ public class InfiniteWorldLevel extends Level {
         int my = Math.floorDiv(cy, macro);
 
         if (state().generatorVersion >= 20) {
-            // V20 uses a balanced 29-slot lattice instead of two unrelated random
-            // hashes. Twenty slots are the twenty Backrooms themes and nine slots
-            // remain ordinary Infinite World. 7 and 11 are both coprime with 29,
-            // so cardinal and ordinary diagonal travel cycles through all 29 slots
-            // before repeating. In practice this guarantees that a long straight
-            // spectator run actually encounters every Backrooms theme.
-            long seedOffset = Math.floorMod(hash(0, 0, 23002), 29L);
-            long slot = Math.floorMod(mx * 7L + my * 11L + seedOffset, 29L);
-            return slot < 20L ? (int)slot + 1 : 0;
+            // V20 deliberately balances discovery instead of leaving theme choice
+            // to random collisions. Moving outward from the origin crosses one
+            // complete 29-band cycle every 29 macro-rings: all twenty Backrooms
+            // themes exactly once, plus nine ordinary-world bands. Eight broad
+            // direction sectors receive different phase offsets so the world does
+            // not become one globally identical square ring.
+            int ax = Math.abs(mx);
+            int ay = Math.abs(my);
+            int sector;
+            if (ay * 2 <= ax) {
+                sector = mx >= 0 ? 0 : 4;
+            } else if (ax * 2 <= ay) {
+                sector = my >= 0 ? 2 : 6;
+            } else if (mx >= 0 && my >= 0) {
+                sector = 1;
+            } else if (mx < 0 && my >= 0) {
+                sector = 3;
+            } else if (mx < 0) {
+                sector = 5;
+            } else {
+                sector = 7;
+            }
+
+            int ring = Math.max(ax, ay);
+            int seedOffset = (int)Math.floorMod(hash(0, 0, 23002), 29L);
+            int cycleIndex = Math.floorMod(ring + seedOffset + sector * 7, 29);
+            return V20_BACKROOMS_CYCLE[cycleIndex];
         }
 
         // V15-V19 keep their exact historic distribution for save compatibility.
