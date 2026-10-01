@@ -82,12 +82,19 @@ public class InfiniteWorldLevel extends Level {
     private static final int SHIFT_LOW = CHUNK_SIZE;
     private static final int SHIFT_HIGH = MAP_SIZE - CHUNK_SIZE;
 
-    // V20 balanced Backrooms cycle: all 20 themes exactly once, with nine
-    // ordinary Infinite World bands interleaved between them.
+    // V20 remains frozen for save compatibility.
     private static final int[] V20_BACKROOMS_CYCLE = {
             1, 0, 8, 2, 0, 15, 3, 0, 10, 4,
             17, 0, 5, 12, 0, 6, 18, 7, 0, 13,
             9, 0, 19, 11, 14, 0, 16, 20, 0
+    };
+
+    // V21 encounter order. Every type appears exactly once before any repeats.
+    // Geometry controls spacing separately, so rarity can be tuned without losing
+    // the guarantee that long exploration eventually visits all twenty themes.
+    private static final int[] V21_BACKROOMS_ORDER = {
+            1, 8, 2, 15, 3, 10, 4, 17, 5, 12,
+            6, 18, 7, 13, 9, 19, 11, 14, 16, 20
     };
 
     private boolean shifting;
@@ -4242,12 +4249,6 @@ public class InfiniteWorldLevel extends Level {
         int my = Math.floorDiv(cy, macro);
 
         if (state().generatorVersion >= 20) {
-            // V20 deliberately balances discovery instead of leaving theme choice
-            // to random collisions. Moving outward from the origin crosses one
-            // complete 29-band cycle every 29 macro-rings: all twenty Backrooms
-            // themes exactly once, plus nine ordinary-world bands. Eight broad
-            // direction sectors receive different phase offsets so the world does
-            // not become one globally identical square ring.
             int ax = Math.abs(mx);
             int ay = Math.abs(my);
             int sector;
@@ -4266,6 +4267,31 @@ public class InfiniteWorldLevel extends Level {
             }
 
             int ring = Math.max(ax, ay);
+
+            if (state().generatorVersion >= 21) {
+                // V21 lowers Backrooms density from V20's 20/29 (~69%) to exactly
+                // one macro-ring in four (25%). At macro size 3 this means a long
+                // straight route normally crosses roughly three ordinary bands
+                // between Backrooms bands: noticeable, but no longer constant.
+                //
+                // More importantly, anomalyOrdinal advances by exactly one at each
+                // Backrooms encounter. V21_BACKROOMS_ORDER is a permutation of all
+                // twenty themes, so a straight exploration sector cannot repeat a
+                // Backrooms type until the other nineteen have appeared.
+                int seedPhase = (int)Math.floorMod(hash(0, 0, 23100), 4L);
+                int progression = ring + seedPhase + sector * 5;
+                if (Math.floorMod(progression, 4) != 0) return 0;
+
+                int anomalyOrdinal = Math.floorDiv(progression, 4);
+                int typeOffset = (int)Math.floorMod(hash(0, 0, 23101), 20L);
+                int orderIndex = Math.floorMod(
+                        anomalyOrdinal + typeOffset + sector * 3,
+                        V21_BACKROOMS_ORDER.length);
+                return V21_BACKROOMS_ORDER[orderIndex];
+            }
+
+            // V20 deliberately balances discovery instead of leaving theme choice
+            // to random collisions. Keep this exact mapping for old V20 saves.
             int seedOffset = (int)Math.floorMod(hash(0, 0, 23002), 29L);
             int cycleIndex = Math.floorMod(ring + seedOffset + sector * 7, 29);
             return V20_BACKROOMS_CYCLE[cycleIndex];
