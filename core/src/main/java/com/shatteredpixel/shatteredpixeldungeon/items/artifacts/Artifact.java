@@ -115,6 +115,18 @@ public class Artifact extends KindofMisc {
 	public boolean ensurePassiveRuntime(Hero hero) {
 		if (hero == null || !isEquipped(hero)) return false;
 
+		// Repair invalid recharge state written by earlier Assist overlevel builds.
+		// In particular, Ethereal Chains/Cloak/Tome could accumulate a negative
+		// partialCharge when an overlevel made a native recharge denominator
+		// negative. Without this migration an old save would remain "stuck" even
+		// after the formula itself was fixed.
+		if (Float.isNaN(partialCharge) || Float.isInfinite(partialCharge) || partialCharge < 0f) {
+			partialCharge = 0f;
+		}
+		if (charge < 0) charge = 0;
+		if (chargeCap > 0 && charge > chargeCap) charge = chargeCap;
+		if (cooldown < 0) cooldown = 0;
+
 		ArtifactBuff expected = passiveBuff instanceof ArtifactBuff ? (ArtifactBuff)passiveBuff : null;
 		boolean attached = expected != null
 				&& expected.target == hero
