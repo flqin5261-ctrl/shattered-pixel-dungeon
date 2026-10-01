@@ -35,14 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BurningTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ChillingTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ConfusionTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrippingTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
-import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.*;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -3973,6 +3966,10 @@ public class InfiniteWorldLevel extends Level {
             }
         }
 
+        if (state().generatorVersion >= 18) {
+            polishV18AnomalyTerrain(out, cx, cy, ox, oy, anomaly);
+        }
+
         setFloor(out, ox + CHUNK_SIZE / 2, oy + CHUNK_SIZE / 2);
 
         // Preserve the normal shared-edge contract so every Backrooms district
@@ -3988,6 +3985,78 @@ public class InfiniteWorldLevel extends Level {
         carveGateway(out, ox + southX, oy + CHUNK_SIZE - 1, true);
         carveGateway(out, ox, oy + westY, false);
         carveGateway(out, ox + CHUNK_SIZE - 1, oy + eastY, false);
+    }
+
+    private void polishV18AnomalyTerrain(
+            int[] out, int cx, int cy, int ox, int oy, int anomaly) {
+
+        // Remove placeholder terrain that read as the wrong environment in V17.
+        for (int ly = 1; ly < CHUNK_SIZE - 1; ly++) {
+            for (int lx = 1; lx < CHUNK_SIZE - 1; lx++) {
+                int cell = ox + lx + (oy + ly) * MAP_SIZE;
+                int t = out[cell];
+
+                if (anomaly == 2 && (t == Terrain.STATUE || t == Terrain.STATUE_SP)) {
+                    out[cell] = Terrain.EMPTY_DECO;
+                } else if (anomaly == 11 && (t == Terrain.STATUE || t == Terrain.STATUE_SP)) {
+                    out[cell] = Terrain.GRASS;
+                } else if (anomaly == 6 && t == Terrain.PEDESTAL) {
+                    out[cell] = Terrain.EMPTY_DECO;
+                }
+            }
+        }
+
+        // Level 0 description explicitly calls out damp flooring. Add only tiny,
+        // scattered patches so they read as moisture rather than a pool district.
+        if (anomaly == 1) {
+            for (int i = 0; i < 4; i++) {
+                int lx = 3 + range(cx, cy, 30200 + i * 2, 0, CHUNK_SIZE - 7);
+                int ly = 3 + range(cx, cy, 30201 + i * 2, 0, CHUNK_SIZE - 7);
+                int cell = ox + lx + (oy + ly) * MAP_SIZE;
+                if (out[cell] == Terrain.EMPTY_SP || out[cell] == Terrain.EMPTY_DECO) {
+                    out[cell] = Terrain.WATER;
+                }
+            }
+        }
+
+        // A small deterministic trap budget gives each anomaly a mechanical
+        // identity instead of making every special district safer than normal.
+        int trapCount;
+        switch (anomaly) {
+            case 3: case 4: case 7: case 13:
+                trapCount = 2; break;
+            case 8:
+                trapCount = 0; break; // ocean itself is already the obstacle
+            default:
+                trapCount = 1; break;
+        }
+
+        for (int i = 0; i < trapCount; i++) {
+            int cell = v18AnomalyTerrainCell(out, cx, cy, ox, oy, 30300 + i * 41);
+            if (cell >= 0) {
+                out[cell] = Math.floorMod(hash(cx, cy, 30320 + i), 100L) < 78
+                        ? Terrain.SECRET_TRAP : Terrain.TRAP;
+            }
+        }
+    }
+
+    private int v18AnomalyTerrainCell(
+            int[] out, int cx, int cy, int ox, int oy, int saltBase) {
+        for (int attempt = 0; attempt < 20; attempt++) {
+            int lx = 2 + range(cx, cy, saltBase + attempt * 3, 0, CHUNK_SIZE - 5);
+            int ly = 2 + range(cx, cy, saltBase + attempt * 3 + 1, 0, CHUNK_SIZE - 5);
+
+            // Preserve the broad shared navigation lanes and chunk gateways.
+            if ((lx >= 10 && lx <= 13) || (ly >= 10 && ly <= 13)) continue;
+
+            int cell = ox + lx + (oy + ly) * MAP_SIZE;
+            int t = out[cell];
+            if (t == Terrain.EMPTY || t == Terrain.EMPTY_SP || t == Terrain.EMPTY_DECO
+                    || t == Terrain.GRASS || t == Terrain.HIGH_GRASS || t == Terrain.EMBERS) {
+                return cell;
+            }
+        }
+        return -1;
     }
 
     private void carveV9InfiniteBackbone(int[] out, int cx, int cy, int ox, int oy) {
