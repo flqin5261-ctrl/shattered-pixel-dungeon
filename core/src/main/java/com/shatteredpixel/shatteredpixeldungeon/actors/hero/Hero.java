@@ -1767,7 +1767,7 @@ public class Hero extends Char {
 		if (SPDSettings.assistInvincible() || InfiniteWorldLevel.assistSpectatorActive()) return;
 		if (GenesisEcho.damageImmune(this)) {
 			HP = HT;
-			if (sprite != null) sprite.showStatus(0x66FFCC, "伤害敕免");
+			GenesisEcho.showDamageDenial(this, src);
 			return;
 		}
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
