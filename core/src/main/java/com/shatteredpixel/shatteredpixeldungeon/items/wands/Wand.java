@@ -154,16 +154,12 @@ public abstract class Wand extends Item {
 			mob.damage(dmg, this);
 			affected++;
 
-			if (mob.isAlive() && GenesisEcho.tryMiracleExecute(hero, mob)) {
+			if (mob.isAlive() && GenesisEcho.tryWandExecute(hero, mob)) {
 				executed++;
 			}
 		}
 
-		if (GenesisEcho.miracleExecutionActive(hero)) {
-			GLog.p("超极限施法：全屏AOE命中%d个敌人，其中%d个触发创世回响秒杀。", affected, executed);
-		} else {
-			GLog.p("超极限施法：全屏AOE命中%d个敌人。", affected);
-		}
+		GLog.p("元级肇法：全屏敕杀%d个敌人。", affected);
 		wandUsed();
 		return true;
 	}
