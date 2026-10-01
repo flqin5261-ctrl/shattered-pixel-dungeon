@@ -34,7 +34,7 @@ public final class InfiniteWorldCycle {
     public static final int CHANGE_SEASON = 1 << 2;
     public static final int CHANGE_DAY = 1 << 3;
 
-    public static final float MINUTES_PER_HERO_ACTION = 2f;
+    public static final float MINUTES_PER_HERO_ACTION = 5f;
     private static final float MINUTES_PER_DAY = 24f * 60f;
     private static final int DAYS_PER_SEASON = 7;
 
@@ -44,7 +44,7 @@ public final class InfiniteWorldCycle {
         state.worldCycleInitialized = true;
         state.worldMinutes = 8f * 60f; // Day 1, 08:00.
         state.worldWeather = WEATHER_CLEAR;
-        state.worldWeatherRemaining = 180f + deterministicRange(seed, 0, 0, 0, 180f);
+        state.worldWeatherRemaining = 45f + deterministicRange(seed, 0, 0, 0, 45f);
         state.worldWeatherSequence = 0;
     }
 
@@ -124,22 +124,22 @@ public final class InfiniteWorldCycle {
         float maxDuration;
         switch (weather) {
             case WEATHER_STORM:
-                minDuration = 90f;
-                maxDuration = 220f;
+                minDuration = 50f;
+                maxDuration = 100f;
                 break;
             case WEATHER_RAIN:
             case WEATHER_SNOW:
-                minDuration = 150f;
-                maxDuration = 360f;
+                minDuration = 70f;
+                maxDuration = 150f;
                 break;
             case WEATHER_WIND:
             case WEATHER_FOG:
-                minDuration = 120f;
-                maxDuration = 300f;
+                minDuration = 60f;
+                maxDuration = 140f;
                 break;
             default:
-                minDuration = 180f;
-                maxDuration = 480f;
+                minDuration = 80f;
+                maxDuration = 180f;
                 break;
         }
 
@@ -211,10 +211,32 @@ public final class InfiniteWorldCycle {
         }
 
         int minute = minuteOfDay(state);
-        if (minute >= 5 * 60 && minute < 7 * 60) return 0x496A83;
-        if (minute >= 7 * 60 && minute < 17 * 60) return 0xFFF0D0;
-        if (minute >= 17 * 60 && minute < 19 * 60) return 0xD57A43;
-        return 0x152842;
+        int season = season(state);
+        if (minute >= 5 * 60 && minute < 7 * 60) {
+            switch (season) {
+                case SEASON_SPRING: return 0x668C92;
+                case SEASON_SUMMER: return 0x7C897C;
+                case SEASON_AUTUMN: return 0x9B6E55;
+                default: return 0x66829A;
+            }
+        }
+        if (minute >= 7 * 60 && minute < 17 * 60) {
+            switch (season) {
+                case SEASON_SPRING: return 0xE5F0CB;
+                case SEASON_SUMMER: return 0xFFE3A3;
+                case SEASON_AUTUMN: return 0xE7B76D;
+                default: return 0xD8ECF5;
+            }
+        }
+        if (minute >= 17 * 60 && minute < 19 * 60) {
+            switch (season) {
+                case SEASON_SPRING: return 0xD78D68;
+                case SEASON_SUMMER: return 0xE78B4E;
+                case SEASON_AUTUMN: return 0xC55F35;
+                default: return 0xB46B73;
+            }
+        }
+        return season == SEASON_WINTER ? 0x203852 : 0x152842;
     }
 
     public static float ambientLightAlpha(InfiniteWorldState state, int anomaly) {
@@ -262,6 +284,65 @@ public final class InfiniteWorldCycle {
             case SEASON_WINTER: return "冬";
             default: return "?";
         }
+    }
+
+    public static String periodName(InfiniteWorldState state) {
+        switch (lightBand(state)) {
+            case 1: return "黎明";
+            case 2: return "白天";
+            case 3: return "黄昏";
+            default:return "夜晚";
+        }
+    }
+
+    public static String anomalyName(int anomaly) {
+        switch (anomaly) {
+            case 1: return "Level 0";
+            case 2: return "Level 1";
+            case 3: return "Level 2";
+            case 4: return "Level 3";
+            case 5: return "Level 4";
+            case 6: return "Level 5";
+            case 7: return "Level 6";
+            case 8: return "Level 7";
+            case 9: return "Level 8";
+            case 10:return "Level 9";
+            case 11:return "Level 10";
+            case 12:return "Level 11";
+            case 13:return "Level 37";
+            case 14:return "Level 94";
+            case 15:return "Level 13";
+            case 16:return "Level 18";
+            case 17:return "Level 34";
+            case 18:return "Level 40";
+            case 19:return "Level 48";
+            case 20:return "Level 974";
+            default:return "普通世界";
+        }
+    }
+
+    public static String anomalyEnvironmentName(int anomaly) {
+        switch (anomaly) {
+            case 1: return "固定荧光环境";
+            case 7: return "固定黑暗环境";
+            case 8: return "固定深海环境";
+            case 10:return "固定午夜环境";
+            case 13:return "固定冷白池厅";
+            case 18:return "固定街机霓虹";
+            case 19:return "固定落日环境";
+            case 20:return "固定粉色室内";
+            default:return "固定环境";
+        }
+    }
+
+    public static String statusText(InfiniteWorldState state, int anomaly) {
+        String time = String.format(java.util.Locale.ROOT, "%02d:%02d", hour(state), minute(state));
+        String base = "第" + day(state) + "天  " + time + "  |  "
+                + seasonName(season(state)) + "季";
+        if (anomaly != 0) {
+            return base + "  |  后室 " + anomalyName(anomaly) + " · " + anomalyEnvironmentName(anomaly);
+        }
+        return base + "  |  " + weatherName(state.worldWeather) + " · " + periodName(state);
     }
 
     public static String weatherName(int weather) {
