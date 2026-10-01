@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.*;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldUrbanSurfaceLayer;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.custom.InfiniteWorldDecorationLayer;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
@@ -5853,6 +5854,46 @@ public class InfiniteWorldLevel extends Level {
                                         InfiniteWorldAccentTilemap.MODE_WALLS);
                         anomalyWalls.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
                         customWalls.add(anomalyWalls);
+
+                        if (state().generatorVersion >= 18) {
+                            int primary = -1;
+                            int alternate = -1;
+                            int altPercent = 10;
+
+                            switch (anomaly) {
+                                case 1: // Level 0 — aged beige/yellow office floor
+                                case 6: // Level 5 — hotel interior
+                                case 14:// Level 94 — staged suburban interior
+                                    primary = 109;
+                                    alternate = 114;
+                                    altPercent = 12;
+                                    break;
+
+                                case 2: // Level 1 — concrete service
+                                case 3: // Level 2 — utility corridors
+                                case 4: // Level 3 — electrical station
+                                case 5: // Level 4 — offices
+                                case 13:// Level 37 — tiled pool halls
+                                    primary = 117;
+                                    alternate = 122;
+                                    altPercent = 10;
+                                    break;
+
+                                default:
+                                    break;
+                            }
+
+                            if (primary >= 0) {
+                                InfiniteWorldUrbanSurfaceLayer urbanSurface =
+                                        new InfiniteWorldUrbanSurfaceLayer(
+                                                primary,
+                                                alternate,
+                                                (int)hash(cx, cy, 22540 + anomaly),
+                                                altPercent);
+                                urbanSurface.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                                customTiles.add(urbanSurface);
+                            }
+                        }
                         continue;
                     }
                 }
