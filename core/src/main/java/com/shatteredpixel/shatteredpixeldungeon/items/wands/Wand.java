@@ -604,6 +604,15 @@ public abstract class Wand extends Item {
 		return 1;
 	}
 	
+	/**
+	 * Assist fast-cast hook. Most wands do not keep geometry/state prepared by fx(),
+	 * so this is a no-op. Stateful wands override it to prepare only the mechanical
+	 * data needed by onZap, without queueing projectile animation callbacks.
+	 */
+	public void prepareForFastZap(Ballistica bolt) {
+		// no-op by default
+	}
+
 	public void fx(Ballistica bolt, Callback callback) {
 		MagicMissile.boltFromChar( curUser.sprite.parent,
 				MagicMissile.MAGIC_MISSILE,
