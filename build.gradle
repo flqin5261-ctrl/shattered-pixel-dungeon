@@ -15,8 +15,8 @@ allprojects {
         appPackageName = 'com.shatteredpixel.shatteredpixeldungeon.assist'
 
         //Full releases gets +2 on version code, needed for an F-Droid quirk
-        appVersionCode = 979
-        appVersionName = '0.8.3'
+        appVersionCode = 980
+        appVersionName = '0.8.4'
 
         appJavaCompatibility = JavaVersion.VERSION_11
 
