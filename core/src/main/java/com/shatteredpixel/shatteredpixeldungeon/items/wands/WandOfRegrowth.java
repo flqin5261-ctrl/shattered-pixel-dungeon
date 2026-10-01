@@ -277,15 +277,17 @@ public class WandOfRegrowth extends Wand {
 
 	}
 
-	public void fx(Ballistica bolt, Callback callback) {
-
-		// 4/6/8 distance
+	@Override
+	public void prepareForFastZap(Ballistica bolt) {
 		int maxDist = 2 + 2*chargesPerCast();
-
 		cone = new ConeAOE( bolt,
 				maxDist,
 				20 + 10*chargesPerCast(),
 				Ballistica.STOP_SOLID | Ballistica.STOP_TARGET);
+	}
+
+	public void fx(Ballistica bolt, Callback callback) {
+		prepareForFastZap(bolt);
 
 		//cast to cells at the tip, rather than all cells, better performance.
 		Ballistica longestRay = null;
