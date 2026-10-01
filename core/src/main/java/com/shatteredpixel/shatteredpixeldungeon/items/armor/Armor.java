@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -418,7 +419,7 @@ public class Armor extends EquipableItem {
 		}
 		
 		if (owner instanceof Hero){
-			int aEnc = STRReq() - ((Hero) owner).STR();
+			int aEnc = GenesisEcho.unrestrictedEquipment((Hero)owner) ? 0 : STRReq() - ((Hero) owner).STR();
 			if (aEnc > 0) evasion /= Math.pow(1.5, aEnc);
 			
 			Momentum momentum = owner.buff(Momentum.class);
@@ -432,7 +433,7 @@ public class Armor extends EquipableItem {
 	
 	public float speedFactor( Char owner, float speed ){
 		
-		if (owner instanceof Hero) {
+		if (owner instanceof Hero && !GenesisEcho.unrestrictedEquipment((Hero)owner)) {
 			int aEnc = STRReq() - ((Hero) owner).STR();
 			if (aEnc > 0) speed /= Math.pow(1.2, aEnc);
 		}
@@ -588,13 +589,15 @@ public class Armor extends EquipableItem {
 
 			info += "\n\n" + Messages.get(Armor.class, "curr_absorb", tier, DRMin(), DRMax(), STRReq());
 			
-			if (Dungeon.hero != null && STRReq() > Dungeon.hero.STR()) {
+			if (Dungeon.hero != null && !GenesisEcho.unrestrictedEquipment(Dungeon.hero)
+					&& STRReq() > Dungeon.hero.STR()) {
 				info += " " + Messages.get(Armor.class, "too_heavy");
 			}
 		} else {
 			info += "\n\n" + Messages.get(Armor.class, "avg_absorb", tier, DRMin(0), DRMax(0), STRReq(0));
 
-			if (Dungeon.hero != null && STRReq(0) > Dungeon.hero.STR()) {
+			if (Dungeon.hero != null && !GenesisEcho.unrestrictedEquipment(Dungeon.hero)
+					&& STRReq(0) > Dungeon.hero.STR()) {
 				info += " " + Messages.get(Armor.class, "probably_too_heavy");
 			}
 		}
