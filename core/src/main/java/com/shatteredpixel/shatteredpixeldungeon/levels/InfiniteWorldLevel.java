@@ -1249,8 +1249,12 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item starterUnknown(Item item) {
-        item.levelKnown = false;
-        item.cursedKnown = false;
+        if (item instanceof Food) {
+            ((Food)item).markStarterUnknown();
+        } else {
+            item.levelKnown = false;
+            item.cursedKnown = false;
+        }
         return item;
     }
 
