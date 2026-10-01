@@ -92,7 +92,7 @@ public class AllLawsArtifact extends Artifact {
 
     private WandOfAllLaws preparedDelegate() {
         WandOfAllLaws wand = new WandOfAllLaws();
-        int level = Math.max(0, nativeLevel());
+        int level = Math.max(0, buffedLvl());
         wand.level(level);
         wand.updateLevel();
         wand.curCharges = wand.maxCharges;
