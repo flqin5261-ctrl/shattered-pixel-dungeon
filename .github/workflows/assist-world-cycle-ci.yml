@@ -3,7 +3,7 @@ name: Assist World Cycle CI
 on:
   pull_request:
     branches:
-      - assist-0.9.5-streaming-final
+      - assist-0.9.6-ci-base
   workflow_dispatch:
 
 permissions:
