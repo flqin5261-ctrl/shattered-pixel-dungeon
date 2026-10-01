@@ -8,12 +8,12 @@
     "license": "GPL-3.0"
   },
   "current_release": {
-    "version_name": "0.6.8",
-    "version_code": 964,
+    "version_name": "0.6.17",
+    "version_code": 973,
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
-    "stable_branch": "assist-0.6.8-stable",
-    "development_branch": "assist-0.6.8-talent-progression",
-    "release_code_sha": "218e629ec060e46004c887d5e0314df0cf59fa44",
+    "stable_branch": "assist-0.6.17-stable",
+    "development_branch": "assist-0.6.17-eternal-edict",
+    "release_code_sha": "a435a89adc130aef51afb9b4e872ba8bad8a5f95",
     "world_generator_version": 17
   },
   "build": {
@@ -357,7 +357,7 @@
       "chest_rule": "extra supply roll applies only to normal and locked chests; unique crystal artifact chests are never modified",
       "revive_rule": "certificate revival occurs after trial-failure interception but before Ankh handling; charged totem consumes its charge, restores HP and grants brief invulnerability",
       "attack_scope": "certificate damage multiplier applies to normal Hero weapon/unarmed damage and DamageWand rolls",
-      "dynamic_enemy_response": "lv30/40/50 Seal contributes moderate power to future mob snapshots; lv60 Miracle Echo contributes 0 and Genesis Echo/copy/permanent kill growth are excluded",
+      "dynamic_enemy_response": "lv30/40/50 Seal contributes moderate power to future mob snapshots; lv60 Miracle World and all 八荒·亘古元敕 authorities/copy/permanent kill growth are excluded",
       "status_ui": {
         "placement": "existing hero BuffIndicator directly under the top-left HP bar",
         "icon": "AMULET icon with certificate tier text 30/40/50/60; tier text is forced visible in compact mobile UI",
@@ -381,38 +381,48 @@
       "consumable_duration": "+20/+35/+55/+80% duration for positive potion/scroll buffs",
       "search_sense": "+1/+2/+3/+4 search radius and +20/+30/+45/+60 percentage points for secret-trap/secret-door auto-detection",
       "revive": "200/160/120/80 action-value full charge; revive at 35/45/55/70% HP",
-      "permanent_immunity": "one random immunity from Burning/Poison/Paralysis/Vertigo/Blindness/Cripple/Weakness/Vulnerability/Slow/Charm/Hex; persisted while equipped",
-      "immunity_reroll": "ScrollOfUpgrade rerolls the Seal's own persisted random immunity without changing tier; WndUpgrade directly shows the current immunity for fast rerolls.",
       "shop_ui": "buy window shows a grey struck-through original price and a green Seal discounted price",
       "cheat_clear": "WndAssist has a one-click breakthrough completion action; inside trial it uses normal success rollback, outside it raises to level 30 if needed and unlocks breakthrough directly",
-      "backpack": "no fixed backpack expansion at any Seal/Miracle tier; 创世回响 supplies Infinite Space instead",
+      "backpack": "no fixed backpack expansion at any Seal/Miracle tier; 八荒·亘古元敕 supplies 无垠·藏墟 after awakening",
       "overflow_rule": "removed because Seal no longer changes capacity",
       "non_disposable": "破界之印 / 奇迹·世界 has no drop/throw action and hard-blocks drop/cast; full normal backpack unequip first spills another item so the Seal itself cannot fall to the ground."
     },
     "genesis_echo": {
-      "unlock": "automatically and permanently awakens when Hero reaches lv60 and the Seal becomes 奇迹·世界",
-      "persistent_buff": "创世回响 remains visible under the HP bar and persists even when 奇迹·世界 is unequipped",
+      "internal_class": "GenesisEcho retained for save/code compatibility",
+      "display_name": "八荒·亘古元敕",
+      "unlock": "permanently awakens at Hero level 60 when the Seal has ascended to 奇迹·世界",
+      "permanent_base_authorities": {
+        "元墟·绝殛": "all Hero damage is rejected, instant death is denied, HP is kept full and HUD displays infinity",
+        "万法·不羁": "real control immunity plus forced-teleport immunity; blocked effects produce named 敕免 feedback",
+        "无垠·藏墟": "root backpack capacity is max(normalCapacity,currentItems+5), guaranteeing at least five free slots",
+        "衡世·契权": "all shop purchases cost 0; uncapped geometric bonus-copy purchase roll remains",
+        "纵横八荒": "each true hostile kill permanently grants +10 max HP and +1 strength; Infinite World distance despawn grants nothing",
+        "通识古今": "successfully acquired unidentified items are immediately fully identified; awakening also identifies currently-owned unidentified items"
+      },
+      "miracle_world_linked_authorities": {
+        "万厄·归寂": "explicit DOT/degrade curse immunities plus rejection of any other NEGATIVE Buff while Miracle World is equipped",
+        "终末·裁决": "successful Hero melee/unarmed/thrown/ranged and wand attacks execute hostile targets with die-then-destroy fallback for special death mechanics",
+        "无限·天资": "initialized tier-1-through-tier-6 talents evaluate at max rank; tier 7 remains independent",
+        "寰宇·映射": "a second complete Miracle World effective stat/ability layer through BreakthroughCertificate effective multipliers/copies"
+      },
+      "tier7": {
+        "exclusive_choice": true,
+        "resettable": true,
+        "independent_of_miracle_world": true,
+        "GENESIS_TELEPORT": "无界遁诰 — double-tap any visited standable cell outside unknown fog to teleport without range limit/cooldown",
+        "GENESIS_REACH": "寰墟指殛 — click visible hostiles for execution and remotely collect/open revealed heaps/chests",
+        "GENESIS_SPELLCAST": "元级肇法 — every wand damage target executes even without Miracle World; double-tap quickslot wand for visible-screen AOE execution; positive potion/scroll durations are at least 999 action-value",
+        "GENESIS_FORTUNE": "万运隆敕 — chest loot burst with uncapped continuation, stack quantities >=10, and weapon/armor/ring/wand equipment set to +120"
+      },
+      "feedback": "blocked effects use visible messages such as 灼烧敕免 / 中毒敕免 / 传送敕免 / 即死敕免 / 伤害敕免",
+      "kill_growth_migration": "old saves with prior +1 HP/+1 STR kill growth are lifted so permanent HP growth is at least 10 × stored permanent STR growth",
+      "monster_scaling": "奇迹·世界, 八荒·亘古元敕, copied Miracle layer, tier mastery and permanent kill-growth remain excluded from dynamic mob scaling",
+      "level59_to_60_xp": 3600,
+      "level60_exp_bonus": "none",
       "omitted_for_now": [
         "no 500-action-value choose-any-item system",
         "no 天降横财 periodic random-item system"
-      ],
-      "permanent_effects": [
-        "instant-death immunity enforced in Hero.die while Genesis Echo is active",
-        "forced-teleport immunity; the Hero's own ScrollOfTeleportation remains voluntary",
-        "real permanent control immunity: Blindness, Daze, Paralysis, Roots, Vertigo, Cripple, Charm, Terror, Amok, Drowsy/Sleep, Slow, Chill, Frost",
-        "Infinite Space: root Backpack capacity dynamically grows so at least 5 empty slots always remain, with paginated WndBag access",
-        "all shop purchases cost 0",
-        "each purchase has an uncapped geometric roll for extra identical copies",
-        "each enemy kill permanently adds exactly +1 max HP and +1 strength"
-      ],
-      "miracle_link": "only while 奇迹·世界 is actually equipped: Genesis Echo copies a second full passive-stat layer, rejects all NEGATIVE buffs plus explicit DOT/degrade curse classes, and makes Hero.damage return immediately for complete standard-pipeline damage immunity",
-      "monster_scaling": "奇迹·世界, 创世回响, copied layer, and permanent kill-growth HP/STR remain excluded from dynamic mob scaling",
-      "level59_to_60_xp": 3600,
-      "level60_exp_bonus": "none",
-      "linked_curse_immunity": "explicit Burning/Poison/Bleeding/Corrosion/Ooze/Weakness/Vulnerable/Degrade/Hex/Doom classes are immune via Char.isImmune, plus Hero.add rejects any other NEGATIVE Buff while linked; already-active blocked effects are cleansed on link/restore",
-      "linked_damage_immunity": "Hero.damage returns immediately and Hero.isInvulnerable reports true while 奇迹·世界 is equipped",
-      "infinite_space": "base Backpack returns to upstream 20-slot baseline before bag modifiers; after Genesis Echo awakens capacity is max(normalCapacity, currentItems+5), guaranteeing >=5 free root slots",
-      "infinite_space_ui": "WndBag root backpack is paginated while Genesis Echo is active; equipment stays visible on every page, item/free-slot pages use safe ASCII prev/next controls, and the final page still exposes the guaranteed five empty slots."
+      ]
     },
     "talent_progression": {
       "enabled": true,
@@ -422,7 +432,21 @@
       "legacy_repair": "Existing high-level Infinite World saves receive missing selector items on world entry/refresh.",
       "full_backpack_rule": "Milestone selector items are inserted even if normal backpack capacity is full.",
       "normal_dungeon_compatibility": "Upstream Boss/item gates remain unchanged outside Infinite World.",
-      "player_facing_text": "Infinite World prompts describe level/milestone selection rather than second/fourth Boss drops."
+      "player_facing_text": "Infinite World prompts describe level/milestone selection rather than second/fourth Boss drops.",
+      "tiers_5_to_7": "Infinite World extends to six normal progression tiers plus one 八荒·亘古元敕-exclusive tier 7."
+    },
+    "starting_supplies": {
+      "enabled": true,
+      "origin_world_coordinates": [
+        12,
+        12
+      ],
+      "normal_chest": "5 random food + 5 random scrolls + 5 random potions",
+      "loose_key": "one CrystalKey at current depth",
+      "crystal_chest": "one random ring + one random wand",
+      "initial_identification": "starter magical items are not force-identified; fresh-run potion/scroll/ring/wand identities remain unknown until normal identification or Eternal Wisdom acquisition",
+      "placement": "guaranteed near origin; searches natural nearby floor first and carves a fallback floor only if necessary",
+      "persistence": "world coordinates, chest states, object state and remaining contents persist through streaming/save-load"
     }
   },
   "current_content": {
