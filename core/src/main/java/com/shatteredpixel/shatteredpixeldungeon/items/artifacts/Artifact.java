@@ -119,7 +119,7 @@ public class Artifact extends KindofMisc {
 		boolean attached = expected != null
 				&& expected.target == hero
 				&& hero.buffs().contains(expected)
-				&& Actor.all().contains(expected);
+				&& Actor.contains(expected);
 
 		if (attached) return true;
 
@@ -129,7 +129,7 @@ public class Artifact extends KindofMisc {
 		for (ArtifactBuff existing : hero.buffs(ArtifactBuff.class)) {
 			if (existing.artifact() == this) {
 				passiveBuff = existing;
-				if (Actor.chars().contains(hero) && !Actor.all().contains(existing)) {
+				if (Actor.chars().contains(hero) && !Actor.contains(existing)) {
 					Actor.add(existing);
 				}
 				return true;
@@ -145,7 +145,7 @@ public class Artifact extends KindofMisc {
 		boolean ok = passiveBuff.attachTo(hero);
 		// attachTo normally schedules immediately if the Hero is already an Actor.
 		// Keep a defensive scheduler check for old saves restored mid-scene.
-		if (ok && Actor.chars().contains(hero) && !Actor.all().contains(passiveBuff)) {
+		if (ok && Actor.chars().contains(hero) && !Actor.contains(passiveBuff)) {
 			Actor.add(passiveBuff);
 		}
 		return ok;
