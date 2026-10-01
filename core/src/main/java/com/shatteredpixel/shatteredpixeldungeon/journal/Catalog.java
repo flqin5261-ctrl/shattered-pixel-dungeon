@@ -85,6 +85,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfIc
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicPotionRing;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicScrollRing;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfAllLaws;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CeremonialCandle;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.DarkGold;
@@ -214,8 +217,10 @@ public enum Catalog {
 		GLYPHS.addItems(Armor.Glyph.curses);
 
 		WANDS.addItems(Generator.Category.WAND.classes);
+		WANDS.addItems(WandOfAllLaws.class);
 
 		RINGS.addItems(Generator.Category.RING.classes);
+		RINGS.addItems(MimicScrollRing.class, MimicPotionRing.class);
 
 		ARTIFACTS.addItems(Generator.Category.ARTIFACT.classes);
 
