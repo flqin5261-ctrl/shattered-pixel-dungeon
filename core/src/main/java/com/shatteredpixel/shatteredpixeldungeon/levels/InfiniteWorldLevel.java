@@ -376,9 +376,9 @@ public class InfiniteWorldLevel extends Level {
             case 8:  return 0.35f;
             case 9:  return 0.62f;
             case 10: return 0.42f;
-            case 11: return 0.34f;
+            case 11: return 0.00f; // Level 10: canon source lists no hostile entities
             case 12: return 0.55f;
-            case 13: return 0.14f;
+            case 13: return 0.00f; // Level 37: survival class 0, devoid of entities
             case 14: return 0.32f;
             case 15: return 0.28f;
             case 16: return 0.08f;
@@ -4648,7 +4648,7 @@ public class InfiniteWorldLevel extends Level {
         switch (anomaly) {
             case 3: case 4: case 7: case 13: case 17:
                 trapCount = 2; break;
-            case 8: case 16: case 19: case 20:
+            case 8: case 11: case 13: case 16: case 19: case 20:
                 trapCount = 0; break;
             default:
                 trapCount = 1; break;
