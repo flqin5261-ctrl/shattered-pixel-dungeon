@@ -170,6 +170,11 @@ public final class InfiniteWorldProgression {
         for (Item item : hero.belongings) {
             if (item == null) continue;
 
+            // 纵横八荒 stacked equipment is an Eternal Edict authority benefit.
+            // Do not feed those extra equipped copies back into dynamic enemy
+            // scaling; only the classic baseline equipment slots count.
+            if (hero.belongings.isGenesisStackExtra(item)) continue;
+
             if (item instanceof Artifact) {
                 p.artifactCount++;
                 p.artifactVisible = Math.max(p.artifactVisible,
@@ -179,7 +184,7 @@ public final class InfiniteWorldProgression {
             }
             if (item instanceof BreakthroughCertificate) {
                 int certLevel = ((BreakthroughCertificate)item).certificateLevel();
-                // Miracle Echo (lv60) and Genesis Echo are deliberately outside
+                // Miracle World (lv60) and 八荒·亘古元敕 are deliberately outside
                 // dynamic enemy scaling. Level 60 is meant to be a true endgame
                 // power break rather than another stat treadmill.
                 p.certificatePower = certLevel >= 60 ? 0 : certLevel >= 50 ? 16 : certLevel >= 40 ? 12 : 8;
