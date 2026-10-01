@@ -169,31 +169,42 @@ public class WandOfLightning extends DamageWand {
 		}
 	}
 	
-	@Override
-	public void fx(Ballistica bolt, Callback callback) {
-
+	private void prepareLightningState(Ballistica bolt) {
 		affected.clear();
 		arcs.clear();
 
 		int cell = bolt.collisionPos;
-
-		Char ch = Actor.findChar( cell );
+		Char ch = Actor.findChar(cell);
 		if (ch != null) {
 			if (ch instanceof DwarfKing){
 				Statistics.qualifiedForBossChallengeBadge = false;
 			}
 
-			affected.add( ch );
-			arcs.add( new Lightning.Arc(curUser.sprite.center(), ch.sprite.center()));
+			affected.add(ch);
+			arcs.add(new Lightning.Arc(curUser.sprite.center(), ch.sprite.center()));
 			arc(ch);
 		} else {
-			arcs.add( new Lightning.Arc(curUser.sprite.center(), DungeonTilemap.raisedTileCenterToWorld(bolt.collisionPos)));
-			CellEmitter.center( cell ).burst( SparkParticle.FACTORY, 3 );
+			arcs.add(new Lightning.Arc(curUser.sprite.center(),
+					DungeonTilemap.raisedTileCenterToWorld(bolt.collisionPos)));
+		}
+	}
+
+	@Override
+	public void prepareForFastZap(Ballistica bolt) {
+		prepareLightningState(bolt);
+	}
+
+	@Override
+	public void fx(Ballistica bolt, Callback callback) {
+		prepareLightningState(bolt);
+
+		if (Actor.findChar(bolt.collisionPos) == null) {
+			CellEmitter.center(bolt.collisionPos).burst(SparkParticle.FACTORY, 3);
 		}
 
 		//don't want to wait for the effect before processing damage.
-		curUser.sprite.parent.addToFront( new Lightning( arcs, null ) );
-		Sample.INSTANCE.play( Assets.Sounds.LIGHTNING );
+		curUser.sprite.parent.addToFront(new Lightning(arcs, null));
+		Sample.INSTANCE.play(Assets.Sounds.LIGHTNING);
 		callback.call();
 	}
 
