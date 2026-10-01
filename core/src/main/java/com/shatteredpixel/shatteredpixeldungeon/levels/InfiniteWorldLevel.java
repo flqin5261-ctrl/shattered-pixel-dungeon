@@ -2194,6 +2194,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v6EquipmentItem(int cx, int cy, int salt) {
+        if (state().generatorVersion >= 22) {
+            return v22EquipmentItem(v22VariantOrdinal(cx, cy, salt));
+        }
+
         Random.pushGenerator(hash(cx, cy, salt));
         try {
             int kind = range(cx, cy, salt + 1, 0, 99);
