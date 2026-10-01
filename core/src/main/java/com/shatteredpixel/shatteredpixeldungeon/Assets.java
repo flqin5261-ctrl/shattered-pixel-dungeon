@@ -68,6 +68,7 @@ public class Assets {
 		public static final String ASSIST_KENNEY_TINY_DUNGEON = "environment/custom_tiles/assist_kenney_tiny_dungeon.png";
 		public static final String ASSIST_KENNEY_TINY_TOWN    = "environment/custom_tiles/assist_kenney_tiny_town.png";
 		public static final String ASSIST_KENNEY_RPG_URBAN    = "environment/custom_tiles/assist_kenney_rpg_urban.png";
+		public static final String ASSIST_BACKROOMS_MATERIALS = "environment/custom_tiles/assist_backrooms_materials.png";
 	}
 	
 	//TODO include other font assets here? Some are platform specific though...
