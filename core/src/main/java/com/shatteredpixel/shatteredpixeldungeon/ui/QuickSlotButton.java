@@ -258,7 +258,8 @@ public class QuickSlotButton extends Button {
 
 	private void useArtifactFromQuickslot(Artifact artifact) {
 		if (artifact == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
-				|| !Dungeon.hero.ready || !Dungeon.hero.belongings.isStackEquipped(artifact)) {
+				|| !Dungeon.hero.ready || !Dungeon.hero.belongings.isStackEquipped(artifact)
+				|| select(slotNum) != artifact) {
 			return;
 		}
 
@@ -272,6 +273,8 @@ public class QuickSlotButton extends Button {
 	private void openArtifactSelector() {
 		if (Dungeon.hero == null || !Dungeon.hero.ready) return;
 
+		GameScene.cancelCellSelector();
+		GameScene.ready();
 		Game.scene().addToFront(new WndStackedEquipment(
 				null,
 				WndStackedEquipment.Category.ARTIFACT,
