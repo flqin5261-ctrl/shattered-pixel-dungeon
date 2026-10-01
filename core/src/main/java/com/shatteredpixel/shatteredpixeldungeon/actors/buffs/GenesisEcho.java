@@ -40,6 +40,7 @@ public class GenesisEcho extends Buff {
         immunities.add(Cripple.class);
         immunities.add(Charm.class);
         immunities.add(Terror.class);
+        immunities.add(Dread.class);
         immunities.add(Amok.class);
         immunities.add(Drowsy.class);
         immunities.add(Sleep.class);
@@ -100,7 +101,7 @@ public class GenesisEcho extends Buff {
         else if (Vertigo.class.isAssignableFrom(cls)) text = "混乱敕免";
         else if (Cripple.class.isAssignableFrom(cls)) text = "残废敕免";
         else if (Charm.class.isAssignableFrom(cls)) text = "魅惑敕免";
-        else if (Terror.class.isAssignableFrom(cls)) text = "恐惧敕免";
+        else if (Terror.class.isAssignableFrom(cls) || Dread.class.isAssignableFrom(cls)) text = "恐惧敕免";
         else if (Amok.class.isAssignableFrom(cls)) text = "狂乱敕免";
         else if (Drowsy.class.isAssignableFrom(cls) || Sleep.class.isAssignableFrom(cls)) text = "睡眠敕免";
         else if (Slow.class.isAssignableFrom(cls)) text = "迟缓敕免";
@@ -164,6 +165,7 @@ public class GenesisEcho extends Buff {
                 || Cripple.class.isAssignableFrom(cls)
                 || Charm.class.isAssignableFrom(cls)
                 || Terror.class.isAssignableFrom(cls)
+                || Dread.class.isAssignableFrom(cls)
                 || Amok.class.isAssignableFrom(cls)
                 || Drowsy.class.isAssignableFrom(cls)
                 || Sleep.class.isAssignableFrom(cls)
