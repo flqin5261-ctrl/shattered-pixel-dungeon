@@ -53,6 +53,9 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Ripple;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SnowParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.WorldCycleRainParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
@@ -69,6 +72,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldCycle;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
@@ -134,6 +138,7 @@ import com.watabou.input.ControllerHandler;
 import com.watabou.input.KeyBindings;
 import com.watabou.input.PointerEvent;
 import com.watabou.noosa.Camera;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Group;
@@ -172,6 +177,9 @@ public class GameScene extends PixelScene {
 	private DungeonWallsTilemap walls;
 	private WallBlockingTilemap wallBlocking;
 	private FogOfWar fog;
+	private ColorBlock infiniteWorldAmbientLight;
+	private Emitter infiniteWorldWeather;
+	private int infiniteWorldWeatherKind = Integer.MIN_VALUE;
 	private HeroSprite hero;
 
 	private MenuPane menu;
@@ -367,6 +375,20 @@ public class GameScene extends PixelScene {
 		add( spells );
 
 		add(overFogEffects);
+
+		// Assist 0.9.6 World Cycle: screen-space lighting and weather live above the
+		// world/fog but below UI. They never mutate Terrain or Streaming state.
+		infiniteWorldAmbientLight = new ColorBlock(uiCamera.width, uiCamera.height, 0x000000);
+		infiniteWorldAmbientLight.camera = uiCamera;
+		infiniteWorldAmbientLight.visible = false;
+		add(infiniteWorldAmbientLight);
+
+		infiniteWorldWeather = new Emitter();
+		infiniteWorldWeather.camera = uiCamera;
+		infiniteWorldWeather.autoKill = false;
+		infiniteWorldWeather.pos(0, 0, uiCamera.width, uiCamera.height);
+		add(infiniteWorldWeather);
+		refreshInfiniteWorldEnvironment();
 
 		checkedCells = new Group();
 		add(checkedCells);
@@ -1434,7 +1456,63 @@ public class GameScene extends PixelScene {
 			updateFog();
 			scene.fog.flushUpdate();
 			scene.wallBlocking.flushMapUpdate();
+			refreshInfiniteWorldEnvironment();
 
+		}
+	}
+
+	public static void refreshInfiniteWorldEnvironment() {
+		if (scene == null || scene.infiniteWorldAmbientLight == null || scene.infiniteWorldWeather == null) {
+			return;
+		}
+
+		synchronized (scene) {
+			if (!Dungeon.infiniteWorld
+					|| !(Dungeon.level instanceof InfiniteWorldLevel)
+					|| Dungeon.infiniteWorldState == null) {
+				scene.infiniteWorldAmbientLight.visible = false;
+				scene.infiniteWorldWeather.on = false;
+				scene.infiniteWorldWeatherKind = Integer.MIN_VALUE;
+				return;
+			}
+
+			InfiniteWorldCycle.ensureInitialized(Dungeon.infiniteWorldState, Dungeon.seed);
+			InfiniteWorldLevel level = (InfiniteWorldLevel)Dungeon.level;
+			int anomaly = level.currentWorldCycleAnomaly();
+
+			int color = InfiniteWorldCycle.ambientLightColor(Dungeon.infiniteWorldState, anomaly);
+			float alpha = InfiniteWorldCycle.ambientLightAlpha(Dungeon.infiniteWorldState, anomaly);
+			scene.infiniteWorldAmbientLight.color(color);
+			scene.infiniteWorldAmbientLight.alpha(alpha);
+			scene.infiniteWorldAmbientLight.visible = alpha > 0.001f;
+
+			int weather = InfiniteWorldCycle.presentationWeather(Dungeon.infiniteWorldState, anomaly);
+			if (scene.infiniteWorldWeatherKind == weather) return;
+
+			scene.infiniteWorldWeather.on = false;
+			scene.infiniteWorldWeather.clearAndDestroy();
+			scene.infiniteWorldWeather.autoKill = false;
+			scene.infiniteWorldWeather.camera = uiCamera;
+			scene.infiniteWorldWeather.pos(0, 0, uiCamera.width, uiCamera.height);
+
+			switch (weather) {
+				case InfiniteWorldCycle.WEATHER_RAIN:
+					scene.infiniteWorldWeather.pour(WorldCycleRainParticle.FACTORY, 0.032f);
+					break;
+				case InfiniteWorldCycle.WEATHER_STORM:
+					scene.infiniteWorldWeather.pour(WorldCycleRainParticle.FACTORY, 0.014f);
+					break;
+				case InfiniteWorldCycle.WEATHER_SNOW:
+					scene.infiniteWorldWeather.pour(SnowParticle.FACTORY, 0.055f);
+					break;
+				case InfiniteWorldCycle.WEATHER_WIND:
+					scene.infiniteWorldWeather.pour(LeafParticle.LEVEL_SPECIFIC, 0.13f);
+					break;
+				default:
+					break;
+			}
+
+			scene.infiniteWorldWeatherKind = weather;
 		}
 	}
 
