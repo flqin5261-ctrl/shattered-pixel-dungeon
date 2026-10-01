@@ -189,13 +189,14 @@ public class SandalsOfNature extends Artifact {
 
 	@Override
 	public String name() {
-		if (level() == 0)   return super.name();
-		else                return Messages.get(this, "name_" + level());
+		int stage = Math.max(0, Math.min(levelCap, nativeLevel()));
+		if (stage == 0) return super.name();
+		return Messages.get(this, "name_" + stage);
 	}
 
 	@Override
 	public String desc() {
-		String desc = Messages.get(this, "desc_" + (level()+1));
+		String desc = Messages.get(this, "desc_" + (Math.max(0, Math.min(levelCap, nativeLevel()))+1));
 
 		if ( isEquipped ( Dungeon.hero ) ) {
 			desc += "\n\n";
@@ -273,8 +274,9 @@ public class SandalsOfNature extends Artifact {
 			if (cursed || target.buff(MagicImmune.class) != null) return;
 			if (charge < chargeCap){
 				//0.5 charge per grass at +0, up to 1.5 at +10
-				float chargeGain = (3f + 2*level())/6f;
+				float chargeGain = (3f + 2*nativeLevel())/6f;
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= assistOverlevelChargeMultiplier();
 				partialCharge += Math.max(0, chargeGain);
 				while (partialCharge >= 1){
 					charge++;
