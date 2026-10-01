@@ -286,6 +286,7 @@ public class WandOfRegrowth extends Wand {
 				Ballistica.STOP_SOLID | Ballistica.STOP_TARGET);
 	}
 
+	@Override
 	public void fx(Ballistica bolt, Callback callback) {
 		prepareForFastZap(bolt);
 
