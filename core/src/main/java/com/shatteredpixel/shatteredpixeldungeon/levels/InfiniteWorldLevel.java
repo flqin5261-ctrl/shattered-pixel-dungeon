@@ -4646,7 +4646,7 @@ public class InfiniteWorldLevel extends Level {
         // identity instead of making every special district safer than normal.
         int trapCount;
         switch (anomaly) {
-            case 3: case 4: case 7: case 13: case 17:
+            case 3: case 4: case 7: case 17:
                 trapCount = 2; break;
             case 8: case 11: case 13: case 16: case 19: case 20:
                 trapCount = 0; break;
