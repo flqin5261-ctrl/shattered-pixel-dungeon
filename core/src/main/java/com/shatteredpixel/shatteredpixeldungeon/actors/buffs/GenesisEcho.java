@@ -344,7 +344,7 @@ public class GenesisEcho extends Buff {
     public static boolean teleportToVisited(Hero hero, int cell) {
         if (!ultraTeleport(hero) || Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()) return false;
         if (!Dungeon.level.visited[cell]) {
-            GLog.w("该位置仍被迷雾遮蔽，无法进行超距离传送。");
+            GLog.w("该位置仍被迷雾遮蔽，无法施行无界遁诰。");
             return false;
         }
         if ((!Dungeon.level.passable[cell] && !Dungeon.level.avoid[cell])
