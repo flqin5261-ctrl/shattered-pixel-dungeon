@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -70,8 +71,9 @@ public class Artifact extends KindofMisc {
 	@Override
 	public boolean doEquip( final Hero hero ) {
 
-		if ((hero.belongings.artifact != null && hero.belongings.artifact.getClass() == this.getClass())
-				|| (hero.belongings.misc != null && hero.belongings.misc.getClass() == this.getClass())){
+		if (!GenesisEcho.unrestrictedEquipment(hero)
+				&& ((hero.belongings.artifact != null && hero.belongings.artifact.getClass() == this.getClass())
+				|| (hero.belongings.misc != null && hero.belongings.misc.getClass() == this.getClass()))){
 
 			GLog.w( Messages.get(Artifact.class, "cannot_wear_two") );
 			return false;
