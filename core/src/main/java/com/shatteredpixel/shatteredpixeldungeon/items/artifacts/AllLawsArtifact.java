@@ -34,7 +34,7 @@ public class AllLawsArtifact extends Artifact {
     public static final String AC_CAST = "CAST";
 
     {
-        image = ItemSpriteSheet.ARTIFACT_SPELLBOOK;
+        image = ItemSpriteSheet.WAND_PRISMATIC_LIGHT;
 
         levelCap = 10;
         chargeCap = 10;
