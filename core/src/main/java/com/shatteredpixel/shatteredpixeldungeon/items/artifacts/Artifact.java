@@ -115,7 +115,7 @@ public class Artifact extends KindofMisc {
 	public boolean ensurePassiveRuntime(Hero hero) {
 		if (hero == null || !isEquipped(hero)) return false;
 
-		ArtifactBuff expected = passiveBuff;
+		ArtifactBuff expected = passiveBuff instanceof ArtifactBuff ? (ArtifactBuff)passiveBuff : null;
 		boolean attached = expected != null
 				&& expected.target == hero
 				&& hero.buffs().contains(expected)
