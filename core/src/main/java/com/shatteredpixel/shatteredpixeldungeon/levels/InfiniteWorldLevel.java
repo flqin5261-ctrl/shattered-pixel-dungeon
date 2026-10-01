@@ -1800,6 +1800,20 @@ public class InfiniteWorldLevel extends Level {
             return v6EquipmentItem(cx, cy, 18600 + index);
         }
 
+        if (state().generatorVersion >= 18) {
+            int roll = range(cx, cy, 18500 + index, 0, 99);
+            if (roll < 14) return new PotionOfHealing();
+            if (roll < 26) return v6RandomPotion(cx, cy, 18540 + index);
+            if (roll < 39) return v6SafeScroll(cx, cy, 18550 + index);
+            if (roll < 52) return v6RandomFood(cx, cy, 18560 + index);
+            if (roll < 62) return new Bomb();
+            if (roll < 71) return new StoneOfBlink();
+            if (roll < 79) return new Torch();
+            if (roll < 87) return new Gold(6 + range(cx, cy, 18570 + index, 0, 20));
+            if (roll < 94) return new Pickaxe();
+            return v6EquipmentItem(cx, cy, 18575 + index);
+        }
+
         int roll = range(cx, cy, 18500 + index, 0, 10);
         switch (roll) {
             case 0: return new PotionOfHealing();
@@ -5698,7 +5712,8 @@ public class InfiniteWorldLevel extends Level {
         if (state().generatorVersion >= 9) {
             if (v9AnomalyType(cx, cy) != 0) return false;
             if (state().generatorVersion >= 11 && isV11MerchantChunk(cx, cy)) return false;
-            return Math.floorMod(hash(cx, cy, 6001), 100) < 12;
+            int chance = state().generatorVersion >= 18 ? 16 : 12;
+            return Math.floorMod(hash(cx, cy, 6001), 100) < chance;
         }
         return Math.floorMod(hash(cx, cy, 6001), 100) < 42;
     }
