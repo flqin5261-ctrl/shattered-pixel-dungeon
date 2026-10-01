@@ -70,6 +70,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.Elixir;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicPotionRing;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicScrollRing;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfAccuracy;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfArcana;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
@@ -130,6 +132,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.VialOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfAllLaws;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorrosion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorruption;
@@ -672,6 +675,26 @@ public class Generator {
 		}
 	}
 	
+	/**
+	 * Assist-only low-level additions are injected after the vanilla deck has
+	 * selected a normal class. This intentionally leaves the saved RING/WAND
+	 * deck arrays unchanged, so 0.8.3 and older Infinite World saves restore
+	 * without generator-array migration.
+	 *
+	 * Two mimic rings behave like two additional equally weighted ring types:
+	 * each has an effective 1/14 chance when a ring is generated. 万法之法 is
+	 * one additional equally weighted wand type: effective 1/14 per wand.
+	 */
+	private static Item instantiateWithAssistSpecial(Category cat, Class<?> vanillaClass) {
+		if (cat == Category.RING && Random.Int(7) == 0) {
+			return (Random.Int(2) == 0 ? new MimicScrollRing() : new MimicPotionRing()).random();
+		}
+		if (cat == Category.WAND && Random.Int(14) == 0) {
+			return new WandOfAllLaws().random();
+		}
+		return ((Item) Reflection.newInstance(vanillaClass)).random();
+	}
+
 	public static Item random() {
 		Category cat = Random.chances( categoryProbs );
 		if (cat == null){
@@ -737,7 +760,7 @@ public class Generator {
 					}
 				}
 
-				return ((Item) Reflection.newInstance(itemCls)).random();
+				return instantiateWithAssistSpecial(cat, itemCls);
 		}
 	}
 
@@ -765,7 +788,7 @@ public class Generator {
 				}
 			}
 
-			return ((Item) Reflection.newInstance(itemCls)).random();
+			return instantiateWithAssistSpecial(cat, itemCls);
 		}
 	}
 	
