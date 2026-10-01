@@ -219,9 +219,18 @@ public class Artifact extends KindofMisc {
 		return level();
 	}
 
-	//transfers upgrades from another artifact, transfer level will equal the displayed level
+	// Transfers a displayed artifact level without ever pushing the native
+	// subclass progression past its original cap. +11..+30 lives exclusively in
+	// Assist overlevel state so artifact-specific level state machines stay valid.
 	public void transferUpgrade(int transferLvl) {
-		upgrade(Math.round((transferLvl*levelCap)/10f));
+		if (levelCap <= 0) return;
+		int visible = Math.max(0, transferLvl);
+		int naturalVisible = Math.min(10, visible);
+		int targetNative = Math.min(levelCap, Math.round((naturalVisible*levelCap)/10f));
+		int delta = Math.max(0, targetNative - super.level());
+		if (delta > 0) upgrade(delta);
+		assistVisibleOverlevel = Math.max(0, visible - 10);
+		updateQuickslot();
 	}
 
 	// Assist edition: pre-breakthrough artifacts cap at +10; after the level-30
