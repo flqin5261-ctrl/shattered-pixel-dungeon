@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndStackedEquipment;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.watabou.input.GameAction;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
@@ -265,8 +266,13 @@ public class QuickSlotButton extends Button {
 
 		if (!GameScene.cancel()) {
 			GameScene.centerNextWndOnInvPane();
-			artifact.execute(Dungeon.hero);
-			if (artifact.usesTargeting) useTargeting();
+			String action = artifact.defaultAction();
+			if (action == null || "NONE".equals(action)) {
+				GameScene.show(new WndUseItem(null, artifact));
+			} else {
+				artifact.execute(Dungeon.hero);
+				if (artifact.usesTargeting) useTargeting();
+			}
 		}
 	}
 
@@ -366,6 +372,10 @@ public class QuickSlotButton extends Button {
 
 		@Override
 		public boolean itemSelectable(Item item) {
+			if (item instanceof Artifact && GenesisEcho.unrestrictedEquipment(Dungeon.hero)
+					&& Dungeon.hero.belongings.isStackEquipped(item)) {
+				return true;
+			}
 			return item.defaultAction() != null;
 		}
 
