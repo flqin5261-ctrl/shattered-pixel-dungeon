@@ -7,6 +7,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.tiles.custom;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldCycle;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
@@ -246,6 +248,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
 
     private int visualForKind(int kind) {
         if (source == SOURCE_TOWN) {
+            kind = seasonalTownKind(kind);
             switch (kind) {
                 case ROUND_TREE:         return 5;
                 case MUSHROOMS:          return 29;
@@ -321,6 +324,20 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
         }
     }
 
+    private int seasonalTownKind(int kind) {
+        if (!Dungeon.infiniteWorld || Dungeon.infiniteWorldState == null) return kind;
+
+        int season = InfiniteWorldCycle.season(Dungeon.infiniteWorldState);
+        if (season == InfiniteWorldCycle.SEASON_AUTUMN) {
+            if (kind == ROUND_TREE) return ROUND_TREE_AUTUMN;
+            if (kind == PINE_TREE_GREEN) return PINE_TREE_AUTUMN;
+        } else {
+            if (kind == ROUND_TREE_AUTUMN) return ROUND_TREE;
+            if (kind == PINE_TREE_AUTUMN) return PINE_TREE_GREEN;
+        }
+        return kind;
+    }
+
     private String keyForKind(int kind) {
         switch (kind) {
             case ROUND_TREE:         return "round_tree";
@@ -388,14 +405,24 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public Tilemap create() {
         updateTexture();
         Tilemap v = super.create();
+        v.map(buildData(), tileW);
+        return v;
+    }
+
+    public void refreshSeason() {
+        if (vis == null || !vis.alive) return;
+        vis.map(buildData(), tileW);
+        vis.flushMapUpdate();
+    }
+
+    private int[] buildData() {
         int[] data = new int[tileW * tileH];
         Arrays.fill(data, -1);
         for (int cell : kinds.keyArray()) {
             int visual = visualForKind(kinds.get(cell));
             if (visual >= 0) data[cell] = visual;
         }
-        v.map(data, tileW);
-        return v;
+        return data;
     }
 
     @Override
