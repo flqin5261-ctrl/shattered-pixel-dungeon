@@ -221,6 +221,7 @@ public class GenesisEcho extends Buff {
         InfiniteWorldState st = InfiniteWorldProgression.state();
         boolean first = !st.genesisEchoUnlocked;
         st.genesisEchoUnlocked = true;
+        migratePermanentGrowth(st);
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         cleanseBlockedEffects(hero);
@@ -235,6 +236,7 @@ public class GenesisEcho extends Buff {
     public static void ensure(Hero hero) {
         if (hero == null || !Dungeon.infiniteWorld) return;
         InfiniteWorldState st = InfiniteWorldProgression.state();
+        if (st.genesisEchoUnlocked) migratePermanentGrowth(st);
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
         }
@@ -438,6 +440,12 @@ public class GenesisEcho extends Buff {
         // The player's own Teleportation Scroll remains voluntary.
         return source == null
                 || !"ScrollOfTeleportation".equals(source.getSimpleName());
+    }
+
+    private static void migratePermanentGrowth(InfiniteWorldState st) {
+        if (st == null) return;
+        int expectedHp = Math.max(0, st.genesisKillStrBonus) * 10;
+        if (st.genesisKillHpBonus < expectedHp) st.genesisKillHpBonus = expectedHp;
     }
 
     public static void onEnemySlain(Hero hero) {
