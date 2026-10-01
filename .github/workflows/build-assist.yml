@@ -64,6 +64,7 @@ on:
       - assist-0.9.6-artifact-backrooms
       - assist-0.9.7-crystal-alllaws
       - assist-0.9.8-loot-progression
+      - assist-0.9.9-fast-60
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
