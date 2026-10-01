@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicRing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
@@ -101,8 +102,9 @@ public class WndUpgrade extends Window {
 
 		// *** Computing current and next level to display ***
 
-		int levelFrom = toUpgrade.isIdentified() ? toUpgrade.level() : 0;
-		int levelTo = levelFrom + 1;
+		boolean mimicRing = toUpgrade instanceof MimicRing;
+		int levelFrom = mimicRing ? 0 : (toUpgrade.isIdentified() ? toUpgrade.level() : 0);
+		int levelTo = mimicRing ? 0 : levelFrom + 1;
 
 		if (toUpgrade instanceof Wand && ((Wand) toUpgrade).resinBonus > 0){
 			levelTo--;
@@ -162,7 +164,15 @@ public class WndUpgrade extends Window {
 
 		BitmapText t1 = new BitmapText(PixelScene.pixelFont);
 		BitmapText t2 = new BitmapText(PixelScene.pixelFont);
-		if (toUpgrade.isIdentified()){
+		if (mimicRing) {
+			// Mimic rings do not have a numerical potency level. Their real
+			// upgrade is ability reroll + wand-like charge-cap growth, shown
+			// explicitly in the stat rows below.
+			t1.text("");
+			t2.text("");
+			t1.hardlight(ItemSlot.UPGRADED);
+			t2.hardlight(ItemSlot.UPGRADED);
+		} else if (toUpgrade.isIdentified()){
 			if (levelFrom > 0){
 				t1.text("+" + levelFrom);
 			} else {
@@ -314,6 +324,25 @@ public class WndUpgrade extends Window {
 					bottom);
 		}
 
+		// Limited mimic rings: show the actual upgrade instead of a fake +1.
+		if (toUpgrade instanceof MimicRing) {
+			MimicRing mimic = (MimicRing) toUpgrade;
+			bottom = fillFields(Messages.get(this, "mimic_ability"),
+					mimic.currentAbilityName(),
+					Messages.get(this, "mimic_reroll"),
+					bottom);
+
+			bottom = fillFields(Messages.get(this, "charges"),
+					Integer.toString(mimic.maxCharges()),
+					Integer.toString(mimic.maxChargesAfterUpgrade()),
+					bottom);
+
+			bottom = fillFields(Messages.get(this, "mimic_uses"),
+					mimic.currentCharges() + "/" + mimic.maxCharges(),
+					mimic.currentChargesAfterUpgrade() + "/" + mimic.maxChargesAfterUpgrade(),
+					bottom);
+		}
+
 		//Various ring stats (varies by ring)
 		if (toUpgrade instanceof Ring){
 			if (((Ring) toUpgrade).isKnown()) {
@@ -354,7 +383,7 @@ public class WndUpgrade extends Window {
 		// *** Various extra info texts that can appear underneath stats ***
 
 		//warning relating to identification
-		if (!toUpgrade.isIdentified()){
+		if (!mimicRing && !toUpgrade.isIdentified()){
 			if (toUpgrade instanceof Ring && !((Ring) toUpgrade).isKnown()){
 				bottom = addMessage(Messages.get(this, "unknown_ring"), CharSprite.WARNING, bottom);
 			} else {
