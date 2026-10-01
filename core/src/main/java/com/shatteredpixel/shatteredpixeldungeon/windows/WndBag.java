@@ -26,7 +26,9 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -92,6 +94,10 @@ public class WndBag extends WndTabbed {
 	private Component itemContent;
 	private ScrollPane itemScroll;
 	private final ArrayList<BagInventorySlot> itemSlots = new ArrayList<>();
+
+	private static final float EQUIP_DOUBLE_TAP_WINDOW = 0.28f;
+	private BagInventorySlot pendingTapSlot;
+	private float pendingTapTimer;
 
 	public WndBag( Bag bag ) {
 		this(bag, null);
@@ -382,28 +388,88 @@ public class WndBag extends WndTabbed {
 		protected void onClick() {
 			if (bagItem == null) return;
 
-			if (stackCategory != null && GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
-				Game.scene().addToFront(new WndStackedEquipment(WndBag.this, stackCategory, selector));
+			// Selectors (upgrade/identify/etc.) must stay single-tap and immediate.
+			if (selector != null) {
+				if (stackCategory != null && GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+					Game.scene().addToFront(new WndStackedEquipment(WndBag.this, stackCategory, selector));
+					return;
+				}
+				if (selector.hideAfterSelecting()) hide();
+				selector.onSelect(bagItem);
 				return;
 			}
 
-			if (lastBag != bagItem && !lastBag.contains(bagItem) && !bagItem.isEquipped(Dungeon.hero)){
-
-				hide();
-
-			} else if (selector != null) {
-
-				if (selector.hideAfterSelecting()){
+			// Normal backpack interaction is delayed very slightly so two taps can be
+			// distinguished. Double tap toggles equip/unequip; single tap keeps the
+			// original behavior (open stack or item action window).
+			if (pendingTapSlot == this && pendingTapTimer > 0f) {
+				pendingTapSlot = null;
+				pendingTapTimer = 0f;
+				if (quickToggleEquipment(bagItem)) {
 					hide();
+				} else {
+					performSingleTap();
 				}
-				selector.onSelect( bagItem );
+				return;
+			}
 
+			pendingTapSlot = this;
+			pendingTapTimer = EQUIP_DOUBLE_TAP_WINDOW;
+		}
+
+		void performSingleTap() {
+			if (bagItem == null) return;
+
+			if (stackCategory != null && GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+				Game.scene().addToFront(new WndStackedEquipment(WndBag.this, stackCategory, null));
+				return;
+			}
+
+			if (lastBag != bagItem && !lastBag.contains(bagItem) && !bagItem.isEquipped(Dungeon.hero)) {
+				hide();
 			} else {
-
-				Game.scene().addToFront(new WndUseItem( WndBag.this, bagItem ) );
-
+				Game.scene().addToFront(new WndUseItem(WndBag.this, bagItem));
 			}
 		}
+	}
+
+	@Override
+	public void update() {
+		super.update();
+		if (pendingTapSlot != null && pendingTapTimer > 0f) {
+			pendingTapTimer -= Game.elapsed;
+			if (pendingTapTimer <= 0f) {
+				BagInventorySlot slot = pendingTapSlot;
+				pendingTapSlot = null;
+				pendingTapTimer = 0f;
+				if (slot != null && slot.active) slot.performSingleTap();
+			}
+		}
+	}
+
+	static boolean quickToggleEquipment(Item item) {
+		if (item == null || Dungeon.hero == null || !Dungeon.hero.ready) return false;
+		Hero hero = Dungeon.hero;
+
+		if (item instanceof EquipableItem) {
+			EquipableItem equipable = (EquipableItem)item;
+			item.execute(hero, equipable.isEquipped(hero)
+					? EquipableItem.AC_UNEQUIP
+					: EquipableItem.AC_EQUIP);
+			return true;
+		}
+
+		// Wands are only wearable through 纵横八荒, but should behave exactly like
+		// the other equipment categories for backpack double-tap.
+		if (item instanceof Wand && GenesisEcho.unrestrictedEquipment(hero)) {
+			Wand wand = (Wand)item;
+			wand.execute(hero, wand.isEquipped(hero)
+					? EquipableItem.AC_UNEQUIP
+					: EquipableItem.AC_EQUIP);
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
