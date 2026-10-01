@@ -309,6 +309,49 @@ public class QuickSlotButton extends Button {
 		}
 	}
 
+	private void useMimicRingFromQuickslot(MimicRing ring) {
+		if (ring == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
+				|| !Dungeon.hero.ready || !Dungeon.hero.belongings.isStackEquipped(ring)
+				|| select(slotNum) != ring) {
+			return;
+		}
+
+		if (!GameScene.cancel()) {
+			GameScene.centerNextWndOnInvPane();
+			ring.execute(Dungeon.hero);
+		}
+	}
+
+	private void openMimicRingSelector() {
+		if (Dungeon.hero == null || !Dungeon.hero.ready) return;
+
+		GameScene.cancelCellSelector();
+		GameScene.ready();
+		Game.scene().addToFront(new WndStackedEquipment(
+				null,
+				WndStackedEquipment.Category.RING,
+				new WndBag.ItemSelector() {
+					@Override
+					public String textPrompt() {
+						return "选择快捷戒指";
+					}
+
+					@Override
+					public boolean itemSelectable(Item item) {
+						return item instanceof MimicRing
+								&& Dungeon.hero.belongings.isStackEquipped(item);
+					}
+
+					@Override
+					public void onSelect(Item item) {
+						if (item instanceof MimicRing) {
+							set(slotNum, item);
+						}
+					}
+				}
+		));
+	}
+
 	private void openArtifactSelector() {
 		if (Dungeon.hero == null || !Dungeon.hero.ready) return;
 
