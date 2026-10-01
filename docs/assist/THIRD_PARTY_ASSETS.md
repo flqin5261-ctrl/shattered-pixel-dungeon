@@ -114,3 +114,14 @@ Curated packed-atlas indices used by Assist:
 
 The source art remains unmodified. Assist uses these as sparse physical scenery
 for office, industrial, suburban, city, and pool-hall districts.
+
+## Assist 0.9.4 — purpose-built Backrooms material atlas
+
+Assist 0.9.4 adds `environment/custom_tiles/assist_backrooms_materials.png`, a small
+16×16-tile atlas created specifically for this private Assist build. It is not
+third-party artwork. The atlas supplies distinct yellow carpet/walls, white pool
+tile, blue water, concrete, hotel, cave, field, city, pastel, arcade, beach and
+pink-house materials plus a small set of matching props. Its main purpose is to
+prevent Backrooms districts from falling back to unrelated dungeon colors (most
+notably red Poolrooms water) and to reduce repeated use of the same medieval props.
+
