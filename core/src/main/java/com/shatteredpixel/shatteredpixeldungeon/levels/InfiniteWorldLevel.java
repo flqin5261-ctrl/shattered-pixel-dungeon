@@ -1387,14 +1387,6 @@ public class InfiniteWorldLevel extends Level {
         return -1;
     }
 
-    private int localCellForWorld(int worldX, int worldY) {
-        if (worldX == Integer.MIN_VALUE || worldY == Integer.MIN_VALUE) return -1;
-        int localX = worldX - (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
-        int localY = worldY - (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
-        if (localX < 0 || localX >= width() || localY < 0 || localY >= height()) return -1;
-        return localX + localY * width();
-    }
-
     private void revealStarterCell(int cell) {
         visited[cell] = true;
         mapped[cell] = true;
