@@ -89,24 +89,24 @@ public class InfiniteWorldSeasonTilemap extends CustomTilemap {
 
         switch (season) {
             case InfiniteWorldCycle.SEASON_SPRING:
-                if (grass && roll < 38) return variation(26, 27, x, y, 24);
+                if (grass && roll < 65) return variation(26, 27, x, y, 24);
                 return -1;
 
             case InfiniteWorldCycle.SEASON_SUMMER:
-                if (grass && roll < 56) return variation(27, 26, x, y, 18);
+                if (grass && roll < 78) return variation(27, 26, x, y, 18);
                 return -1;
 
             case InfiniteWorldCycle.SEASON_AUTUMN:
-                if (grass && roll < 74) return variation(18, 20, x, y, 30);
-                if (floor && roll < 12) return variation(18, 20, x, y, 50);
+                if (grass && roll < 92) return variation(18, 20, x, y, 30);
+                if (floor && roll < 26) return variation(18, 20, x, y, 50);
                 return -1;
 
             case InfiniteWorldCycle.SEASON_WINTER:
             default:
                 int coverage;
-                if (weather == InfiniteWorldCycle.WEATHER_SNOW) coverage = 86;
-                else if (weather == InfiniteWorldCycle.WEATHER_RAIN) coverage = 24;
-                else coverage = 46;
+                if (weather == InfiniteWorldCycle.WEATHER_SNOW) coverage = 96;
+                else if (weather == InfiniteWorldCycle.WEATHER_RAIN) coverage = 32;
+                else coverage = 64;
 
                 if (roll < coverage) {
                     // Poolrooms white/cool material cells double as a snow-like
