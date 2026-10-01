@@ -22,6 +22,16 @@ public class InfiniteWorldState implements Bundlable {
     public int heroWorldY = 12;
     public boolean heroWorldInitialized = false;
 
+    // Assist 0.6.17 starter cache. Coordinates are stored in world-space so the
+    // two chests/key survive streaming-window rebuilds and can never duplicate.
+    public boolean starterSuppliesInitialized = false;
+    public int starterNormalChestWorldX = Integer.MIN_VALUE;
+    public int starterNormalChestWorldY = Integer.MIN_VALUE;
+    public int starterCrystalKeyWorldX = Integer.MIN_VALUE;
+    public int starterCrystalKeyWorldY = Integer.MIN_VALUE;
+    public int starterCrystalChestWorldX = Integer.MIN_VALUE;
+    public int starterCrystalChestWorldY = Integer.MIN_VALUE;
+
     // V12 progression state. heroActionValue counts positive Hero spend/spendConstant
     // time while inside Infinite World. The guaranteed artifact chest is a single
     // world object with an explicit lifecycle so Streaming and Save/Load cannot clone it.
@@ -204,6 +214,13 @@ public class InfiniteWorldState implements Bundlable {
     private static final String HERO_WX = "hero_world_x";
     private static final String HERO_WY = "hero_world_y";
     private static final String HERO_WORLD_INIT = "hero_world_init";
+    private static final String STARTER_SUPPLIES_INIT = "starter_supplies_init";
+    private static final String STARTER_NORMAL_X = "starter_normal_x";
+    private static final String STARTER_NORMAL_Y = "starter_normal_y";
+    private static final String STARTER_KEY_X = "starter_key_x";
+    private static final String STARTER_KEY_Y = "starter_key_y";
+    private static final String STARTER_CRYSTAL_X = "starter_crystal_x";
+    private static final String STARTER_CRYSTAL_Y = "starter_crystal_y";
     private static final String HERO_ACTION_VALUE = "hero_action_value";
     private static final String ARTIFACT_CHEST_WX = "artifact_chest_wx";
     private static final String ARTIFACT_CHEST_WY = "artifact_chest_wy";
@@ -247,6 +264,13 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(HERO_WX, heroWorldX);
         bundle.put(HERO_WY, heroWorldY);
         bundle.put(HERO_WORLD_INIT, heroWorldInitialized);
+        bundle.put(STARTER_SUPPLIES_INIT, starterSuppliesInitialized);
+        bundle.put(STARTER_NORMAL_X, starterNormalChestWorldX);
+        bundle.put(STARTER_NORMAL_Y, starterNormalChestWorldY);
+        bundle.put(STARTER_KEY_X, starterCrystalKeyWorldX);
+        bundle.put(STARTER_KEY_Y, starterCrystalKeyWorldY);
+        bundle.put(STARTER_CRYSTAL_X, starterCrystalChestWorldX);
+        bundle.put(STARTER_CRYSTAL_Y, starterCrystalChestWorldY);
         bundle.put(HERO_ACTION_VALUE, heroActionValue);
         bundle.put(ARTIFACT_CHEST_WX, artifactChestWorldX);
         bundle.put(ARTIFACT_CHEST_WY, artifactChestWorldY);
@@ -333,6 +357,20 @@ public class InfiniteWorldState implements Bundlable {
         heroWorldX = bundle.contains(HERO_WX) ? bundle.getInt(HERO_WX) : 12;
         heroWorldY = bundle.contains(HERO_WY) ? bundle.getInt(HERO_WY) : 12;
         heroWorldInitialized = bundle.contains(HERO_WORLD_INIT) && bundle.getBoolean(HERO_WORLD_INIT);
+        starterSuppliesInitialized = bundle.contains(STARTER_SUPPLIES_INIT)
+                && bundle.getBoolean(STARTER_SUPPLIES_INIT);
+        starterNormalChestWorldX = bundle.contains(STARTER_NORMAL_X)
+                ? bundle.getInt(STARTER_NORMAL_X) : Integer.MIN_VALUE;
+        starterNormalChestWorldY = bundle.contains(STARTER_NORMAL_Y)
+                ? bundle.getInt(STARTER_NORMAL_Y) : Integer.MIN_VALUE;
+        starterCrystalKeyWorldX = bundle.contains(STARTER_KEY_X)
+                ? bundle.getInt(STARTER_KEY_X) : Integer.MIN_VALUE;
+        starterCrystalKeyWorldY = bundle.contains(STARTER_KEY_Y)
+                ? bundle.getInt(STARTER_KEY_Y) : Integer.MIN_VALUE;
+        starterCrystalChestWorldX = bundle.contains(STARTER_CRYSTAL_X)
+                ? bundle.getInt(STARTER_CRYSTAL_X) : Integer.MIN_VALUE;
+        starterCrystalChestWorldY = bundle.contains(STARTER_CRYSTAL_Y)
+                ? bundle.getInt(STARTER_CRYSTAL_Y) : Integer.MIN_VALUE;
         heroActionValue = bundle.contains(HERO_ACTION_VALUE) ? bundle.getFloat(HERO_ACTION_VALUE) : 0f;
         artifactChestWorldX = bundle.contains(ARTIFACT_CHEST_WX) ? bundle.getInt(ARTIFACT_CHEST_WX) : 0;
         artifactChestWorldY = bundle.contains(ARTIFACT_CHEST_WY) ? bundle.getInt(ARTIFACT_CHEST_WY) : 0;
