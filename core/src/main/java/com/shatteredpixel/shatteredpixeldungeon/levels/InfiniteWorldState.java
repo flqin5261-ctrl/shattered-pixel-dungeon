@@ -24,6 +24,14 @@ public class InfiniteWorldState implements Bundlable {
     public int heroWorldY = 12;
     public boolean heroWorldInitialized = false;
 
+    // Assist 0.9.6 World Cycle. These values are independent from generatorVersion
+    // so weather/time can evolve without regenerating or invalidating terrain.
+    public boolean worldCycleInitialized = false;
+    public float worldMinutes = 8f * 60f;
+    public int worldWeather = 0;
+    public float worldWeatherRemaining = 240f;
+    public int worldWeatherSequence = 0;
+
     // Assist 0.6.17 starter cache. Coordinates are stored in world-space so the
     // two chests/key survive streaming-window rebuilds and can never duplicate.
     public boolean starterSuppliesInitialized = false;
@@ -218,6 +226,12 @@ public class InfiniteWorldState implements Bundlable {
     private static final String HERO_WX = "hero_world_x";
     private static final String HERO_WY = "hero_world_y";
     private static final String HERO_WORLD_INIT = "hero_world_init";
+
+    private static final String WORLD_CYCLE_INIT = "world_cycle_init";
+    private static final String WORLD_MINUTES = "world_minutes";
+    private static final String WORLD_WEATHER = "world_weather";
+    private static final String WORLD_WEATHER_REMAINING = "world_weather_remaining";
+    private static final String WORLD_WEATHER_SEQUENCE = "world_weather_sequence";
     private static final String STARTER_SUPPLIES_INIT = "starter_supplies_init";
     private static final String STARTER_NORMAL_X = "starter_normal_x";
     private static final String STARTER_NORMAL_Y = "starter_normal_y";
@@ -270,6 +284,11 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(HERO_WX, heroWorldX);
         bundle.put(HERO_WY, heroWorldY);
         bundle.put(HERO_WORLD_INIT, heroWorldInitialized);
+        bundle.put(WORLD_CYCLE_INIT, worldCycleInitialized);
+        bundle.put(WORLD_MINUTES, worldMinutes);
+        bundle.put(WORLD_WEATHER, worldWeather);
+        bundle.put(WORLD_WEATHER_REMAINING, worldWeatherRemaining);
+        bundle.put(WORLD_WEATHER_SEQUENCE, worldWeatherSequence);
         bundle.put(STARTER_SUPPLIES_INIT, starterSuppliesInitialized);
         bundle.put(STARTER_NORMAL_X, starterNormalChestWorldX);
         bundle.put(STARTER_NORMAL_Y, starterNormalChestWorldY);
@@ -365,6 +384,13 @@ public class InfiniteWorldState implements Bundlable {
         heroWorldX = bundle.contains(HERO_WX) ? bundle.getInt(HERO_WX) : 12;
         heroWorldY = bundle.contains(HERO_WY) ? bundle.getInt(HERO_WY) : 12;
         heroWorldInitialized = bundle.contains(HERO_WORLD_INIT) && bundle.getBoolean(HERO_WORLD_INIT);
+        worldCycleInitialized = bundle.contains(WORLD_CYCLE_INIT) && bundle.getBoolean(WORLD_CYCLE_INIT);
+        worldMinutes = bundle.contains(WORLD_MINUTES) ? bundle.getFloat(WORLD_MINUTES) : 8f * 60f;
+        worldWeather = bundle.contains(WORLD_WEATHER) ? bundle.getInt(WORLD_WEATHER) : 0;
+        worldWeatherRemaining = bundle.contains(WORLD_WEATHER_REMAINING)
+                ? bundle.getFloat(WORLD_WEATHER_REMAINING) : 240f;
+        worldWeatherSequence = bundle.contains(WORLD_WEATHER_SEQUENCE)
+                ? bundle.getInt(WORLD_WEATHER_SEQUENCE) : 0;
         starterSuppliesInitialized = bundle.contains(STARTER_SUPPLIES_INIT)
                 && bundle.getBoolean(STARTER_SUPPLIES_INIT);
         starterNormalChestWorldX = bundle.contains(STARTER_NORMAL_X)
