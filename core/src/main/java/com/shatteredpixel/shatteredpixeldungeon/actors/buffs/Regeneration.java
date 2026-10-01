@@ -56,13 +56,23 @@ public class Regeneration extends Buff {
 			if (regenOn() && target.HP < regencap() && !((Hero)target).isStarving()) {
 				boolean chaliceCursed = false;
 				int chaliceLevel = -1;
+				ChaliceOfBlood activeChalice = null;
 				if (target.buff(MagicImmune.class) == null) {
-					if (Dungeon.hero.buff(ChaliceOfBlood.chaliceRegen.class) != null) {
-						chaliceCursed = Dungeon.hero.buff(ChaliceOfBlood.chaliceRegen.class).isCursed();
-						chaliceLevel = Dungeon.hero.buff(ChaliceOfBlood.chaliceRegen.class).itemLevel();
-					} else if (Dungeon.hero.buff(SpiritForm.SpiritFormBuff.class) != null
+					for (ChaliceOfBlood.chaliceRegen regen : Dungeon.hero.buffs(ChaliceOfBlood.chaliceRegen.class)) {
+						if (regen.artifact() instanceof ChaliceOfBlood) {
+							ChaliceOfBlood candidate = (ChaliceOfBlood)regen.artifact();
+							// Multiple chalices can be equipped by 纵横八荒. Use the
+							// strongest native chalice for the shared regeneration timer.
+							if (activeChalice == null || candidate.nativeLevel() > activeChalice.nativeLevel()) {
+								activeChalice = candidate;
+								chaliceCursed = regen.isCursed();
+								chaliceLevel = candidate.nativeLevel();
+							}
+						}
+					}
+					if (activeChalice == null && Dungeon.hero.buff(SpiritForm.SpiritFormBuff.class) != null
 							&& Dungeon.hero.buff(SpiritForm.SpiritFormBuff.class).artifact() instanceof ChaliceOfBlood) {
-						chaliceLevel = SpiritForm.artifactLevel();
+						chaliceLevel = Math.min(10, SpiritForm.artifactLevel());
 					}
 				}
 
@@ -71,9 +81,10 @@ public class Regeneration extends Buff {
 					if (chaliceCursed) {
 						delay *= 1.5f;
 					} else {
-						//15% boost at +0, scaling to a 500% boost at +10
-						delay -= 1.33f + chaliceLevel*0.667f;
+						//15% boost at +0, scaling to 500% at native +10.
+						delay = Math.max(1f, delay - (1.33f + chaliceLevel*0.667f));
 						delay /= RingOfEnergy.artifactChargeMultiplier(target);
+						if (activeChalice != null) delay /= activeChalice.assistOverlevelChargeMultiplier();
 					}
 				}
 
