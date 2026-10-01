@@ -5,7 +5,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
 /**
- * Persistent world-time / season / weather rules for Infinite World.
+ * Persistent, presentation-only world-time / season / weather rules for Infinite World.
  *
  * This class deliberately does not regenerate terrain. All changes are presented
  * through lighting, particles, audio and visual-only tile overlays so Streaming
