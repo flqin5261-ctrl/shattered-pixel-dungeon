@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicRing;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
@@ -421,6 +422,14 @@ public class WndAssist extends Window {
                     int after = artifact.assistBoostVisibleLevel(amount);
                     GLog.p("已强化：" + artifact.name() + "，神器等级 " + before + " → " + after
                             + "（神器遵循自身等级上限）");
+                } else if (item instanceof MimicRing) {
+                    MimicRing mimic = (MimicRing)item;
+                    int beforeCharges = mimic.maxCharges();
+                    item.upgrade(amount);
+                    item.identify();
+                    GLog.p("已刷新：" + mimic.name() + " ×" + amount
+                            + "，当前能力：" + mimic.currentAbilityName()
+                            + "，充能上限 " + beforeCharges + " → " + mimic.maxCharges());
                 } else {
                     int before = item.trueLevel();
 
