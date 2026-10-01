@@ -645,6 +645,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6LooseLoot();
         generateV6Plants();
         generateV7ThemedRoomContents();
+        generateV18AnomalyContent();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
         generateStarterSupplies();
@@ -1182,6 +1183,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV6LooseLootStates();
         snapshotV6PlantStates();
         snapshotV7ThemedRoomStates();
+        snapshotV18AnomalyContent();
         snapshotV9AnomalyNotes();
         snapshotGuaranteedArtifactChest();
         snapshotStarterSupplies();
@@ -1223,6 +1225,7 @@ public class InfiniteWorldLevel extends Level {
         generateV6LooseLoot();
         generateV6Plants();
         generateV7ThemedRoomContents();
+        generateV18AnomalyContent();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
         generateStarterSupplies();
@@ -3389,6 +3392,240 @@ public class InfiniteWorldLevel extends Level {
         Heap heap = heaps.get(cell);
         if (heap == null || heap.type != Heap.Type.HEAP) {
             state().setObjectState(stateKey, 1);
+        }
+    }
+
+    private void generateV18AnomalyContent() {
+        if (state().generatorVersion < 18) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+                if (anomaly == 0) return;
+
+                int looseChance = v18AnomalyLooseChance(anomaly);
+                if (Math.floorMod(hash(cx, cy, 30500), 100L) < looseChance) {
+                    int cell = v18AnomalyObjectCell(cx, cy, ox, oy, 30600);
+                    if (cell >= 0) {
+                        long key = v6ObjectKey(cell, 0x7100 + anomaly);
+                        if (st.objectState(key) == 0
+                                && heaps.get(cell) == null
+                                && traps.get(cell) == null
+                                && plants.get(cell) == null) {
+                            Heap heap = new Heap();
+                            heap.pos = cell;
+                            heap.seen = mapped[cell] || visited[cell];
+                            heap.type = Heap.Type.HEAP;
+                            heap.drop(v18AnomalySupplyItem(cx, cy, anomaly, 30680));
+                            heaps.put(cell, heap);
+                        }
+                    }
+                }
+
+                int containerChance = v18AnomalyContainerChance(anomaly);
+                if (Math.floorMod(hash(cx, cy, 30700), 100L) < containerChance) {
+                    int cell = v18AnomalyObjectCell(cx, cy, ox, oy, 30740);
+                    if (cell >= 0) {
+                        long key = v6ObjectKey(cell, 0x7200 + anomaly);
+                        int chestState = st.chestState(key);
+                        if (chestState < 2 && heaps.get(cell) == null && traps.get(cell) == null) {
+                            Heap heap = new Heap();
+                            heap.pos = cell;
+                            heap.seen = mapped[cell] || visited[cell];
+                            Heap.Type original = v18AnomalyContainerType(anomaly);
+                            heap.type = chestState == 0 ? original : Heap.Type.HEAP;
+                            heap.drop(v18AnomalySupplyItem(cx, cy, anomaly, 30820));
+                            heaps.put(cell, heap);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void snapshotV18AnomalyContent() {
+        if (state().generatorVersion < 18) return;
+        final InfiniteWorldState st = state();
+
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                int anomaly = v9AnomalyType(cx, cy);
+                if (anomaly == 0) return;
+
+                if (Math.floorMod(hash(cx, cy, 30500), 100L) < v18AnomalyLooseChance(anomaly)) {
+                    int cell = v18AnomalyObjectCell(cx, cy, ox, oy, 30600);
+                    if (cell >= 0) {
+                        long key = v6ObjectKey(cell, 0x7100 + anomaly);
+                        if (st.objectState(key) == 0) {
+                            Heap heap = heaps.get(cell);
+                            if (heap == null || heap.type != Heap.Type.HEAP) {
+                                st.setObjectState(key, 1);
+                            }
+                        }
+                    }
+                }
+
+                if (Math.floorMod(hash(cx, cy, 30700), 100L) < v18AnomalyContainerChance(anomaly)) {
+                    int cell = v18AnomalyObjectCell(cx, cy, ox, oy, 30740);
+                    if (cell >= 0) {
+                        long key = v6ObjectKey(cell, 0x7200 + anomaly);
+                        Heap heap = heaps.get(cell);
+                        if (heap == null) {
+                            st.setChestState(key, 2);
+                        } else if (heap.type == v18AnomalyContainerType(anomaly)) {
+                            st.setChestState(key, 0);
+                        } else {
+                            st.setChestState(key, 1);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private int v18AnomalyLooseChance(int anomaly) {
+        switch (anomaly) {
+            case 6: return 34; // hotel
+            case 7: return 28; // lights out
+            case 8: return 22; // ocean
+            case 13:return 28; // poolrooms
+            default:return 42;
+        }
+    }
+
+    private int v18AnomalyContainerChance(int anomaly) {
+        switch (anomaly) {
+            case 7: return 10;
+            case 8: return 9;
+            case 13:return 12;
+            case 2: case 5: case 6: case 10: case 12:
+                return 22;
+            default:return 16;
+        }
+    }
+
+    private Heap.Type v18AnomalyContainerType(int anomaly) {
+        switch (anomaly) {
+            case 9:
+                return Heap.Type.SKELETON;
+            case 3:
+                return Heap.Type.TOMB;
+            default:
+                return Heap.Type.CHEST;
+        }
+    }
+
+    private int v18AnomalyObjectCell(int cx, int cy, int ox, int oy, int saltBase) {
+        for (int attempt = 0; attempt < 24; attempt++) {
+            int lx = 2 + range(cx, cy, saltBase + attempt * 3, 0, CHUNK_SIZE - 5);
+            int ly = 2 + range(cx, cy, saltBase + attempt * 3 + 1, 0, CHUNK_SIZE - 5);
+            int cell = ox + lx + (oy + ly) * width();
+
+            int t = map[cell];
+            if ((t == Terrain.EMPTY || t == Terrain.EMPTY_SP || t == Terrain.EMPTY_DECO
+                    || t == Terrain.GRASS || t == Terrain.HIGH_GRASS || t == Terrain.EMBERS)
+                    && !solid[cell] && !pit[cell]) {
+                return cell;
+            }
+        }
+        return -1;
+    }
+
+    private Item v18AnomalySupplyItem(int cx, int cy, int anomaly, int salt) {
+        int roll = range(cx, cy, salt + anomaly * 17, 0, 4);
+        switch (anomaly) {
+            case 1: // Level 0
+                if (roll == 0) return v6RandomFood(cx, cy, salt + 1);
+                if (roll == 1) return v6SafeScroll(cx, cy, salt + 2);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return new Torch();
+                return new StoneOfBlink();
+
+            case 2: // Level 1
+                if (roll == 0) return new Bomb();
+                if (roll == 1) return new Torch();
+                if (roll == 2) return v6RandomFood(cx, cy, salt + 3);
+                if (roll == 3) return new Pickaxe();
+                return new Gold(5 + range(cx, cy, salt + 4, 0, 18));
+
+            case 3: // Level 2
+                if (roll <= 1) return new PotionOfFrost();
+                if (roll == 2) return new Bomb();
+                if (roll == 3) return new Torch();
+                return new ScrollOfTeleportation();
+
+            case 4: // Level 3
+                if (roll == 0) return new ScrollOfRecharging();
+                if (roll == 1) return new StoneOfBlink();
+                if (roll == 2) return new Bomb();
+                if (roll == 3) return v6RandomPotion(cx, cy, salt + 5);
+                return new Gold(8 + range(cx, cy, salt + 6, 0, 20));
+
+            case 5: // Level 4
+                if (roll <= 1) return v6SafeScroll(cx, cy, salt + 7);
+                if (roll == 2) return v6RandomFood(cx, cy, salt + 8);
+                if (roll == 3) return new PotionOfHealing();
+                return new Gold(6 + range(cx, cy, salt + 9, 0, 18));
+
+            case 6: // Level 5
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 10);
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return new PotionOfInvisibility();
+                return v6SafeScroll(cx, cy, salt + 11);
+
+            case 7: // Level 6
+                if (roll <= 1) return new Torch();
+                if (roll == 2) return v6RandomFood(cx, cy, salt + 12);
+                if (roll == 3) return new PotionOfHealing();
+                return new StoneOfBlink();
+
+            case 8: // Level 7
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 13);
+                if (roll == 2) return new PotionOfFrost();
+                if (roll == 3) return new com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation();
+                return new Torch();
+
+            case 9: // Level 8
+                if (roll == 0) return new Pickaxe();
+                if (roll == 1) return new Torch();
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return v6RandomFood(cx, cy, salt + 14);
+                return v6SeedItem(cx, cy, salt + 15);
+
+            case 10: // Level 9
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 16);
+                if (roll == 2) return new Gold(8 + range(cx, cy, salt + 17, 0, 22));
+                if (roll == 3) return new PotionOfHealing();
+                return new Bomb();
+
+            case 11: // Level 10
+                if (roll <= 1) return v6RandomFood(cx, cy, salt + 18);
+                if (roll == 2) return v6SeedItem(cx, cy, salt + 19);
+                if (roll == 3) return new PotionOfHealing();
+                return new Torch();
+
+            case 12: // Level 11
+                if (roll <= 1) return new Gold(10 + range(cx, cy, salt + 20, 0, 30));
+                if (roll == 2) return v6SafeScroll(cx, cy, salt + 21);
+                if (roll == 3) return new Bomb();
+                return v6RandomFood(cx, cy, salt + 22);
+
+            case 13: // Level 37
+                if (roll <= 1) return new PotionOfFrost();
+                if (roll == 2) return new PotionOfHealing();
+                if (roll == 3) return new com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation();
+                return v6SafeScroll(cx, cy, salt + 23);
+
+            case 14: // Level 94
+            default:
+                if (roll == 0) return v6RandomFood(cx, cy, salt + 24);
+                if (roll == 1) return v6RandomPotion(cx, cy, salt + 25);
+                if (roll == 2) return v6SafeScroll(cx, cy, salt + 26);
+                if (roll == 3) return new Gold(8 + range(cx, cy, salt + 27, 0, 22));
+                return new StoneOfBlink();
         }
     }
 
