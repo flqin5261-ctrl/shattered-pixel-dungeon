@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -33,7 +34,7 @@ import java.util.ArrayList;
 public class WndStackedEquipment extends Window {
 
     public enum Category {
-        WEAPON, WAND, RING, ARTIFACT
+        WEAPON, ARMOR, WAND, RING, ARTIFACT
     }
 
     private static final int SLOT = 24;
@@ -281,6 +282,9 @@ public class WndStackedEquipment extends Window {
             case WEAPON:
                 for (KindOfWeapon item : b.equippedWeapons()) result.add(item);
                 break;
+            case ARMOR:
+                for (Armor item : b.equippedArmors()) result.add(item);
+                break;
             case WAND:
                 for (Wand item : b.equippedWands()) result.add(item);
                 break;
@@ -297,6 +301,7 @@ public class WndStackedEquipment extends Window {
     private static String titleFor(Category category) {
         switch (category) {
             case WEAPON: return "已装备武器";
+            case ARMOR: return "已装备防具";
             case WAND: return "已装备法杖";
             case RING: return "已装备戒指";
             case ARTIFACT: return "已装备神器";
