@@ -113,7 +113,11 @@ public abstract class Wand extends Item {
 			actions.add( AC_ZAP );
 		}
 		if (GenesisEcho.unrestrictedEquipment(hero)) {
-			actions.add(isEquipped(hero) ? EquipableItem.AC_UNEQUIP : EquipableItem.AC_EQUIP);
+			boolean equipped = isEquipped(hero);
+			actions.add(equipped ? EquipableItem.AC_UNEQUIP : EquipableItem.AC_EQUIP);
+			// An equipped wand is no longer physically in the backpack. Do not expose
+			// the generic throw action, which would otherwise bypass the stack record.
+			if (equipped) actions.remove(AC_THROW);
 		}
 
 		return actions;
