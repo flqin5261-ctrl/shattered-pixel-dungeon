@@ -598,6 +598,7 @@ public class InfiniteWorldLevel extends Level {
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
+        generateStarterSupplies();
         rebuildV15DecorationProps();
     }
 
@@ -1134,6 +1135,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV7ThemedRoomStates();
         snapshotV9AnomalyNotes();
         snapshotGuaranteedArtifactChest();
+        snapshotStarterSupplies();
     }
 
     private void rebuildWindow() {
@@ -1174,7 +1176,231 @@ public class InfiniteWorldLevel extends Level {
         generateV7ThemedRoomContents();
         generateV9AnomalyNotes();
         restoreGuaranteedArtifactChest();
+        generateStarterSupplies();
         rebuildV15DecorationProps();
+    }
+
+
+    private static final int STARTER_ORIGIN_WORLD_X = 12;
+    private static final int STARTER_ORIGIN_WORLD_Y = 12;
+    private static final int STARTER_KEY_SALT = 0x7A31;
+
+    private void generateStarterSupplies() {
+        InfiniteWorldState st = state();
+
+        if (!st.starterSuppliesInitialized) {
+            int origin = localCellForWorld(STARTER_ORIGIN_WORLD_X, STARTER_ORIGIN_WORLD_Y);
+            if (origin < 0) return;
+
+            ArrayList<Integer> used = new ArrayList<>();
+            int normal = findStarterSupplyCell(origin, used, 0);
+            if (normal < 0) return;
+            used.add(normal);
+
+            int key = findStarterSupplyCell(origin, used, 1);
+            if (key < 0) return;
+            used.add(key);
+
+            int crystal = findStarterSupplyCell(origin, used, 2);
+            if (crystal < 0) return;
+
+            st.starterNormalChestWorldX = worldXForLocalCell(normal);
+            st.starterNormalChestWorldY = worldYForLocalCell(normal);
+            st.starterCrystalKeyWorldX = worldXForLocalCell(key);
+            st.starterCrystalKeyWorldY = worldYForLocalCell(key);
+            st.starterCrystalChestWorldX = worldXForLocalCell(crystal);
+            st.starterCrystalChestWorldY = worldYForLocalCell(crystal);
+
+            buildStarterContents(st);
+            st.starterSuppliesInitialized = true;
+        }
+
+        restoreStarterNormalChest(st);
+        restoreStarterCrystalKey(st);
+        restoreStarterCrystalChest(st);
+    }
+
+    private void buildStarterContents(InfiniteWorldState st) {
+        st.starterNormalChestContents.clear();
+        st.starterCrystalChestContents.clear();
+
+        Random.pushGenerator(Dungeon.seed ^ 0x6A09E667F3BCC909L);
+        try {
+            for (int i = 0; i < 5; i++) {
+                Item item = Generator.randomUsingDefaults(Generator.Category.FOOD);
+                if (item != null) st.starterNormalChestContents.add(starterUnknown(item));
+            }
+            for (int i = 0; i < 5; i++) {
+                Item item = Generator.randomUsingDefaults(Generator.Category.SCROLL);
+                if (item != null) st.starterNormalChestContents.add(starterUnknown(item));
+            }
+            for (int i = 0; i < 5; i++) {
+                Item item = Generator.randomUsingDefaults(Generator.Category.POTION);
+                if (item != null) st.starterNormalChestContents.add(starterUnknown(item));
+            }
+
+            Item ring = Generator.randomUsingDefaults(Generator.Category.RING);
+            Item wand = Generator.randomUsingDefaults(Generator.Category.WAND);
+            if (ring != null) st.starterCrystalChestContents.add(starterUnknown(ring));
+            if (wand != null) st.starterCrystalChestContents.add(starterUnknown(wand));
+        } finally {
+            Random.popGenerator();
+        }
+    }
+
+    private Item starterUnknown(Item item) {
+        item.levelKnown = false;
+        item.cursedKnown = false;
+        return item;
+    }
+
+    private void restoreStarterNormalChest(InfiniteWorldState st) {
+        int cell = localCellForWorld(st.starterNormalChestWorldX, st.starterNormalChestWorldY);
+        if (cell < 0) return;
+
+        long key = encodeWorld(st.starterNormalChestWorldX, st.starterNormalChestWorldY);
+        int chestState = st.chestState(key);
+        if (chestState >= 2 || heaps.get(cell) != null) return;
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.seen = true;
+        heap.type = chestState == 0 ? Heap.Type.CHEST : Heap.Type.HEAP;
+        for (Item item : new ArrayList<>(st.starterNormalChestContents)) {
+            if (item != null && item.quantity() > 0) heap.drop(item);
+        }
+        st.starterNormalChestContents.clear();
+        st.starterNormalChestContents.addAll(heap.items);
+        heaps.put(cell, heap);
+        revealStarterCell(cell);
+    }
+
+    private void restoreStarterCrystalKey(InfiniteWorldState st) {
+        int cell = localCellForWorld(st.starterCrystalKeyWorldX, st.starterCrystalKeyWorldY);
+        if (cell < 0) return;
+
+        long objectKey = starterKeyObjectKey(st);
+        if (st.objectState(objectKey) != 0 || heaps.get(cell) != null) return;
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.seen = true;
+        heap.type = Heap.Type.HEAP;
+        heap.drop(new CrystalKey(Dungeon.depth));
+        heaps.put(cell, heap);
+        revealStarterCell(cell);
+    }
+
+    private void restoreStarterCrystalChest(InfiniteWorldState st) {
+        int cell = localCellForWorld(st.starterCrystalChestWorldX, st.starterCrystalChestWorldY);
+        if (cell < 0) return;
+
+        long key = encodeWorld(st.starterCrystalChestWorldX, st.starterCrystalChestWorldY);
+        int chestState = st.chestState(key);
+        if (chestState >= 2 || heaps.get(cell) != null) return;
+
+        Heap heap = new Heap();
+        heap.pos = cell;
+        heap.seen = true;
+        heap.type = chestState == 0 ? Heap.Type.CRYSTAL_CHEST : Heap.Type.HEAP;
+        for (Item item : new ArrayList<>(st.starterCrystalChestContents)) {
+            if (item != null && item.quantity() > 0) heap.drop(item);
+        }
+        st.starterCrystalChestContents.clear();
+        st.starterCrystalChestContents.addAll(heap.items);
+        heaps.put(cell, heap);
+        revealStarterCell(cell);
+    }
+
+    private void snapshotStarterSupplies() {
+        InfiniteWorldState st = state();
+        if (!st.starterSuppliesInitialized) return;
+
+        snapshotStarterChest(st.starterNormalChestWorldX, st.starterNormalChestWorldY,
+                Heap.Type.CHEST, st.starterNormalChestContents);
+        snapshotStarterChest(st.starterCrystalChestWorldX, st.starterCrystalChestWorldY,
+                Heap.Type.CRYSTAL_CHEST, st.starterCrystalChestContents);
+
+        int keyCell = localCellForWorld(st.starterCrystalKeyWorldX, st.starterCrystalKeyWorldY);
+        if (keyCell >= 0 && st.objectState(starterKeyObjectKey(st)) == 0) {
+            Heap heap = heaps.get(keyCell);
+            boolean present = false;
+            if (heap != null) {
+                for (Item item : heap.items) {
+                    if (item instanceof CrystalKey) {
+                        present = true;
+                        break;
+                    }
+                }
+            }
+            if (!present) st.setObjectState(starterKeyObjectKey(st), 1);
+        }
+    }
+
+    private void snapshotStarterChest(int worldX, int worldY, Heap.Type closedType,
+                                      ArrayList<Item> contents) {
+        int cell = localCellForWorld(worldX, worldY);
+        if (cell < 0) return;
+
+        long key = encodeWorld(worldX, worldY);
+        Heap heap = heaps.get(cell);
+        if (heap == null) {
+            state().setChestState(key, 2);
+            contents.clear();
+            return;
+        }
+
+        state().setChestState(key, heap.type == closedType ? 0 : 1);
+        contents.clear();
+        contents.addAll(heap.items);
+    }
+
+    private long starterKeyObjectKey(InfiniteWorldState st) {
+        long world = encodeWorld(st.starterCrystalKeyWorldX, st.starterCrystalKeyWorldY);
+        long mix = 0x9E3779B97F4A7C15L * (STARTER_KEY_SALT + 0x632BE5AB);
+        return world ^ Long.rotateLeft(mix, STARTER_KEY_SALT & 31);
+    }
+
+    private int findStarterSupplyCell(int origin, ArrayList<Integer> used, int ordinal) {
+        int ox = origin % width();
+        int oy = origin / width();
+
+        for (int radius = 1; radius <= 9; radius++) {
+            ArrayList<Integer> candidates = new ArrayList<>();
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) != radius) continue;
+                    int x = ox + dx;
+                    int y = oy + dy;
+                    if (x < 1 || y < 1 || x >= width()-1 || y >= height()-1) continue;
+                    int cell = x + y * width();
+                    if (used.contains(cell)) continue;
+                    if (solid[cell] || pit[cell] || (!passable[cell] && !avoid[cell])) continue;
+                    if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+                    candidates.add(cell);
+                }
+            }
+            if (!candidates.isEmpty()) {
+                return candidates.get(Math.floorMod(ordinal, candidates.size()));
+            }
+        }
+        return -1;
+    }
+
+    private int localCellForWorld(int worldX, int worldY) {
+        if (worldX == Integer.MIN_VALUE || worldY == Integer.MIN_VALUE) return -1;
+        int localX = worldX - (state().centerChunkX - HALF_WINDOW) * CHUNK_SIZE;
+        int localY = worldY - (state().centerChunkY - HALF_WINDOW) * CHUNK_SIZE;
+        if (localX < 0 || localX >= width() || localY < 0 || localY >= height()) return -1;
+        return localX + localY * width();
+    }
+
+    private void revealStarterCell(int cell) {
+        visited[cell] = true;
+        mapped[cell] = true;
+        long key = worldKeyForLocalCell(cell);
+        state().markVisited(key);
+        state().markMapped(key);
     }
 
     private void applyTerrainOverrides() {
