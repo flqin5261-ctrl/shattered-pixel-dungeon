@@ -291,7 +291,7 @@ public class LloydsBeacon extends Artifact {
 
 	@Override
 	public Item upgrade() {
-		if (level() == levelCap) return this;
+		if (level() >= levelCap) return this;
 		chargeCap ++;
 		GLog.p( Messages.get(this, "levelup") );
 		return super.upgrade();
@@ -317,7 +317,7 @@ public class LloydsBeacon extends Artifact {
 		@Override
 		public boolean act() {
 			if (charge < chargeCap && !cursed && Regeneration.regenOn()) {
-				partialCharge += 1 / (100f - (chargeCap - charge)*10f);
+				partialCharge += assistOverlevelChargeMultiplier() / Math.max(1f, 100f - (chargeCap - charge)*10f);
 
 				while (partialCharge >= 1) {
 					partialCharge --;
