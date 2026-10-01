@@ -22,15 +22,17 @@ import java.util.ArrayList;
 /**
  * Common implementation for the two limited mimic rings.
  *
- * The ring intentionally has no numerical upgrade scaling. A Scroll of Upgrade
- * calls upgrade(), which only rerolls the stored consumable ability. Charges and
- * recharge timing mirror a normal wand with two base charges.
+ * The copied consumable effect itself has no numerical upgrade scaling. A Scroll
+ * of Upgrade rerolls the stored ability, while charge capacity grows exactly like
+ * a normal 2-charge wand: 2 -> ... -> 10. Recharge timing mirrors Wand.Charger.
  */
 public abstract class MimicRing extends Ring {
 
     public static final String AC_INVOKE = "INVOKE";
 
-    private static final int MAX_CHARGES = 2;
+    private static final int INITIAL_CHARGES = 2;
+    private static final int MAX_CHARGES = 10;
+    private static final int MAX_CHARGE_UPGRADES = MAX_CHARGES - INITIAL_CHARGES;
 
     private static final float BASE_CHARGE_DELAY = 10f;
     private static final float SCALING_CHARGE_ADDITION = 40f;
@@ -40,9 +42,11 @@ public abstract class MimicRing extends Ring {
     private static final String ABILITY_INDEX = "mimic_ability_index";
     private static final String CUR_CHARGES = "mimic_cur_charges";
     private static final String PARTIAL_CHARGE = "mimic_partial_charge";
+    private static final String CHARGE_UPGRADES = "mimic_charge_upgrades";
 
     protected int abilityIndex = 0;
-    protected int curCharges = MAX_CHARGES;
+    protected int chargeUpgrades = 0;
+    protected int curCharges = INITIAL_CHARGES;
     protected float partialCharge = 0f;
 
     {
@@ -56,7 +60,7 @@ public abstract class MimicRing extends Ring {
         // instantiate items directly. Roll here as well so a granted ring does
         // not always default to the first scroll/potion in its pool.
         rollInitialAbility();
-        curCharges = MAX_CHARGES;
+        curCharges = maxCharges();
         partialCharge = 0f;
     }
 
@@ -142,6 +146,14 @@ public abstract class MimicRing extends Ring {
         return Messages.titleCase(Messages.get(pool[abilityIndex], "name"));
     }
 
+    public String currentAbilityName() {
+        return storedAbilityName();
+    }
+
+    public int maxCharges() {
+        return Math.min(MAX_CHARGES, INITIAL_CHARGES + Math.max(0, chargeUpgrades));
+    }
+
     protected void rollInitialAbility() {
         Class<? extends Item>[] pool = abilityPool();
         abilityIndex = (pool == null || pool.length == 0) ? 0 : Random.Int(pool.length);
@@ -166,25 +178,36 @@ public abstract class MimicRing extends Ring {
         super.random();
         // Limited mimic rings never gain a numerical ring level.
         super.level(0);
+        chargeUpgrades = 0;
         rollInitialAbility();
-        curCharges = MAX_CHARGES;
+        curCharges = maxCharges();
         partialCharge = 0f;
         return this;
     }
 
     @Override
     public Item upgrade() {
-        // Deliberately do NOT call Ring.upgrade()/Item.upgrade(): the Scroll of
-        // Upgrade is a reroll token for this item, not a numerical enhancement.
+        // Deliberately do NOT call Ring.upgrade()/Item.upgrade(): copied scroll
+        // and potion effects never gain a numerical potency level. The upgrade is
+        // instead both a reroll token and one step of wand-like charge growth.
         rerollAbility();
 
-        // Keep the ordinary ring's small curse-cleansing chance, but do not alter
-        // level, max charges, current charges, or recharge rate.
+        int oldMax = maxCharges();
+        if (chargeUpgrades < MAX_CHARGE_UPGRADES) {
+            chargeUpgrades++;
+        }
+        int newMax = maxCharges();
+        if (newMax > oldMax) {
+            curCharges = Math.min(newMax, curCharges + 1);
+        }
+
+        // Keep the ordinary ring's small curse-cleansing chance.
         if (Random.Int(3) == 0) {
             cursed = false;
         }
 
-        GLog.p(Messages.get(MimicRing.class, "rerolled"), storedAbilityName());
+        // Do not emit a GLog line here. Bulk Assist upgrades call upgrade() many
+        // times; one line per reroll could cover the entire phone screen.
         updateQuickslot();
         return this;
     }
@@ -205,12 +228,12 @@ public abstract class MimicRing extends Ring {
     @Override
     protected String statsInfo() {
         return Messages.get(MimicRing.class, "stats",
-                storedAbilityName(), curCharges, MAX_CHARGES);
+                storedAbilityName(), curCharges, maxCharges());
     }
 
     @Override
     public String status() {
-        return curCharges + "/" + MAX_CHARGES;
+        return curCharges + "/" + maxCharges();
     }
 
     @Override
@@ -224,6 +247,7 @@ public abstract class MimicRing extends Ring {
         bundle.put(ABILITY_INDEX, abilityIndex);
         bundle.put(CUR_CHARGES, curCharges);
         bundle.put(PARTIAL_CHARGE, partialCharge);
+        bundle.put(CHARGE_UPGRADES, chargeUpgrades);
     }
 
     @Override
@@ -234,12 +258,15 @@ public abstract class MimicRing extends Ring {
         int maxIndex = pool == null ? 0 : Math.max(0, pool.length - 1);
         abilityIndex = Math.max(0, Math.min(bundle.getInt(ABILITY_INDEX), maxIndex));
 
-        curCharges = Math.max(0, Math.min(MAX_CHARGES, bundle.getInt(CUR_CHARGES)));
+        chargeUpgrades = bundle.contains(CHARGE_UPGRADES)
+                ? Math.max(0, Math.min(MAX_CHARGE_UPGRADES, bundle.getInt(CHARGE_UPGRADES)))
+                : 0;
+        curCharges = Math.max(0, Math.min(maxCharges(), bundle.getInt(CUR_CHARGES)));
         partialCharge = bundle.getFloat(PARTIAL_CHARGE);
         if (Float.isNaN(partialCharge) || Float.isInfinite(partialCharge) || partialCharge < 0f) {
             partialCharge = 0f;
         }
-        if (curCharges >= MAX_CHARGES) {
+        if (curCharges >= maxCharges()) {
             partialCharge = 0f;
         }
     }
@@ -248,18 +275,18 @@ public abstract class MimicRing extends Ring {
 
         @Override
         public boolean act() {
-            if (curCharges < MAX_CHARGES && target.buff(MagicImmune.class) == null) {
+            if (curCharges < maxCharges() && target.buff(MagicImmune.class) == null) {
                 recharge();
             }
 
-            while (partialCharge >= 1f && curCharges < MAX_CHARGES) {
+            while (partialCharge >= 1f && curCharges < maxCharges()) {
                 partialCharge--;
                 curCharges++;
                 updateQuickslot();
             }
 
-            if (curCharges >= MAX_CHARGES) {
-                curCharges = MAX_CHARGES;
+            if (curCharges >= maxCharges()) {
+                curCharges = maxCharges();
                 partialCharge = 0f;
             }
 
@@ -268,7 +295,7 @@ public abstract class MimicRing extends Ring {
         }
 
         private void recharge() {
-            int missingCharges = Math.max(0, MAX_CHARGES - curCharges);
+            int missingCharges = Math.max(0, maxCharges() - curCharges);
             float turnsToCharge = (float)(BASE_CHARGE_DELAY
                     + SCALING_CHARGE_ADDITION * Math.pow(NORMAL_SCALE_FACTOR, missingCharges));
 
