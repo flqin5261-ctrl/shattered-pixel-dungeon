@@ -95,7 +95,7 @@ public class CapeOfThorns extends Artifact {
 				charge += damage*(0.5+nativeLevel()*0.05)*assistOverlevelChargeMultiplier();
 				if (charge >= chargeCap){
 					charge = 0;
-					cooldown = 10+level();
+					cooldown = 10+nativeLevel();
 					GLog.p( Messages.get(this, "radiating") );
 				}
 			}
