@@ -79,6 +79,44 @@ public class RingOfForce extends Ring {
 		return tier;
 	}
 
+	private static boolean forceAppliesToUnarmed(Hero hero) {
+		boolean usingForce = hero != null && hero.buff(Force.class) != null;
+		if (hero != null && hero.buff(SpiritForm.SpiritFormBuff.class) != null
+				&& hero.buff(SpiritForm.SpiritFormBuff.class).ring() instanceof RingOfForce) {
+			usingForce = true;
+		}
+		if (hero != null && hero.buff(MonkEnergy.MonkAbility.UnarmedAbilityTracker.class) != null) {
+			usingForce = false;
+		}
+		return usingForce;
+	}
+
+	public static int unarmedMin(Hero hero) {
+		if (hero == null) return 1;
+		if (!forceAppliesToUnarmed(hero)) return 1;
+		int level = getBuffedBonus(hero, Force.class);
+		float tier = tier(hero.STR());
+		int value = min(level, tier);
+		BrawlersStance stance = hero.buff(BrawlersStance.class);
+		if (stance != null && stance.active) {
+			value += Math.round(3+tier+(level*((4+2*tier)/8f)));
+		}
+		return value;
+	}
+
+	public static int unarmedMax(Hero hero) {
+		if (hero == null) return 1;
+		if (!forceAppliesToUnarmed(hero)) return Math.max(hero.STR()-8, 1);
+		int level = getBuffedBonus(hero, Force.class);
+		float tier = tier(hero.STR());
+		int value = max(level, tier);
+		BrawlersStance stance = hero.buff(BrawlersStance.class);
+		if (stance != null && stance.active) {
+			value += Math.round(3+tier+(level*((4+2*tier)/8f)));
+		}
+		return value;
+	}
+
 	public static int damageRoll( Hero hero ){
 		//level can be 0 while still using a ring, so we specifically check for the presence of a ring of force
 		boolean usingForce = hero.buff(Force.class) != null;
