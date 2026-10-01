@@ -3297,7 +3297,7 @@ public class InfiniteWorldLevel extends Level {
         for (int y = spec[1] + 1; y <= spec[3] - 1; y++) {
             for (int x = spec[0] + 1; x <= spec[2] - 1; x++) {
                 int cell = ox + x + (oy + y) * width();
-                int t = map[cell];
+                int t = baseWindow != null && cell < baseWindow.length ? baseWindow[cell] : map[cell];
                 if (!(t == Terrain.EMPTY || t == Terrain.EMPTY_SP || t == Terrain.EMPTY_DECO
                         || t == Terrain.GRASS || t == Terrain.HIGH_GRASS || t == Terrain.EMBERS)) {
                     continue;
@@ -3619,7 +3619,7 @@ public class InfiniteWorldLevel extends Level {
             int ly = 2 + range(cx, cy, saltBase + attempt * 3 + 1, 0, CHUNK_SIZE - 5);
             int cell = ox + lx + (oy + ly) * width();
 
-            int t = map[cell];
+            int t = baseWindow != null && cell < baseWindow.length ? baseWindow[cell] : map[cell];
             if ((t == Terrain.EMPTY || t == Terrain.EMPTY_SP || t == Terrain.EMPTY_DECO
                     || t == Terrain.GRASS || t == Terrain.HIGH_GRASS || t == Terrain.EMBERS)
                     && !solid[cell] && !pit[cell]) {
