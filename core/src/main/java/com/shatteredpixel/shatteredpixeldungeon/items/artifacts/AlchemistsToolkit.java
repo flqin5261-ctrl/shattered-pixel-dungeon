@@ -159,6 +159,14 @@ public class AlchemistsToolkit extends Artifact {
 	}
 	
 	@Override
+	public void onEquippedHeroGainExp(float levelPercent, Hero hero) {
+		ensurePassiveRuntime(hero);
+		if (passiveBuff instanceof kitEnergy) {
+			((kitEnergy)passiveBuff).gainCharge(levelPercent);
+		}
+	}
+
+	@Override
 	public void charge(Hero target, float amount) {
 		if (target.buff(MagicImmune.class) != null) return;
 		partialCharge += 0.25f*amount;
