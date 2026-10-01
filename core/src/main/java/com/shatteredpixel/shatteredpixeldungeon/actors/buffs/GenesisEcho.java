@@ -498,16 +498,22 @@ public class GenesisEcho extends Buff {
 
             int armorMin = 0;
             int armorMax = 0;
-            Armor armor = hero.belongings.armor();
-            if (armor != null) {
-                armorMin = Math.max(0, armor.DRMin());
-                armorMax = Math.max(0, armor.DRMax());
+            java.util.ArrayList<Armor> armors = hero.belongings.equippedArmors();
+            for (Armor armor : armors) {
+                if (armor == null) continue;
+                armorMin += Math.max(0, armor.DRMin());
+                armorMax += Math.max(0, armor.DRMax());
             }
             out.append("\n装备减伤：").append(armorMin).append("～").append(armorMax + weaponBlock);
             if (weaponBlock > 0) {
                 out.append("（武器格挡上限 +").append(weaponBlock).append("）");
             }
-            out.append("\n防具：").append(armor == null ? "未装备" : armor.name()).append("（仍为单件槽）");
+            out.append("\n防具：").append(armors.size()).append("件，护甲值真实叠加");
+            Armor primaryArmor = hero.belongings.armor();
+            if (primaryArmor != null) {
+                out.append("；主防具：").append(primaryArmor.name());
+                out.append("。破损纹章仅由主防具承载并触发护盾");
+            }
 
             java.util.ArrayList<Ring> rings = hero.belongings.equippedRings();
             out.append("\n\n_戒指真实叠加_\n共 ").append(rings.size()).append(" 枚");
