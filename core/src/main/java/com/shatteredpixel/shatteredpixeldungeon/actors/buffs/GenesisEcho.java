@@ -132,6 +132,13 @@ public class GenesisEcho extends Buff {
         if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
     }
 
+    public static void showCurseDenial(Hero hero) {
+        if (hero == null || !miracleLinked(hero)) return;
+        String text = "诅咒敕免";
+        GLog.p(text);
+        if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
+    }
+
     public static void showDamageDenial(Hero hero, Object source) {
         if (hero == null || !active(hero)) return;
         String text = "伤害敕免";
