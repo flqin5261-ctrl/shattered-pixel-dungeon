@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
 
@@ -49,6 +50,11 @@ public class Food extends Item {
 	public static final String AC_EAT	= "EAT";
 	
 	public float energy = Hunger.HUNGRY;
+
+	private static final String STARTER_UNKNOWN = "starter_unknown";
+	private static final String STARTER_REAL_IMAGE = "starter_real_image";
+	private boolean starterUnknown = false;
+	private int starterRealImage = -1;
 	
 	{
 		stackable = true;
@@ -72,6 +78,8 @@ public class Food extends Item {
 		super.execute( hero, action );
 
 		if (action.equals( AC_EAT )) {
+
+			if (starterUnknown) identify();
 			
 			detach( hero.belongings.backpack );
 			Catalog.countUse(getClass());
@@ -131,11 +139,62 @@ public class Food extends Item {
 		return false;
 	}
 	
+	public Food markStarterUnknown() {
+		if (!starterUnknown) {
+			starterUnknown = true;
+			starterRealImage = image;
+		}
+		image = ItemSpriteSheet.RATION;
+		levelKnown = false;
+		cursedKnown = false;
+		return this;
+	}
+
 	@Override
 	public boolean isIdentified() {
-		return true;
+		return !starterUnknown;
 	}
-	
+
+	@Override
+	public Item identify(boolean byHero) {
+		if (starterUnknown) {
+			starterUnknown = false;
+			if (starterRealImage >= 0) image = starterRealImage;
+		}
+		return super.identify(byHero);
+	}
+
+	@Override
+	public String name() {
+		return starterUnknown ? Messages.get(Food.class, "starter_unknown_name") : super.name();
+	}
+
+	@Override
+	public String desc() {
+		return starterUnknown ? Messages.get(Food.class, "starter_unknown_desc") : super.desc();
+	}
+
+	@Override
+	public boolean isSimilar(Item item) {
+		if (item instanceof Food && starterUnknown != ((Food)item).starterUnknown) return false;
+		return super.isSimilar(item);
+	}
+
+	@Override
+	public void storeInBundle(Bundle bundle) {
+		super.storeInBundle(bundle);
+		bundle.put(STARTER_UNKNOWN, starterUnknown);
+		bundle.put(STARTER_REAL_IMAGE, starterRealImage);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		starterUnknown = bundle.contains(STARTER_UNKNOWN) && bundle.getBoolean(STARTER_UNKNOWN);
+		starterRealImage = bundle.contains(STARTER_REAL_IMAGE) ? bundle.getInt(STARTER_REAL_IMAGE) : -1;
+		if (starterUnknown) image = ItemSpriteSheet.RATION;
+	}
+
 	@Override
 	public int value() {
 		return 10 * quantity;
