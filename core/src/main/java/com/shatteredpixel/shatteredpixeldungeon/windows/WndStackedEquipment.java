@@ -40,11 +40,14 @@ public class WndStackedEquipment extends Window {
     private static final int GAP = 2;
     private static final int PAD = 2;
     private static final int MAX_COLS = 5;
+    private static final int MIN_NORMAL_COLS = 3;
     private static final float EQUIP_DOUBLE_TAP_WINDOW = 0.28f;
 
     private final Window owner;
+    private final Category category;
     private final WndBag.ItemSelector selector;
     private final ArrayList<StackInventorySlot> slots = new ArrayList<>();
+    private ScrollPane scroll;
 
     private StackInventorySlot pendingTapSlot;
     private float pendingTapTimer;
@@ -56,6 +59,7 @@ public class WndStackedEquipment extends Window {
     public WndStackedEquipment(Window owner, Category category, WndBag.ItemSelector selector) {
         super();
         this.owner = owner;
+        this.category = category;
         this.selector = selector;
 
         final ArrayList<Item> items = itemsFor(category);
@@ -77,7 +81,8 @@ public class WndStackedEquipment extends Window {
         if (selector != null) {
             cols = maxColsForScreen;
         } else {
-            cols = Math.min(maxColsForScreen, Math.max(1, items.size()));
+            cols = Math.min(maxColsForScreen,
+                    Math.max(MIN_NORMAL_COLS, Math.max(1, items.size())));
         }
         final int width = PAD * 2 + cols * SLOT + Math.max(0, cols - 1) * GAP;
 
@@ -99,14 +104,14 @@ public class WndStackedEquipment extends Window {
         // lone slot to the left edge.
         int visibleCols = Math.min(cols, Math.max(1, items.size()));
         float firstRowLeft = PAD;
-        if (selector != null && items.size() < cols) {
+        if (items.size() < cols) {
             float rowWidth = visibleCols * SLOT + Math.max(0, visibleCols - 1) * GAP;
             firstRowLeft = (width - rowWidth) / 2f;
         }
 
         for (final Item item : items) {
             StackInventorySlot slot = new StackInventorySlot(item);
-            float rowLeft = (selector != null && items.size() < cols) ? firstRowLeft : PAD;
+            float rowLeft = items.size() < cols ? firstRowLeft : PAD;
             slot.setRect(rowLeft + col * (SLOT + GAP), PAD + row * (SLOT + GAP), SLOT, SLOT);
             content.add(slot);
             slots.add(slot);
@@ -132,7 +137,7 @@ public class WndStackedEquipment extends Window {
                 PixelScene.uiCamera.height - chrome.marginVer() - (int)paneY - 8);
         int viewportHeight = Math.min(contentHeight, maxViewport);
 
-        ScrollPane scroll = new ScrollPane(content) {
+        scroll = new ScrollPane(content) {
             @Override
             public void onClick(float x, float y) {
                 StackInventorySlot slot = slotAt(x, y);
@@ -211,8 +216,7 @@ public class WndStackedEquipment extends Window {
                 pendingTapSlot = null;
                 pendingTapTimer = 0f;
                 if (WndBag.quickToggleEquipment(stackItem)) {
-                    hide();
-                    if (owner != null) owner.hide();
+                    refreshAfterEquipmentToggle();
                 } else {
                     performSingleTap();
                 }
@@ -229,11 +233,45 @@ public class WndStackedEquipment extends Window {
             Dungeon.hero.belongings.makeStackPrimary(stackItem);
             Item.updateQuickslot();
 
-            hide();
-            if (owner != null) owner.hide();
-
-            GameScene.show(new WndUseItem(null, stackItem));
+            // Keep this equipment-group window open behind the item details.
+            // Closing WndUseItem returns directly to the same group so the player
+            // can inspect every equipped weapon/ring/wand/artifact in sequence.
+            GameScene.show(new WndUseItem(WndStackedEquipment.this, stackItem));
         }
+    }
+
+    private float currentScrollY() {
+        if (scroll == null || scroll.content() == null || scroll.content().camera == null) {
+            return 0f;
+        }
+        return scroll.content().camera.scroll.y;
+    }
+
+    private void restoreScrollY(float y) {
+        if (scroll != null) scroll.scrollTo(0, y);
+    }
+
+    private void refreshAfterEquipmentToggle() {
+        float oldScrollY = currentScrollY();
+        Window refreshedOwner = owner;
+
+        // Remove only this group window. If it was opened from the backpack,
+        // rebuild the backpack in-place as well so newly equipped/unequipped
+        // items are reflected immediately without exiting inventory management.
+        hide();
+        if (owner instanceof WndBag) {
+            refreshedOwner = ((WndBag) owner).refreshAfterEquipmentToggle();
+        }
+
+        ArrayList<Item> remaining = itemsFor(category);
+        if (!remaining.isEmpty()) {
+            WndStackedEquipment fresh =
+                    new WndStackedEquipment(refreshedOwner, category, selector);
+            Game.scene().addToFront(fresh);
+            fresh.restoreScrollY(oldScrollY);
+        }
+        // If the last item in this category was removed, simply reveal the
+        // refreshed backpack underneath instead of closing the backpack too.
     }
 
     public static ArrayList<Item> itemsFor(Category category) {
