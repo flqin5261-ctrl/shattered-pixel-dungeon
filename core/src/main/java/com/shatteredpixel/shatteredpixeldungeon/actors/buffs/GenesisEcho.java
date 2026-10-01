@@ -118,6 +118,13 @@ public class GenesisEcho extends Buff {
         return active(hero);
     }
 
+    public static void showForcedMovementDenial(Hero hero) {
+        if (hero == null || !active(hero)) return;
+        String text = "位移敕免";
+        GLog.p(text);
+        if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
+    }
+
     public static void showDamageDenial(Hero hero, Object source) {
         if (hero == null || !active(hero)) return;
         String text = "伤害敕免";
@@ -207,7 +214,13 @@ public class GenesisEcho extends Buff {
     public String desc() {
         Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        return Messages.get(this, miracleLinked(hero) ? "desc_linked" : "desc_unlinked",
+        String base = Messages.get(this, miracleLinked(hero) ? "desc_linked" : "desc_unlinked",
+                st.genesisKillHpBonus,
+                st.genesisKillStrBonus);
+        if (hero == null) return base;
+        return base + Messages.get(this, "live_stats",
+                hero.HT,
+                hero.STR(),
                 st.genesisKillHpBonus,
                 st.genesisKillStrBonus);
     }
