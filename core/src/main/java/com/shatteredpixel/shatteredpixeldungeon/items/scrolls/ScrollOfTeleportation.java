@@ -105,10 +105,7 @@ public class ScrollOfTeleportation extends Scroll {
 	public static boolean teleportChar( Char ch, Class source ) {
 
 		if (GenesisEcho.blocksForcedTeleport(ch, source)) {
-			if (ch == Dungeon.hero) {
-				GLog.p("万法·不羁：传送敕免。");
-				if (ch.sprite != null) ch.sprite.showStatus(0x66FFCC, "传送敕免");
-			}
+			if (ch instanceof Hero) GenesisEcho.showForcedTeleportDenial((Hero)ch);
 			return false;
 		}
 
