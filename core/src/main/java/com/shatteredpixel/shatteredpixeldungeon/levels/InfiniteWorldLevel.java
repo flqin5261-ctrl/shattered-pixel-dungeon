@@ -1384,6 +1384,28 @@ public class InfiniteWorldLevel extends Level {
                 return candidates.get(Math.floorMod(ordinal, candidates.size()));
             }
         }
+
+        // The starter cache is a hard guarantee. If an unusual generator layout
+        // leaves no free nearby floor at all, reserve one of the immediate cells
+        // and carve it into ordinary floor instead of silently omitting supplies.
+        int[][] fallback = new int[][]{
+                {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+                {1, 1}, {-1, 1}, {1, -1}, {-1, -1},
+                {2, 0}, {-2, 0}, {0, 2}, {0, -2}
+        };
+        for (int[] d : fallback) {
+            int x = ox + d[0];
+            int y = oy + d[1];
+            if (x < 1 || y < 1 || x >= width()-1 || y >= height()-1) continue;
+            int cell = x + y * width();
+            if (used.contains(cell) || Actor.findChar(cell) != null) continue;
+
+            heaps.remove(cell);
+            traps.remove(cell);
+            plants.remove(cell);
+            Level.set(cell, Terrain.EMPTY, this);
+            return cell;
+        }
         return -1;
     }
 
