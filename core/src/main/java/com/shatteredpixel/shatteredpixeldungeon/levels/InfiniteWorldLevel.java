@@ -3671,7 +3671,9 @@ public class InfiniteWorldLevel extends Level {
             case 9:
                 return Heap.Type.SKELETON;
             case 3:
-                return Heap.Type.TOMB;
+                // Level 2 is an industrial maintenance corridor; a dungeon tomb
+                // was visually out of place even though it functioned correctly.
+                return Heap.Type.CHEST;
             default:
                 return Heap.Type.CHEST;
         }
