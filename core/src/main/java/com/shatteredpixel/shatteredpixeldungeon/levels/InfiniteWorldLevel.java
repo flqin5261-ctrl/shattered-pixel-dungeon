@@ -2378,10 +2378,14 @@ public class InfiniteWorldLevel extends Level {
         switch (family) {
             case 0:
                 return v22CategoryItem(v22MeleeTier(variant), variant / 5L, 0);
-            case 1:
+            case 1: {
                 // Only the five ordinary armor tiers are world loot; class armor
                 // remains tied to its own progression systems.
-                return v22CategoryItem(Generator.Category.ARMOR, variant, 0);
+                Class<?>[] armor = Generator.Category.ARMOR.classes;
+                int idx = (int)Math.floorMod(variant, 5L);
+                Item item = (Item)Reflection.newInstance((Class<? extends Item>)armor[idx]);
+                return item == null ? null : item.random();
+            }
             case 2:
                 return v22CategoryItem(Generator.Category.WAND, variant, 0);
             case 3:
@@ -2928,7 +2932,8 @@ public class InfiniteWorldLevel extends Level {
                 switch (range(cx, cy, 25150, 0, 4)) {
                     case 0: return new Bomb();
                     case 1: return new Torch();
-                    case 2: return new StoneOfBlink();
+                    case 2: return state().generatorVersion >= 22
+                            ? v22StoneItem(cx, cy, 25152) : new StoneOfBlink();
                     case 3: return new Pickaxe();
                     default:return new ScrollOfRemoveCurse();
                 }
@@ -3026,7 +3031,8 @@ public class InfiniteWorldLevel extends Level {
             if (progressTier == 1) {
                 if (roll < 25) return Generator.randomUsingDefaults(Generator.Category.WAND);
                 if (roll < 45) return new ScrollOfTransmutation();
-                if (roll < 70) return new StoneOfBlink();
+                if (roll < 70) return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, 25172 + progressTier) : new StoneOfBlink();
                 return new ScrollOfRemoveCurse();
             }
 
@@ -3034,7 +3040,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll < 35) return Generator.randomUsingDefaults(Generator.Category.WAND);
                 if (roll < 60) return Generator.randomUsingDefaults(Generator.Category.RING);
                 if (roll < 80) return new ScrollOfTransmutation();
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, 25173 + progressTier) : new StoneOfBlink();
             }
 
             if (progressTier == 3) {
@@ -3457,7 +3464,10 @@ public class InfiniteWorldLevel extends Level {
     private void generateV7Workshop(int cx, int cy, int ox, int oy, int roomIndex) {
         Item[] items;
         if (state().generatorVersion >= 9) {
-            items = new Item[]{ new Bomb(), new StoneOfBlink() };
+            items = new Item[]{ new Bomb(),
+                    state().generatorVersion >= 22
+                            ? v22StoneItem(cx, cy, 21821 + roomIndex)
+                            : new StoneOfBlink() };
         } else {
             items = new Item[]{ new Bomb(), new Bomb(), new StoneOfBlink(), new Torch() };
         }
@@ -3576,7 +3586,8 @@ public class InfiniteWorldLevel extends Level {
         if (roll < 77) return v6RandomPotion(cx, cy, salt + 3);
         if (roll < 89) return new Gold(18 + range(cx, cy, salt + 4, 0, 32));
         if (roll < 95) return new Bomb();
-        return new StoneOfBlink();
+        return state().generatorVersion >= 22
+                ? v22StoneItem(cx, cy, salt + 5) : new StoneOfBlink();
     }
 
     private void generateV8SecretBonus(int cx, int cy, int ox, int oy, int roomIndex) {
@@ -3912,7 +3923,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll == 1) return v6SafeScroll(cx, cy, salt + 2);
                 if (roll == 2) return new PotionOfHealing();
                 if (roll == 3) return new Torch();
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 41) : new StoneOfBlink();
 
             case 2: // Level 1
                 if (roll == 0) return new Bomb();
@@ -3929,7 +3941,8 @@ public class InfiniteWorldLevel extends Level {
 
             case 4: // Level 3
                 if (roll == 0) return new ScrollOfRecharging();
-                if (roll == 1) return new StoneOfBlink();
+                if (roll == 1) return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 42) : new StoneOfBlink();
                 if (roll == 2) return new Bomb();
                 if (roll == 3) return v6RandomPotion(cx, cy, salt + 5);
                 return new Gold(8 + range(cx, cy, salt + 6, 0, 20));
@@ -3950,7 +3963,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll <= 1) return new Torch();
                 if (roll == 2) return v6RandomFood(cx, cy, salt + 12);
                 if (roll == 3) return new PotionOfHealing();
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 43) : new StoneOfBlink();
 
             case 8: // Level 7
                 if (roll <= 1) return v6RandomFood(cx, cy, salt + 13);
@@ -3994,7 +4008,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll == 1) return v6RandomPotion(cx, cy, salt + 25);
                 if (roll == 2) return v6SafeScroll(cx, cy, salt + 26);
                 if (roll == 3) return new Gold(8 + range(cx, cy, salt + 27, 0, 22));
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 44) : new StoneOfBlink();
 
             case 15: // Level 13 apartments
                 if (roll <= 1) return v6RandomFood(cx, cy, salt + 28);
@@ -4006,7 +4021,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll <= 1) return v6RandomFood(cx, cy, salt + 31);
                 if (roll == 2) return new PotionOfHealing();
                 if (roll == 3) return v6RandomPotion(cx, cy, salt + 32);
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 45) : new StoneOfBlink();
 
             case 17: // Level 34 sewer
                 if (roll <= 1) return new Torch();
@@ -4019,7 +4035,8 @@ public class InfiniteWorldLevel extends Level {
                 if (roll == 1) return v6RandomFood(cx, cy, salt + 34);
                 if (roll == 2) return v6SafeScroll(cx, cy, salt + 35);
                 if (roll == 3) return new PotionOfInvisibility();
-                return new StoneOfBlink();
+                return state().generatorVersion >= 22
+                        ? v22StoneItem(cx, cy, salt + 46) : new StoneOfBlink();
 
             case 19: // Level 48 beach
                 if (roll <= 1) return v6RandomFood(cx, cy, salt + 36);
