@@ -113,7 +113,7 @@ public class SkeletonKey extends Artifact {
 
 	//levels when used, with bonus xp for opening locks that could be opened with keys
 	public void gainExp( int xpGain ){
-		if (level() == levelCap){
+		if (level() >= levelCap){
 			return;
 		}
 
@@ -436,8 +436,9 @@ public class SkeletonKey extends Artifact {
 					&& target.buff(MagicImmune.class) == null
 					&& Regeneration.regenOn()) {
 				//120 turns to charge at full, 60 turns to charge at 0/8
-				float chargeGain = 1 / (120f - (chargeCap - charge)*7.5f);
+				float chargeGain = 1 / Math.max(1f, 120f - (chargeCap - charge)*7.5f);
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= assistOverlevelChargeMultiplier();
 				partialCharge += chargeGain;
 
 				while (partialCharge >= 1) {
