@@ -229,16 +229,9 @@ public class GenesisEcho extends Buff {
     @Override
     public String desc() {
         Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
-        InfiniteWorldState st = InfiniteWorldProgression.state();
-        String base = Messages.get(this, miracleLinked(hero) ? "desc_linked" : "desc_unlinked",
-                st.genesisKillHpBonus,
-                st.genesisKillStrBonus);
+        String base = Messages.get(this, miracleLinked(hero) ? "desc_linked" : "desc_unlinked");
         if (hero == null) return base;
-        return base + Messages.get(this, "live_stats",
-                hero.HT,
-                hero.STR(),
-                st.genesisKillHpBonus,
-                st.genesisKillStrBonus);
+        return base + Messages.get(this, "live_stats", hero.STR());
     }
 
     public static boolean active(Hero hero) {
@@ -250,7 +243,7 @@ public class GenesisEcho extends Buff {
         InfiniteWorldState st = InfiniteWorldProgression.state();
         boolean first = !st.genesisEchoUnlocked;
         st.genesisEchoUnlocked = true;
-        boolean growthMigrated = migratePermanentGrowth(st);
+        boolean growthMigrated = retireLegacyKillGrowth(st);
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         if (growthMigrated) hero.updateHT(true);
@@ -266,7 +259,7 @@ public class GenesisEcho extends Buff {
     public static void ensure(Hero hero) {
         if (hero == null || !Dungeon.infiniteWorld) return;
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        boolean growthMigrated = st.genesisEchoUnlocked && migratePermanentGrowth(st);
+        boolean growthMigrated = st.genesisEchoUnlocked && retireLegacyKillGrowth(st);
         if (growthMigrated) hero.updateHT(true);
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
@@ -473,35 +466,29 @@ public class GenesisEcho extends Buff {
                 || !"ScrollOfTeleportation".equals(source.getSimpleName());
     }
 
-    private static boolean migratePermanentGrowth(InfiniteWorldState st) {
+    private static boolean retireLegacyKillGrowth(InfiniteWorldState st) {
         if (st == null) return false;
-        int expectedHp = Math.max(0, st.genesisKillStrBonus) * 10;
-        if (st.genesisKillHpBonus < expectedHp) {
-            st.genesisKillHpBonus = expectedHp;
-            return true;
-        }
-        return false;
+        boolean changed = st.genesisKillHpBonus != 0 || st.genesisKillStrBonus != 0;
+        st.genesisKillHpBonus = 0;
+        st.genesisKillStrBonus = 0;
+        return changed;
     }
 
+    // 0.6.19: 纵横八荒 no longer grants kill-based HP/STR growth. Keep this
+    // hook as a compatibility no-op so older call sites and saves remain safe.
     public static void onEnemySlain(Hero hero) {
-        if (hero == null || !active(hero) || !Dungeon.infiniteWorld) return;
-
-        InfiniteWorldState st = InfiniteWorldProgression.state();
-        st.genesisKillHpBonus += 10;
-        st.genesisKillStrBonus++;
-
-        hero.updateHT(true);
-        hero.HP = hero.HT;
     }
 
     public static int permanentHpBonus(Hero hero) {
-        if (hero == null || !active(hero) || !Dungeon.infiniteWorld) return 0;
-        return InfiniteWorldProgression.state().genesisKillHpBonus;
+        return 0;
     }
 
     public static int permanentStrBonus(Hero hero) {
-        if (hero == null || !active(hero) || !Dungeon.infiniteWorld) return 0;
-        return InfiniteWorldProgression.state().genesisKillStrBonus;
+        return 0;
+    }
+
+    public static boolean unrestrictedEquipment(Hero hero) {
+        return active(hero);
     }
 
     public static boolean freeShop(Hero hero) {
