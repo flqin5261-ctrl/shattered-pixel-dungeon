@@ -91,7 +91,7 @@ public class InfiniteWorldBackroomsMaterialLayer extends CustomTilemap {
 
         if (terrain != Terrain.EMPTY && terrain != Terrain.EMPTY_SP
                 && terrain != Terrain.EMPTY_DECO && terrain != Terrain.EMBERS
-                && terrain != Terrain.CUSTOM_DECO_EMPTY) {
+                && terrain != Terrain.CUSTOM_DECO_EMPTY && terrain != Terrain.CUSTOM_DECO) {
             return -1;
         }
 
