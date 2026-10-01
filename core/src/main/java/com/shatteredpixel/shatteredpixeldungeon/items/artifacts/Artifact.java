@@ -123,6 +123,19 @@ public class Artifact extends KindofMisc {
 
 		if (attached) return true;
 
+		// A restored save may already contain this exact artifact's passive buff
+		// while the item field itself has not been rebound yet. Reuse it instead of
+		// spawning a duplicate runtime.
+		for (ArtifactBuff existing : hero.buffs(ArtifactBuff.class)) {
+			if (existing.artifact() == this) {
+				passiveBuff = existing;
+				if (Actor.chars().contains(hero) && !Actor.all().contains(existing)) {
+					Actor.add(existing);
+				}
+				return true;
+			}
+		}
+
 		if (expected != null && expected.target != null) {
 			expected.detach();
 		}
@@ -373,6 +386,10 @@ public class Artifact extends KindofMisc {
 	}
 
 	public class ArtifactBuff extends Buff {
+
+		public Artifact artifact() {
+			return Artifact.this;
+		}
 
 		@Override
 		public boolean attachTo( Char target ) {
