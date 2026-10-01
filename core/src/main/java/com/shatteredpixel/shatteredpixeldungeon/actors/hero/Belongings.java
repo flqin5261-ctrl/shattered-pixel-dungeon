@@ -48,7 +48,6 @@ import com.watabou.utils.Bundlable;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 
 public class Belongings implements Iterable<Item> {
@@ -365,6 +364,13 @@ public class Belongings implements Iterable<Item> {
 		return item == weapon || item == secondWep || item == artifact || item == misc || item == ring
 				|| stackedWeapons.contains(item) || stackedWands.contains(item)
 				|| stackedArtifacts.contains(item) || stackedRings.contains(item);
+	}
+
+	public boolean isGenesisStackExtra(Item item) {
+		return item != null && (stackedWeapons.contains(item)
+				|| stackedWands.contains(item)
+				|| stackedArtifacts.contains(item)
+				|| stackedRings.contains(item));
 	}
 
 	public ArrayList<KindOfWeapon> equippedWeapons() {
