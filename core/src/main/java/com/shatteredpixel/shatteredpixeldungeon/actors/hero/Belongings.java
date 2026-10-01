@@ -102,6 +102,7 @@ public class Belongings implements Iterable<Item> {
 	// are truly equipped and remain owned by the Hero without occupying backpack
 	// cells.
 	private final ArrayList<KindOfWeapon> stackedWeapons = new ArrayList<>();
+	private final ArrayList<Armor> stackedArmors = new ArrayList<>();
 	private final ArrayList<Wand> stackedWands = new ArrayList<>();
 	private final ArrayList<Artifact> stackedArtifacts = new ArrayList<>();
 	private final ArrayList<Ring> stackedRings = new ArrayList<>();
@@ -203,6 +204,7 @@ public class Belongings implements Iterable<Item> {
 
 	private static final String SECOND_WEP = "second_wep";
 	private static final String STACKED_WEAPONS = "genesis_stacked_weapons";
+	private static final String STACKED_ARMORS = "genesis_stacked_armors";
 	private static final String STACKED_WANDS = "genesis_stacked_wands";
 	private static final String STACKED_ARTIFACTS = "genesis_stacked_artifacts";
 	private static final String STACKED_RINGS = "genesis_stacked_rings";
@@ -219,6 +221,7 @@ public class Belongings implements Iterable<Item> {
 		bundle.put( RING, ring );
 		bundle.put( SECOND_WEP, secondWep );
 		bundle.put( STACKED_WEAPONS, stackedWeapons );
+		bundle.put( STACKED_ARMORS, stackedArmors );
 		bundle.put( STACKED_WANDS, stackedWands );
 		bundle.put( STACKED_ARTIFACTS, stackedArtifacts );
 		bundle.put( STACKED_RINGS, stackedRings );
@@ -253,6 +256,7 @@ public class Belongings implements Iterable<Item> {
 		if (secondWep() != null)    secondWep().activate(owner);
 
 		stackedWeapons.clear();
+		stackedArmors.clear();
 		stackedWands.clear();
 		stackedArtifacts.clear();
 		stackedRings.clear();
@@ -263,6 +267,15 @@ public class Belongings implements Iterable<Item> {
 					KindOfWeapon weapon = (KindOfWeapon)item;
 					stackedWeapons.add(weapon);
 					weapon.activate(owner);
+				}
+			}
+		}
+		if (bundle.contains(STACKED_ARMORS)) {
+			for (Bundlable item : bundle.getCollection(STACKED_ARMORS)) {
+				if (item instanceof Armor) {
+					Armor armor = (Armor)item;
+					stackedArmors.add(armor);
+					armor.activate(owner);
 				}
 			}
 		}
@@ -306,6 +319,7 @@ public class Belongings implements Iterable<Item> {
 		misc = null;
 		ring = null;
 		stackedWeapons.clear();
+		stackedArmors.clear();
 		stackedWands.clear();
 		stackedArtifacts.clear();
 		stackedRings.clear();
@@ -315,6 +329,13 @@ public class Belongings implements Iterable<Item> {
 		if (item == null || isStackEquipped(item)) return false;
 		if (weapon == null) weapon = item;
 		else stackedWeapons.add(item);
+		return true;
+	}
+
+	public boolean equipStackedArmor(Armor item) {
+		if (item == null || isStackEquipped(item)) return false;
+		if (armor == null) armor = item;
+		else stackedArmors.add(item);
 		return true;
 	}
 
@@ -350,6 +371,11 @@ public class Belongings implements Iterable<Item> {
 			return true;
 		}
 		if (stackedWeapons.remove(item)) return true;
+		if (armor == item) {
+			armor = stackedArmors.isEmpty() ? null : stackedArmors.remove(0);
+			return true;
+		}
+		if (stackedArmors.remove(item)) return true;
 		if (stackedWands.remove(item)) return true;
 		if (artifact == item) {
 			artifact = stackedArtifacts.isEmpty() ? null : stackedArtifacts.remove(0);
@@ -369,13 +395,14 @@ public class Belongings implements Iterable<Item> {
 
 	public boolean isStackEquipped(Item item) {
 		if (item == null) return false;
-		return item == weapon || item == secondWep || item == artifact || item == misc || item == ring
-				|| stackedWeapons.contains(item) || stackedWands.contains(item)
+		return item == weapon || item == secondWep || item == armor || item == artifact || item == misc || item == ring
+				|| stackedWeapons.contains(item) || stackedArmors.contains(item) || stackedWands.contains(item)
 				|| stackedArtifacts.contains(item) || stackedRings.contains(item);
 	}
 
 	public boolean isGenesisStackExtra(Item item) {
 		return item != null && (stackedWeapons.contains(item)
+				|| stackedArmors.contains(item)
 				|| stackedWands.contains(item)
 				|| stackedArtifacts.contains(item)
 				|| stackedRings.contains(item));
@@ -491,6 +518,13 @@ public class Belongings implements Iterable<Item> {
 		return result;
 	}
 
+	public ArrayList<Armor> equippedArmors() {
+		ArrayList<Armor> result = new ArrayList<>();
+		if (armor != null) result.add(armor);
+		for (Armor item : stackedArmors) if (item != null && !result.contains(item)) result.add(item);
+		return result;
+	}
+
 	public ArrayList<Wand> equippedWands() {
 		return new ArrayList<>(stackedWands);
 	}
@@ -513,6 +547,11 @@ public class Belongings implements Iterable<Item> {
 
 	public KindOfWeapon displayWeapon() {
 		ArrayList<KindOfWeapon> items = equippedWeapons();
+		return items.isEmpty() ? null : items.get(0);
+	}
+
+	public Armor displayArmor() {
+		ArrayList<Armor> items = equippedArmors();
 		return items.isEmpty() ? null : items.get(0);
 	}
 
@@ -744,6 +783,7 @@ public class Belongings implements Iterable<Item> {
 			addEquipped(ring);
 			addEquipped(secondWep);
 			for (KindOfWeapon item : stackedWeapons) addEquipped(item);
+			for (Armor item : stackedArmors) addEquipped(item);
 			for (Wand item : stackedWands) addEquipped(item);
 			for (Artifact item : stackedArtifacts) addEquipped(item);
 			for (Ring item : stackedRings) addEquipped(item);
