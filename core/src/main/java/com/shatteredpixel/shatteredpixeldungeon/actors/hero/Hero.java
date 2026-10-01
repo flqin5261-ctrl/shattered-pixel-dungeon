@@ -283,7 +283,7 @@ public class Hero extends Char {
 			HT = Math.round(HT * (1f + 0.10f * pointsInTalent(Talent.ASCENDANT_VITALITY)));
 		}
 
-		// Genesis Echo kill growth is exactly +1 max HP per enemy, so apply this
+		// 八荒·亘古元敕 kill growth is exactly +10 max HP per enemy, so apply this
 		// after percentage multipliers rather than letting the permanent point be
 		// amplified by rings or Miracle World.
 		HT += GenesisEcho.permanentHpBonus(this);
@@ -2337,7 +2337,7 @@ public class Hero extends Char {
 	
 	public static int maxExp( int lvl ){
 		if (Dungeon.infiniteWorld && lvl == 59) {
-			// Level 60 grants Miracle World + Genesis Echo, so this final step is
+			// Level 60 grants 奇迹·世界 + 八荒·亘古元敕, so this final step is
 			// intentionally a much longer endgame grind.
 			return 3600;
 		}
