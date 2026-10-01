@@ -2178,7 +2178,7 @@ public class InfiniteWorldLevel extends Level {
 
     private Item v6LooseItem(int cx, int cy, int index) {
         if (state().generatorVersion >= 22) {
-            return v22BalancedSupplyItem(cx, cy, index, 19800);
+            return v22BalancedSupplySequence(v22LooseSupplySequence(cx, cy, index));
         }
 
         int roll = range(cx, cy, 19800 + index, 0, 99);
@@ -2414,8 +2414,30 @@ public class InfiniteWorldLevel extends Level {
         }
     }
 
+    private long v22LooseSupplySequence(int cx, int cy, int index) {
+        long ordinal = v22SpiralOrdinal(cx, cy);
+        long block = Math.floorDiv(ordinal, 5L);
+        int remainder = (int)Math.floorMod(ordinal, 5L);
+
+        // Main loose drops occur only at remainder 0/1, so map them back to a
+        // gap-free sequence: 0,1,2,3,4,5... This is the key piece that prevents
+        // spatial sparsity from biasing the item-family cycle.
+        long sequence = block * 2L + Math.min(remainder, 1);
+
+        // The rare second drop uses a separate deterministic continuation. It is
+        // bonus variety and does not disturb the primary coverage order.
+        if (index > 0) {
+            sequence += 1_000_000L + Math.floorDiv(ordinal, 37L) + index - 1L;
+        }
+        return sequence;
+    }
+
     private Item v22BalancedSupplyItem(int cx, int cy, int index, int salt) {
-        long seq = v22SpiralOrdinal(cx, cy) * 2L + index + (long)salt * 13L;
+        long seq = v22SpiralOrdinal(cx, cy) + index + (long)salt;
+        return v22BalancedSupplySequence(seq);
+    }
+
+    private Item v22BalancedSupplySequence(long seq) {
         int slot = (int)Math.floorMod(seq, 12L);
         long cycle = Math.floorDiv(seq, 12L);
 
