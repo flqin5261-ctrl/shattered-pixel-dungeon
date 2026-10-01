@@ -80,44 +80,58 @@ public class WandOfAllLaws extends DamageWand {
 
     @Override
     public void fx(Ballistica bolt, Callback callback) {
-        castRandomEffect(0, effectCount(), bolt.collisionPos, callback);
+        final int total = effectCount();
+        final int target = bolt.collisionPos;
+
+        // Do not serialize dozens of native projectile callbacks. That made high
+        // level casts visibly stop after one effect and continue only when each
+        // animation finished. Instead, all mechanics resolve in this cast, while
+        // only a small visual budget uses full native fx animations.
+        final int visualBudget = total <= 9 ? 3 : 2;
+
+        HeroState old = new HeroState();
+        old.user = curUser;
+        old.item = curItem;
+
+        try {
+            for (int i = 0; i < total; i++) {
+                Wand effect = prepareRandomEffect();
+                if (effect == null) continue;
+
+                Ballistica effectShot =
+                        new Ballistica(curUser.pos, target, effect.collisionProperties(target));
+
+                curItem = effect;
+
+                if (i < visualBudget) {
+                    // Native fx prepares any wand-specific geometry/state and
+                    // starts a visual, but its callback must never gate the next
+                    // random effect.
+                    effect.fx(effectShot, new Callback() {
+                        @Override
+                        public void call() {
+                            // Intentionally empty: mechanics are resolved below.
+                        }
+                    });
+                } else {
+                    // Stateful wands (fireblast, lightning, regrowth) prepare the
+                    // data onZap needs without spawning another expensive visual.
+                    effect.prepareForFastZap(effectShot);
+                }
+
+                effect.onZap(effectShot);
+            }
+        } finally {
+            curUser = old.user;
+            curItem = this;
+        }
+
+        callback.call();
     }
 
-    private void castRandomEffect(final int index, final int total,
-                                  final int target, final Callback done) {
-        if (index >= total) {
-            curItem = this;
-            done.call();
-            return;
-        }
-
-        final Wand effect = prepareRandomEffect();
-        if (effect == null) {
-            castRandomEffect(index + 1, total, target, done);
-            return;
-        }
-
-        // Each strike rolls independently. Native fx + onZap are both executed
-        // so fire, frost, corrosion, disintegration, warding, knockback, etc.
-        // remain genuine original wand mechanics.
-
-        final Ballistica effectShot =
-                new Ballistica(curUser.pos, target, effect.collisionProperties(target));
-
-        curItem = effect;
-        effect.fx(effectShot, new Callback() {
-            @Override
-            public void call() {
-                Item previous = curItem;
-                try {
-                    curItem = effect;
-                    effect.onZap(effectShot);
-                } finally {
-                    curItem = previous;
-                }
-                castRandomEffect(index + 1, total, target, done);
-            }
-        });
+    private static class HeroState {
+        com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero user;
+        Item item;
     }
 
     @Override
