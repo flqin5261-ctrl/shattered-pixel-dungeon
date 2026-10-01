@@ -60,6 +60,8 @@ import java.util.Iterator;
 
 public class WandOfRegrowth extends Wand {
 
+	public static final int LEVEL_CAP = 30;
+
 	{
 		image = ItemSpriteSheet.WAND_REGROWTH;
 
@@ -69,6 +71,40 @@ public class WandOfRegrowth extends Wand {
 	
 	private int totChrgUsed = 0;
 	private int chargesOverLimit = 0;
+
+	@Override
+	public com.shatteredpixel.shatteredpixeldungeon.items.Item level(int value) {
+		super.level(Math.min(value, LEVEL_CAP));
+		updateLevel();
+		return this;
+	}
+
+	@Override
+	public int level() {
+		return Math.min(LEVEL_CAP, super.level());
+	}
+
+	@Override
+	public int buffedLvl() {
+		return Math.min(LEVEL_CAP, super.buffedLvl());
+	}
+
+	@Override
+	public com.shatteredpixel.shatteredpixeldungeon.items.Item upgrade() {
+		if (trueLevel() >= LEVEL_CAP) {
+			if (trueLevel() > LEVEL_CAP) {
+				super.level(LEVEL_CAP);
+			}
+			updateLevel();
+			return this;
+		}
+		com.shatteredpixel.shatteredpixeldungeon.items.Item result = super.upgrade();
+		if (trueLevel() > LEVEL_CAP) {
+			super.level(LEVEL_CAP);
+		}
+		updateLevel();
+		return result;
+	}
 
 	ConeAOE cone;
 	int target;
@@ -229,7 +265,7 @@ public class WandOfRegrowth extends Wand {
 		}
 
 		if (grass) {
-			int level = Math.max(0, staff.buffedLvl());
+			int level = Math.min(LEVEL_CAP, Math.max(0, staff.buffedLvl()));
 
 			// lvl 0 - 16%
 			// lvl 1 - 21%
@@ -296,11 +332,13 @@ public class WandOfRegrowth extends Wand {
 
 	@Override
 	public String upgradeStat1(int level) {
+		level = Math.min(LEVEL_CAP, level);
 		return Messages.decimalFormat("#.##", 3 + (2+level)/3f);
 	}
 
 	@Override
 	public String upgradeStat2(int level) {
+		level = Math.min(LEVEL_CAP, level);
 		if (level >= 10){
 			return "∞";
 		} else {
@@ -333,6 +371,10 @@ public class WandOfRegrowth extends Wand {
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
+		if (trueLevel() > LEVEL_CAP) {
+			super.level(LEVEL_CAP);
+			updateLevel();
+		}
 		totChrgUsed = bundle.getInt(TOTAL);
 		chargesOverLimit = bundle.getInt(OVER);
 	}
