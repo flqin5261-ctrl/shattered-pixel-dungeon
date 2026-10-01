@@ -89,6 +89,12 @@ public class Heap implements Bundlable {
 	
 	public void open( Hero hero ) {
 		Type openedType = type;
+		// Remember the exact item advertised by a crystal chest inspection. Some
+		// Assist effects add large amounts of bonus loot when the chest opens; the
+		// advertised prize must remain identifiable and must not be visually
+		// replaced by a random bonus weapon/armor.
+		Item advertisedCrystalPrize = openedType == Type.CRYSTAL_CHEST ? peek() : null;
+		int openedPos = pos;
 		switch (type) {
 		case TOMB:
 			Wraith.spawnAround( hero.pos );
@@ -148,12 +154,17 @@ public class Heap implements Bundlable {
 
 		if (GenesisEcho.ultraFortune(hero)
 				&& (openedType == Type.CHEST || openedType == Type.LOCKED_CHEST || openedType == Type.CRYSTAL_CHEST)) {
-			genesisFortuneBurst(hero);
+			genesisFortuneBurst(hero, advertisedCrystalPrize, openedPos);
 		}
 	}
 
-	private void genesisFortuneBurst(Hero hero) {
+	private void genesisFortuneBurst(Hero hero, Item advertisedCrystalPrize, int advertisedPos) {
 		ArrayList<Item> burst = new ArrayList<>(items);
+		if (advertisedCrystalPrize != null) {
+			// The advertised item is handled separately below so it stays at the
+			// crystal chest position and is never confused with bonus loot.
+			burst.remove(advertisedCrystalPrize);
+		}
 
 		int extraCount = 10;
 		while (Random.Float() < 0.55f) extraCount++;
@@ -196,6 +207,14 @@ public class Heap implements Bundlable {
 
 		items.clear();
 		destroy();
+
+		if (advertisedCrystalPrize != null) {
+			Heap primary = Dungeon.level.drop(advertisedCrystalPrize, advertisedPos);
+			if (primary != null && primary.sprite != null) {
+				primary.sprite.drop(advertisedPos);
+			}
+			GLog.i("水晶宝箱原本显露的物品仍留在宝箱位置：%s", advertisedCrystalPrize.name());
+		}
 
 		int index = 0;
 		for (Item item : burst) {
@@ -496,8 +515,16 @@ public class Heap implements Bundlable {
 					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "artifact") );
 				else if (peek() instanceof Wand)
 					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "wand") );
-				else
+				else if (peek() instanceof Ring)
 					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "ring") );
+				else if (peek() instanceof Weapon)
+					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "weapon") );
+				else if (peek() instanceof Armor)
+					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "armor") );
+				else if (peek() != null)
+					return Messages.get(this, "crystal_chest_desc", peek().name() );
+				else
+					return Messages.get(this, "crystal_chest_desc", Messages.get(this, "unknown_item") );
 			case TOMB:
 				return Messages.get(this, "tomb_desc");
 			case SKELETON:
