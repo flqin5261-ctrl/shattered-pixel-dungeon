@@ -932,6 +932,7 @@ public class InfiniteWorldLevel extends Level {
         int weather = InfiniteWorldCycle.presentationWeather(state(), anomaly);
 
         if (weather == InfiniteWorldCycle.WEATHER_STORM && worldCycleThunderCountdown <= 0f) {
+            GameScene.flashInfiniteWorldLightning();
             Sample.INSTANCE.play(Assets.Sounds.LIGHTNING, 0.78f, cycleAudioRange(9101, 0.86f, 1.05f));
             worldCycleThunderCountdown = cycleAudioRange(9102, 18f, 42f);
         }
