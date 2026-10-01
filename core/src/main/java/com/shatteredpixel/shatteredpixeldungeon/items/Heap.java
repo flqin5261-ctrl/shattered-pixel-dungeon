@@ -175,15 +175,10 @@ public class Heap implements Bundlable {
 
 		for (Item item : burst) {
 			if (item == null) continue;
-			if (item instanceof Weapon || item instanceof Armor || item instanceof Ring || item instanceof Wand) {
-				item.level(120);
-				item.levelKnown = true;
-			}
-			if (item.stackable) {
-				int qty = Math.max(10, item.quantity());
-				while (Random.Float() < 0.45f) qty += Random.IntRange(1, 10);
-				item.quantity(qty);
-			}
+			empowerGenesisFortuneItem(item);
+		}
+		if (advertisedCrystalPrize != null) {
+			empowerGenesisFortuneItem(advertisedCrystalPrize);
 		}
 
 		ArrayList<Integer> cells = new ArrayList<>();
@@ -226,6 +221,19 @@ public class Heap implements Bundlable {
 		GLog.p("万运隆敕：宝箱物品大爆发！");
 	}
 	
+	private void empowerGenesisFortuneItem(Item item) {
+		if (item == null) return;
+		if (item instanceof Weapon || item instanceof Armor || item instanceof Ring || item instanceof Wand) {
+			item.level(120);
+			item.levelKnown = true;
+		}
+		if (item.stackable) {
+			int qty = Math.max(10, item.quantity());
+			while (Random.Float() < 0.45f) qty += Random.IntRange(1, 10);
+			item.quantity(qty);
+		}
+	}
+
 	public Heap setHauntedIfCursed(){
 		for (Item item : items) {
 			if (item.cursed) {
