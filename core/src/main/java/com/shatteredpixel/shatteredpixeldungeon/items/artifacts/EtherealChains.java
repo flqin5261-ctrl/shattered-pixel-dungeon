@@ -118,7 +118,7 @@ public class EtherealChains extends Artifact {
 	@Override
 	public void resetForTrinity(int visibleLevel) {
 		super.resetForTrinity(visibleLevel);
-		charge = 5+(level()*2); //sets charge to soft cap
+		charge = 5+(nativeLevel()*2); //sets charge to native soft cap
 	}
 
 	public CellSelector.Listener caster = new CellSelector.Listener(){
@@ -299,7 +299,7 @@ public class EtherealChains extends Artifact {
 	@Override
 	public void charge(Hero target, float amount) {
 		if (cursed || target.buff(MagicImmune.class) != null) return;
-		int chargeTarget = 5+(level()*2);
+		int chargeTarget = 5+(nativeLevel()*2);
 		if (charge < chargeTarget*2){
 			partialCharge += 0.5f*amount;
 			while (partialCharge >= 1){
@@ -328,14 +328,15 @@ public class EtherealChains extends Artifact {
 
 		@Override
 		public boolean act() {
-			int chargeTarget = 5+(level()*2);
+			int chargeTarget = 5+(nativeLevel()*2);
 			if (charge < chargeTarget
 					&& !cursed
 					&& target.buff(MagicImmune.class) == null
 					&& Regeneration.regenOn()) {
 				//gains a charge in 40 - 2*missingCharge turns
-				float chargeGain = (1 / (40f - (chargeTarget - charge)*2f));
+				float chargeGain = (1 / Math.max(1f, 40f - (chargeTarget - charge)*2f));
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= assistOverlevelChargeMultiplier();
 				partialCharge += chargeGain;
 			} else if (cursed && Random.Int(100) == 0){
 				Buff.prolong( target, Cripple.class, 10f);
@@ -359,10 +360,11 @@ public class EtherealChains extends Artifact {
 			exp += Math.round(levelPortion*100);
 
 			//past the soft charge cap, gaining  charge from leveling is slowed.
-			if (charge > 5+(level()*2)){
-				levelPortion *= (5+((float)level()*2))/charge;
+			int chargeTarget = 5+(nativeLevel()*2);
+			if (charge > chargeTarget){
+				levelPortion *= ((float)chargeTarget)/charge;
 			}
-			partialCharge += levelPortion*6f;
+			partialCharge += levelPortion*6f*assistOverlevelChargeMultiplier();
 
 			if (exp > 100+level()*100 && level() < levelCap){
 				exp -= 100+level()*100;
