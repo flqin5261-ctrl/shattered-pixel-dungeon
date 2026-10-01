@@ -4,9 +4,11 @@
  */
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,6 +33,8 @@ public class InfiniteWorldState implements Bundlable {
     public int starterCrystalKeyWorldY = Integer.MIN_VALUE;
     public int starterCrystalChestWorldX = Integer.MIN_VALUE;
     public int starterCrystalChestWorldY = Integer.MIN_VALUE;
+    public final ArrayList<Item> starterNormalChestContents = new ArrayList<>();
+    public final ArrayList<Item> starterCrystalChestContents = new ArrayList<>();
 
     // V12 progression state. heroActionValue counts positive Hero spend/spendConstant
     // time while inside Infinite World. The guaranteed artifact chest is a single
@@ -221,6 +225,8 @@ public class InfiniteWorldState implements Bundlable {
     private static final String STARTER_KEY_Y = "starter_key_y";
     private static final String STARTER_CRYSTAL_X = "starter_crystal_x";
     private static final String STARTER_CRYSTAL_Y = "starter_crystal_y";
+    private static final String STARTER_NORMAL_CONTENTS = "starter_normal_contents";
+    private static final String STARTER_CRYSTAL_CONTENTS = "starter_crystal_contents";
     private static final String HERO_ACTION_VALUE = "hero_action_value";
     private static final String ARTIFACT_CHEST_WX = "artifact_chest_wx";
     private static final String ARTIFACT_CHEST_WY = "artifact_chest_wy";
@@ -271,6 +277,8 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(STARTER_KEY_Y, starterCrystalKeyWorldY);
         bundle.put(STARTER_CRYSTAL_X, starterCrystalChestWorldX);
         bundle.put(STARTER_CRYSTAL_Y, starterCrystalChestWorldY);
+        bundle.put(STARTER_NORMAL_CONTENTS, starterNormalChestContents);
+        bundle.put(STARTER_CRYSTAL_CONTENTS, starterCrystalChestContents);
         bundle.put(HERO_ACTION_VALUE, heroActionValue);
         bundle.put(ARTIFACT_CHEST_WX, artifactChestWorldX);
         bundle.put(ARTIFACT_CHEST_WY, artifactChestWorldY);
@@ -371,6 +379,18 @@ public class InfiniteWorldState implements Bundlable {
                 ? bundle.getInt(STARTER_CRYSTAL_X) : Integer.MIN_VALUE;
         starterCrystalChestWorldY = bundle.contains(STARTER_CRYSTAL_Y)
                 ? bundle.getInt(STARTER_CRYSTAL_Y) : Integer.MIN_VALUE;
+        starterNormalChestContents.clear();
+        if (bundle.contains(STARTER_NORMAL_CONTENTS)) {
+            for (Bundlable item : bundle.getCollection(STARTER_NORMAL_CONTENTS)) {
+                if (item instanceof Item) starterNormalChestContents.add((Item)item);
+            }
+        }
+        starterCrystalChestContents.clear();
+        if (bundle.contains(STARTER_CRYSTAL_CONTENTS)) {
+            for (Bundlable item : bundle.getCollection(STARTER_CRYSTAL_CONTENTS)) {
+                if (item instanceof Item) starterCrystalChestContents.add((Item)item);
+            }
+        }
         heroActionValue = bundle.contains(HERO_ACTION_VALUE) ? bundle.getFloat(HERO_ACTION_VALUE) : 0f;
         artifactChestWorldX = bundle.contains(ARTIFACT_CHEST_WX) ? bundle.getInt(ARTIFACT_CHEST_WX) : 0;
         artifactChestWorldY = bundle.contains(ARTIFACT_CHEST_WY) ? bundle.getInt(ARTIFACT_CHEST_WY) : 0;
