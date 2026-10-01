@@ -100,8 +100,9 @@ public class InfiniteWorldLevel extends Level {
     // does not immediately force a 7x7 window rebuild.
     private boolean genesisTeleportGrace;
 
-    // Infinite World ecology is deliberately sparse. The player should normally
-    // see only a few enemies at a time, with exploration remaining the main loop.
+    // Infinite World ecology scales with Hero progression: very sparse early,
+    // gradually denser in the middle game, and only moderately busy late game.
+    // Five remains the normal late-game target; six is only the hard safety cap.
     private static final int MOB_SPAWN_TARGET_CAP = 5;
     private static final int MOB_HARD_CAP = 6;
     private static final int MOB_SPAWN_MIN_DISTANCE = 14;
@@ -240,13 +241,69 @@ public class InfiniteWorldLevel extends Level {
         if (mobEcology == null) {
             mobEcology = new InfiniteWorldMobEcology();
         }
-        Actor.addDelayed(mobEcology, 20f + Random.Float() * 12f);
+        float min = mobRespawnMinTurns();
+        float max = mobRespawnMaxTurns();
+        Actor.addDelayed(mobEcology, min + Random.Float() * (max - min));
         return mobEcology;
     }
 
     @Override
     public int mobLimit() {
         return MOB_HARD_CAP;
+    }
+
+    private int mobEcologyStage() {
+        int level = Dungeon.hero == null ? 1 : Dungeon.hero.lvl;
+        if (level < 10) return 0;
+        if (level < 30) return 1;
+        if (level < 45) return 2;
+        return 3;
+    }
+
+    private int dynamicMobTargetCap() {
+        switch (mobEcologyStage()) {
+            case 0: return 2;
+            case 1: return 3;
+            case 2: return 4;
+            default:return MOB_SPAWN_TARGET_CAP;
+        }
+    }
+
+    private float mobRespawnMinTurns() {
+        switch (mobEcologyStage()) {
+            case 0: return 48f;
+            case 1: return 40f;
+            case 2: return 32f;
+            default:return 26f;
+        }
+    }
+
+    private float mobRespawnMaxTurns() {
+        switch (mobEcologyStage()) {
+            case 0: return 72f;
+            case 1: return 60f;
+            case 2: return 48f;
+            default:return 40f;
+        }
+    }
+
+    private float mobSpawnChance(int count) {
+        switch (mobEcologyStage()) {
+            case 0:
+                return count == 0 ? 0.42f : 0.18f;
+            case 1:
+                if (count == 0) return 0.58f;
+                if (count == 1) return 0.40f;
+                return 0.22f;
+            case 2:
+                if (count == 0) return 0.70f;
+                if (count <= 1) return 0.52f;
+                return 0.32f;
+            default:
+                if (count == 0) return 0.78f;
+                if (count <= 2) return 0.60f;
+                return 0.40f;
+        }
     }
 
     @Override
@@ -280,18 +337,16 @@ public class InfiniteWorldLevel extends Level {
             // Spectator test mode is for terrain/streaming QA. It must not cause
             // exploration to populate the window with new enemies.
             if (assistSpectatorActive()) {
-                spend(MOB_RESPAWN_MIN_TURNS);
+                spend(mobRespawnMinTurns());
                 return true;
             }
 
             pruneInfiniteWorldMobs();
 
             int count = activeEnemyCount();
-            if (count < MOB_SPAWN_TARGET_CAP) {
-                float chance;
-                if (count == 0) chance = 0.82f;
-                else if (count <= 2) chance = 0.58f;
-                else chance = 0.32f;
+            int targetCap = dynamicMobTargetCap();
+            if (count < targetCap) {
+                float chance = mobSpawnChance(count);
 
                 int heroChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
                 int heroChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
@@ -305,15 +360,16 @@ public class InfiniteWorldLevel extends Level {
                 }
             }
 
-            spend(MOB_RESPAWN_MIN_TURNS
-                    + Random.Float() * (MOB_RESPAWN_MAX_TURNS - MOB_RESPAWN_MIN_TURNS));
+            float min = mobRespawnMinTurns();
+            float max = mobRespawnMaxTurns();
+            spend(min + Random.Float() * (max - min));
             return true;
         }
     }
 
     private boolean spawnInfiniteWorldMob() {
         if (Dungeon.hero == null || !Dungeon.hero.isAlive()) return false;
-        if (activeEnemyCount() >= MOB_SPAWN_TARGET_CAP) return false;
+        if (activeEnemyCount() >= dynamicMobTargetCap()) return false;
 
         Mob mob = createMob();
         int cell = findInfiniteWorldMobSpawnCell(mob);
