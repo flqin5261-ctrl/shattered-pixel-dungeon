@@ -195,7 +195,7 @@ public class Heap implements Bundlable {
 			Heap dropped = Dungeon.level.drop(item, cell);
 			if (dropped != null && dropped.sprite != null) dropped.sprite.drop(hero.pos);
 		}
-		GLog.p("超极限好运：宝箱物品大爆发！");
+		GLog.p("万运隆敕：宝箱物品大爆发！");
 	}
 	
 	public Heap setHauntedIfCursed(){
