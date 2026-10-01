@@ -90,7 +90,9 @@ public class WndUpgrade extends Window {
 			quantity += moreUpgradeItem.quantity();
 		}
 
-		String mainText = Messages.get(this, "desc");
+		String mainText = toUpgrade instanceof MimicRing
+				? Messages.get(this, "mimic_desc")
+				: Messages.get(this, "desc");
 		if (quantity > 1){
 			mainText += "\n" + Messages.get(this, "remaining", quantity);
 		}
@@ -133,7 +135,7 @@ public class WndUpgrade extends Window {
 		bg2.y = message.bottom() + 2*GAP;
 		add(bg2);
 
-		if (!toUpgrade.isIdentified()){
+		if (!mimicRing && !toUpgrade.isIdentified()){
 			if (!toUpgrade.cursed && toUpgrade.cursedKnown){
 				bg1.hardlight(1f, 1, 2f);
 				bg2.hardlight(1f, 1, 2f);
