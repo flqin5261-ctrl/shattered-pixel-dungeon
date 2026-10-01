@@ -294,8 +294,9 @@ public class WndBag extends WndTabbed {
 		if (container != Dungeon.hero.belongings.backpack){
 			placeItem(container);
 			count--; //don't count this one, as it's not actually inside of itself
-		} else if (stuff.secondWep != null) {
-			//second weapon always goes to the front of view on main bag
+		} else if (stuff.secondWep != null && !GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+			// In the normal rules the Champion's second weapon is a separate equipped
+			// slot. Under 纵横八荒 it is already represented inside the weapon stack.
 			placeItem(stuff.secondWep);
 			equipped++;
 		}
