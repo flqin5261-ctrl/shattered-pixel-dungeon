@@ -408,5 +408,9 @@ public abstract class Actor implements Bundlable {
 		return new HashSet<>(all);
 	}
 
+	public static synchronized boolean contains(Actor actor) {
+		return actor != null && all.contains(actor);
+	}
+
 	public static synchronized HashSet<Char> chars() { return new HashSet<>(chars); }
 }
