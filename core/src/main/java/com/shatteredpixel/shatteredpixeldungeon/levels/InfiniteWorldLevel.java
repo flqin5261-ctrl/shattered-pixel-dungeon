@@ -4240,7 +4240,8 @@ public class InfiniteWorldLevel extends Level {
         // V15 treats Backrooms-inspired districts as a normal part of exploration,
         // so they can start much closer to the origin. Older worlds retain their
         // original opening buffer for deterministic save compatibility.
-        int startBuffer = state().generatorVersion >= 15 ? 2 : 4;
+        int startBuffer = state().generatorVersion >= 21 ? 4
+                : (state().generatorVersion >= 15 ? 2 : 4);
         if (Math.abs(cx) <= startBuffer && Math.abs(cy) <= startBuffer) return 0;
 
         final int macro = state().generatorVersion >= 20 ? 3
@@ -4270,22 +4271,21 @@ public class InfiniteWorldLevel extends Level {
 
             if (state().generatorVersion >= 21) {
                 // V21 lowers Backrooms density from V20's 20/29 (~69%) to exactly
-                // one macro-ring in four (25%). At macro size 3 this means a long
-                // straight route normally crosses roughly three ordinary bands
-                // between Backrooms bands: noticeable, but no longer constant.
+                // one macro-ring in four (25%). At macro size 3 this gives three
+                // ordinary-world macro bands between Backrooms bands.
                 //
-                // More importantly, anomalyOrdinal advances by exactly one at each
-                // Backrooms encounter. V21_BACKROOMS_ORDER is a permutation of all
-                // twenty themes, so a straight exploration sector cannot repeat a
-                // Backrooms type until the other nineteen have appeared.
+                // The encounter order is ring-global rather than sector-specific:
+                // every NEW Backrooms band advances exactly one slot through a
+                // 20-entry permutation. This guarantees that no Backrooms type is
+                // repeated until all other 19 themes have appeared once.
                 int seedPhase = (int)Math.floorMod(hash(0, 0, 23100), 4L);
-                int progression = ring + seedPhase + sector * 5;
+                int progression = ring + seedPhase;
                 if (Math.floorMod(progression, 4) != 0) return 0;
 
                 int anomalyOrdinal = Math.floorDiv(progression, 4);
                 int typeOffset = (int)Math.floorMod(hash(0, 0, 23101), 20L);
                 int orderIndex = Math.floorMod(
-                        anomalyOrdinal + typeOffset + sector * 3,
+                        anomalyOrdinal + typeOffset,
                         V21_BACKROOMS_ORDER.length);
                 return V21_BACKROOMS_ORDER[orderIndex];
             }
