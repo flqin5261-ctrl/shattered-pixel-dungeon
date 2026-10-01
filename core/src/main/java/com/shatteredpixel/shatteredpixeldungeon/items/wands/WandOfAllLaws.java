@@ -87,9 +87,9 @@ public class WandOfAllLaws extends DamageWand {
         // Keep every native animation, but avoid creating too many projectile/
         // particle systems in the same frame. High-count casts get a slightly
         // wider cadence so fast phones still show the whole spell storm cleanly.
-        if (total <= 5) return 0.09f;
-        if (total <= 15) return 0.11f;
-        return 0.13f;
+        if (total <= 5) return 0.10f;
+        if (total <= 15) return 0.12f;
+        return 0.14f;
     }
 
     @Override
