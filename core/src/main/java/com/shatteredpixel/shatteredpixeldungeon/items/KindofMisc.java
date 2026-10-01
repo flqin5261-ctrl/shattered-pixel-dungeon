@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -39,6 +40,25 @@ public abstract class KindofMisc extends EquipableItem {
 
 	@Override
 	public boolean doEquip(final Hero hero) {
+
+		if (GenesisEcho.unrestrictedEquipment(hero) && (this instanceof Ring || this instanceof Artifact)) {
+			// Keep classic primary slots for compatibility, but never force-swap an
+			// already equipped ring/artifact. Additional pieces live in the stacked
+			// equipment collections and their passive buffs are activated normally.
+			detach(hero.belongings.backpack);
+			if (!hero.belongings.equipStackedMisc(this)) {
+				return true;
+			}
+			Talent.onItemEquipped(hero, this);
+			activate(hero);
+			cursedKnown = true;
+			if (cursed) {
+				equipCursed(hero);
+				GLog.n(Messages.get(this, "equip_cursed", this));
+			}
+			hero.spendAndNext(timeToEquip(hero));
+			return true;
+		}
 
 		boolean equipFull = false;
 		if ( this instanceof Artifact
@@ -172,29 +192,16 @@ public abstract class KindofMisc extends EquipableItem {
 	@Override
 	public boolean doUnequip(Hero hero, boolean collect, boolean single) {
 		if (super.doUnequip(hero, collect, single)){
-
-			if (hero.belongings.artifact == this) {
-				hero.belongings.artifact = null;
-			} else if (hero.belongings.misc == this) {
-				hero.belongings.misc = null;
-			} else if (hero.belongings.ring == this){
-				hero.belongings.ring = null;
-			}
-
+			hero.belongings.removeStackedEquipment(this);
 			return true;
-
 		} else {
-
 			return false;
-
 		}
 	}
 
 	@Override
 	public boolean isEquipped( Hero hero ) {
-		return hero != null && (hero.belongings.artifact() == this
-				|| hero.belongings.misc() == this
-				|| hero.belongings.ring() == this);
+		return hero != null && hero.belongings.isStackEquipped(this);
 	}
 
 }
