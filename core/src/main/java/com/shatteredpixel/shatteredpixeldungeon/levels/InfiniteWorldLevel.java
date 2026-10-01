@@ -4566,6 +4566,13 @@ public class InfiniteWorldLevel extends Level {
                     carveRect(out, ox + 1, oy + 1, ox + CHUNK_SIZE - 2, oy + 7, Terrain.GRASS);
                     carveRect(out, ox + 1, oy + 8, ox + CHUNK_SIZE - 2, oy + 15, Terrain.EMPTY);
                     carveRect(out, ox + 1, oy + 16, ox + CHUNK_SIZE - 2, oy + CHUNK_SIZE - 2, Terrain.WATER);
+                    // Sparse modern beach houses/hotel bungalows along the forest edge.
+                    if (Math.floorMod(hash(cx, cy, 24980), 3L) != 0) {
+                        int hx = 3 + range(cx, cy, 24981, 0, 8);
+                        carveRect(out, ox + hx, oy + 2, ox + hx + 5, oy + 6, Terrain.WALL);
+                        carveRect(out, ox + hx + 1, oy + 3, ox + hx + 4, oy + 5, Terrain.EMPTY_SP);
+                        out[ox + hx + 2 + (oy + 6) * MAP_SIZE] = Terrain.DOOR;
+                    }
                     break;
 
                 case 20: // Level 974 - Kitty's House, pink domestic rooms.
@@ -6388,7 +6395,7 @@ public class InfiniteWorldLevel extends Level {
                 case 2:  return 7 + range(cx, cy, 29081, 0, 3); // storage/service
                 case 3:  return 8 + range(cx, cy, 29082, 0, 3); // hot utility
                 case 4:  return 9 + range(cx, cy, 29083, 0, 3); // electrical machinery
-                case 5:  return 7 + range(cx, cy, 29084, 0, 3); // office
+                case 5:  return 2 + range(cx, cy, 29084, 0, 2); // Level 4: mostly empty office
                 case 6:  return 7 + range(cx, cy, 29085, 0, 3); // hotel
                 case 7:  return 2 + range(cx, cy, 29086, 0, 2); // lights out: intentionally bare
                 case 8:  return 2 + range(cx, cy, 29087, 0, 1); // ocean: almost empty
@@ -6696,12 +6703,11 @@ public class InfiniteWorldLevel extends Level {
                     if (roll < 78) return InfiniteWorldDecorationLayer.LOG;
                     return InfiniteWorldDecorationLayer.BARREL;
 
-                case 9: // Level 8: caves.
-                    if (roll < 35) return InfiniteWorldDecorationLayer.ROCK;
-                    if (roll < 58) return InfiniteWorldDecorationLayer.MUSHROOMS;
-                    if (roll < 76) return InfiniteWorldDecorationLayer.RUBBLE;
-                    if (roll < 90) return InfiniteWorldDecorationLayer.LOG;
-                    return InfiniteWorldDecorationLayer.CAMPFIRE;
+                case 9: // Level 8: caves; natural clutter only.
+                    if (roll < 38) return InfiniteWorldDecorationLayer.ROCK;
+                    if (roll < 64) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.RUBBLE;
+                    return InfiniteWorldDecorationLayer.LOG;
 
                 case 10: // Level 9: suburbs.
                     if (roll < 15) return InfiniteWorldDecorationLayer.STREET_LAMP;
@@ -6714,13 +6720,13 @@ public class InfiniteWorldLevel extends Level {
                     return InfiniteWorldDecorationLayer.REFUSE_BAGS;
 
                 case 11: // Level 10: fields.
-                    if (roll < 22) return InfiniteWorldDecorationLayer.ROUND_TREE;
-                    if (roll < 40) return InfiniteWorldDecorationLayer.FERN;
-                    if (roll < 56) return InfiniteWorldDecorationLayer.FENCE_RAIL;
-                    if (roll < 70) return InfiniteWorldDecorationLayer.FENCE_POST;
-                    if (roll < 83) return InfiniteWorldDecorationLayer.LOG;
-                    if (roll < 92) return InfiniteWorldDecorationLayer.BARREL;
-                    return InfiniteWorldDecorationLayer.URBAN_SIGN;
+                    if (roll < 24) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 44) return InfiniteWorldDecorationLayer.FERN;
+                    if (roll < 60) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                    if (roll < 74) return InfiniteWorldDecorationLayer.FENCE_POST;
+                    if (roll < 87) return InfiniteWorldDecorationLayer.LOG;
+                    if (roll < 95) return InfiniteWorldDecorationLayer.BARREL;
+                    return InfiniteWorldDecorationLayer.WOODEN_POST;
 
                 case 12: // Level 11: city.
                     if (roll < 16) return InfiniteWorldDecorationLayer.STREET_LAMP;
@@ -6738,12 +6744,12 @@ public class InfiniteWorldLevel extends Level {
                     if (roll < 76) return InfiniteWorldDecorationLayer.WAYFINDING_PILLAR;
                     return InfiniteWorldDecorationLayer.METAL_RAIL;
 
-                case 14: // Level 94: toy-like staged town.
+                case 14: // Level 94: stop-motion 1930s town, not a playground.
                     if (roll < 18) return InfiniteWorldDecorationLayer.ROUND_TREE;
                     if (roll < 34) return InfiniteWorldDecorationLayer.ROUND_TREE_AUTUMN;
                     if (roll < 48) return InfiniteWorldDecorationLayer.STREET_LAMP;
                     if (roll < 62) return InfiniteWorldDecorationLayer.FENCE_RAIL;
-                    if (roll < 76) return InfiniteWorldDecorationLayer.PLAY_BLOCKS;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.BARREL;
                     if (roll < 90) return InfiniteWorldDecorationLayer.FERN;
                     return InfiniteWorldDecorationLayer.WAYFINDING_PILLAR;
 
