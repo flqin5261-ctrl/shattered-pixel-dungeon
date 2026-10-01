@@ -1068,6 +1068,18 @@ public abstract class Mob extends Char {
 				
 				int exp = Dungeon.hero.lvl <= maxLvl ? EXP : 0;
 
+				// At Infinite World level 60 there is no further Hero level to gain, but
+				// equipped artifacts/rings still legitimately recharge or progress from
+				// earned XP. Dynamic enemies were capped at maxLvl 59, which made every
+				// real level-60 kill report 0 XP and left XP-driven artifacts (notably
+				// Horn of Plenty) permanently empty. Preserve effective XP for those
+				// on-exp systems without allowing Hero level > MAX_LEVEL.
+				if (exp == 0 && Dungeon.infiniteWorld
+						&& Dungeon.hero.lvl >= Hero.MAX_LEVEL
+						&& assistDynamicLevel > 0 && EXP > 0) {
+					exp = EXP;
+				}
+
 				//during ascent, under-levelled enemies grant 10 xp each until level 30
 				// after this enemy kills which reduce the amulet curse still grant 10 effective xp
 				// for the purposes of on-exp effects, see AscensionChallenge.processEnemyKill
