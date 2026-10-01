@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -264,14 +265,28 @@ public class WndBag extends WndTabbed {
 	
 	protected void placeItems( Bag container ) {
 		
-		// Equipped items
+		// Equipped items. Under 纵横八荒 the root bag intentionally shows one
+		// representative per stack; tapping it opens the complete one-row stack.
 		Belongings stuff = Dungeon.hero.belongings;
-		placeItem( stuff.weapon != null ? stuff.weapon : new Placeholder( ItemSpriteSheet.WEAPON_HOLDER ) );
-		placeItem( stuff.armor != null ? stuff.armor : new Placeholder( ItemSpriteSheet.ARMOR_HOLDER ) );
-		placeItem( stuff.artifact != null ? stuff.artifact : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
-		placeItem( stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
-		placeItem( stuff.misc != null ? stuff.misc : new Placeholder( ItemSpriteSheet.SOMETHING ) );
-		placeItem( stuff.ring != null ? stuff.ring : new Placeholder( ItemSpriteSheet.RING_HOLDER ) );
+		if (GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+			placeItem(stuff.displayWeapon() != null ? stuff.displayWeapon() : new Placeholder(ItemSpriteSheet.WEAPON_HOLDER),
+					WndStackedEquipment.Category.WEAPON);
+			placeItem(stuff.armor != null ? stuff.armor : new Placeholder(ItemSpriteSheet.ARMOR_HOLDER));
+			placeItem(stuff.displayArtifact() != null ? stuff.displayArtifact() : new Placeholder(ItemSpriteSheet.ARTIFACT_HOLDER),
+					WndStackedEquipment.Category.ARTIFACT);
+			placeItem(stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder(ItemSpriteSheet.ARTIFACT_HOLDER));
+			placeItem(stuff.displayWand() != null ? stuff.displayWand() : new Placeholder(ItemSpriteSheet.WAND_HOLDER),
+					WndStackedEquipment.Category.WAND);
+			placeItem(stuff.displayRing() != null ? stuff.displayRing() : new Placeholder(ItemSpriteSheet.RING_HOLDER),
+					WndStackedEquipment.Category.RING);
+		} else {
+			placeItem( stuff.weapon != null ? stuff.weapon : new Placeholder( ItemSpriteSheet.WEAPON_HOLDER ) );
+			placeItem( stuff.armor != null ? stuff.armor : new Placeholder( ItemSpriteSheet.ARMOR_HOLDER ) );
+			placeItem( stuff.artifact != null ? stuff.artifact : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
+			placeItem( stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder( ItemSpriteSheet.ARTIFACT_HOLDER ) );
+			placeItem( stuff.misc != null ? stuff.misc : new Placeholder( ItemSpriteSheet.SOMETHING ) );
+			placeItem( stuff.ring != null ? stuff.ring : new Placeholder( ItemSpriteSheet.RING_HOLDER ) );
+		}
 
 		int equipped = 6;
 
@@ -300,14 +315,18 @@ public class WndBag extends WndTabbed {
 		}
 	}
 	
-	protected void placeItem( final Item item ) {
+	protected void placeItem(final Item item) {
+		placeItem(item, null);
+	}
+
+	protected void placeItem(final Item item, final WndStackedEquipment.Category stackCategory) {
 
 		count++;
 
 		int x = col * (slotWidth + SLOT_MARGIN);
 		int y = row * (slotHeight + SLOT_MARGIN);
 
-		BagInventorySlot slot = new BagInventorySlot(item);
+		BagInventorySlot slot = new BagInventorySlot(item, stackCategory);
 		slot.setRect( x, y, slotWidth, slotHeight );
 		itemContent.add(slot);
 		itemSlots.add(slot);
@@ -335,10 +354,12 @@ public class WndBag extends WndTabbed {
 	private class BagInventorySlot extends InventorySlot {
 
 		private final Item bagItem;
+		private final WndStackedEquipment.Category stackCategory;
 
-		BagInventorySlot(Item item) {
+		BagInventorySlot(Item item, WndStackedEquipment.Category stackCategory) {
 			super(item);
 			this.bagItem = item;
+			this.stackCategory = stackCategory;
 		}
 
 		void disableNativePointer() {
@@ -359,6 +380,12 @@ public class WndBag extends WndTabbed {
 		@Override
 		protected void onClick() {
 			if (bagItem == null) return;
+
+			if (stackCategory != null && selector == null
+					&& GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
+				Game.scene().addToFront(new WndStackedEquipment(stackCategory));
+				return;
+			}
 
 			if (lastBag != bagItem && !lastBag.contains(bagItem) && !bagItem.isEquipped(Dungeon.hero)){
 
