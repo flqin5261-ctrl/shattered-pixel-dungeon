@@ -2581,3 +2581,23 @@ Changes:
 - Genesis Overcast: wand hits execute hostile targets; positive potion/scroll effects are raised to at least 999 action-value.
 - Genesis Fortune: chest contents burst around the Hero in a 9x9 area, add at least ten extra generated items with uncapped continuation, force stackables to at least quantity 10, and set generated/contained weapon/armor/ring/wand equipment to +120.
 - The selected tier-7 authority is represented by a persistent visible buff beneath the HP UI and remains active after Miracle World is unequipped.
+
+# 0.6.17 — Eternal Edict of the Eight Wastes
+
+Version:
+- versionName: 0.6.17
+- versionCode: 973
+- dev: assist-0.6.17-eternal-edict
+- target stable: assist-0.6.17-stable
+- WORLD_GEN_VERSION: 17 unchanged
+
+Major changes:
+- Renamed player-visible Genesis Echo to 八荒·亘古元敕 while retaining the GenesisEcho Java class for save compatibility.
+- Base authority now denies all incoming damage, direct instant death, control and forced teleport; the HP HUD shows infinity while active.
+- Immunity feedback now uses short Chinese “敕免” messages.
+- Permanent kill growth changed to +10 max HP / +1 STR per true hostile kill, including migration of old cumulative growth.
+- Added 通识古今: successfully acquired unidentified items are immediately fully identified; awakening also identifies unidentified items already owned.
+- Miracle World-linked curse immunity, execution, tier-1-to-6 mastery, and copied Miracle World bonuses remain, under the new names 万厄·归寂 / 终末·裁决 / 无限·天资 / 寰宇·映射.
+- Tier-7 talents renamed to 无界遁诰 / 寰墟指殛 / 元级肇法 / 万运隆敕.
+- 元级肇法 now makes all wand damage targets execute even without Miracle World, including secondary/AOE wand victims. The double-tap screen-wide wand action remains.
+- Added a persistent guaranteed starter cache near Infinite World spawn: normal chest with 5 food + 5 scrolls + 5 potions, loose Crystal Key, and Crystal Chest with one random ring + one random wand.
