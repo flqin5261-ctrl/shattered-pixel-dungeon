@@ -656,11 +656,24 @@ public class Hero extends Char {
 		evasion *= 1f + 0.15f * pointsInTalent(Talent.ASCENDANT_REFLEX);
 
 		if (belongings.armor() != null) {
-			evasion = belongings.armor().evasionFactor(this, evasion);
+			if (GenesisEcho.unrestrictedEquipment(this)) {
+				// Every worn armor contributes its evasion augment. Stone remains a
+				// hard override: if any equipped armor carries it, later armors must
+				// not add evasion back after the value has been forced to zero.
+				for (Armor armor : belongings.equippedArmors()) {
+					if (armor != null && armor.hasGlyph(Stone.class, this) && !Stone.testingEvasion()) {
+						return 0;
+					}
+				}
+				for (Armor armor : belongings.equippedArmors()) {
+					if (armor != null) evasion = armor.evasionFactor(this, evasion);
+				}
+			} else {
+				evasion = belongings.armor().evasionFactor(this, evasion);
 
-			//stone specifically overrides to 0 always, guaranteed hit
-			if (belongings.armor().hasGlyph(Stone.class, this) && !Stone.testingEvasion()){
-				return 0;
+				if (belongings.armor().hasGlyph(Stone.class, this) && !Stone.testingEvasion()){
+					return 0;
+				}
 			}
 		}
 
@@ -700,9 +713,17 @@ public class Hero extends Char {
 	public int drRoll() {
 		int dr = super.drRoll();
 
-		if (belongings.armor() != null) {
+		if (GenesisEcho.unrestrictedEquipment(this)) {
+			// 纵横八荒 armor fusion: every equipped armor rolls its real DR and the
+			// results add together. Strength requirements remain ignored by the edict.
+			for (Armor armor : belongings.equippedArmors()) {
+				if (armor == null) continue;
+				int armDr = Random.NormalIntRange(armor.DRMin(), armor.DRMax());
+				if (armDr > 0) dr += armDr;
+			}
+		} else if (belongings.armor() != null) {
 			int armDr = Random.NormalIntRange( belongings.armor().DRMin(), belongings.armor().DRMax());
-			if (!GenesisEcho.unrestrictedEquipment(this) && STR() < belongings.armor().STRReq()){
+			if (STR() < belongings.armor().STRReq()){
 				armDr -= 2*(belongings.armor().STRReq() - STR());
 			}
 			if (armDr > 0) dr += armDr;
@@ -1739,7 +1760,21 @@ public class Hero extends Char {
 		}
 		
 		if (belongings.armor() != null) {
-			damage = belongings.armor().proc( enemy, this, damage );
+			if (GenesisEcho.unrestrictedEquipment(this)) {
+				Armor primaryArmor = belongings.armor();
+				damage = primaryArmor.proc(enemy, this, damage);
+
+				// Each secondary armor contributes its own glyph and identification
+				// progress. Shared hero-wide effects such as Body Form and Holy Ward
+				// are intentionally processed only by the primary armor above.
+				for (Armor armor : belongings.equippedArmors()) {
+					if (armor != null && armor != primaryArmor) {
+						damage = armor.procStackedSecondary(enemy, this, damage);
+					}
+				}
+			} else {
+				damage = belongings.armor().proc( enemy, this, damage );
+			}
 		} else {
 			if (buff(BodyForm.BodyFormBuff.class) != null
 				&& buff(BodyForm.BodyFormBuff.class).glyph() != null){
@@ -1766,15 +1801,28 @@ public class Hero extends Char {
 
 	@Override
 	public int glyphLevel(Class<? extends Armor.Glyph> cls) {
-		if (belongings.armor() != null && belongings.armor().hasGlyph(cls, this)){
-			return Math.max(super.glyphLevel(cls), belongings.armor.buffedLvl());
-		} else if (buff(BodyForm.BodyFormBuff.class) != null
+		int result = super.glyphLevel(cls);
+
+		if (GenesisEcho.unrestrictedEquipment(this)) {
+			for (Armor armor : belongings.equippedArmors()) {
+				if (armor != null && armor.hasGlyph(cls, this)) {
+					result = Math.max(result, armor.buffedLvl());
+				}
+			}
+		} else if (belongings.armor() != null && belongings.armor().hasGlyph(cls, this)){
+			result = Math.max(result, belongings.armor().buffedLvl());
+		}
+
+		if (buff(BodyForm.BodyFormBuff.class) != null
 				&& buff(BodyForm.BodyFormBuff.class).glyph() != null
 				&& buff(BodyForm.BodyFormBuff.class).glyph().getClass() == cls){
-			return belongings.armor() != null ? belongings.armor.buffedLvl() : 0;
-		} else {
-			return super.glyphLevel(cls);
+			int armorLevel = 0;
+			for (Armor armor : belongings.equippedArmors()) {
+				if (armor != null) armorLevel = Math.max(armorLevel, armor.buffedLvl());
+			}
+			result = Math.max(result, armorLevel);
 		}
+		return result;
 	}
 
 	@Override
