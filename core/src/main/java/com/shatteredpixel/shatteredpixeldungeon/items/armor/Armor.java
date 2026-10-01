@@ -241,6 +241,30 @@ public class Armor extends EquipableItem {
 			return false;
 		}
 
+		if (GenesisEcho.unrestrictedEquipment(hero)) {
+			detach(hero.belongings.backpack);
+			if (!hero.belongings.equipStackedArmor(this)) {
+				collect(hero.belongings.backpack);
+				return false;
+			}
+
+			cursedKnown = true;
+			if (cursed) {
+				equipCursed(hero);
+				GLog.n(Messages.get(Armor.class, "equip_cursed"));
+			}
+
+			// The classic armor slot remains the visual/ability/seal primary.
+			if (hero.belongings.armor == this) {
+				((HeroSprite)hero.sprite).updateArmor();
+			}
+			activate(hero);
+			Talent.onItemEquipped(hero, this);
+			hero.spendAndNext(timeToEquip(hero));
+			updateQuickslot();
+			return true;
+		}
+
 		detach(hero.belongings.backpack);
 
 		Armor oldArmor = hero.belongings.armor;
@@ -301,7 +325,11 @@ public class Armor extends EquipableItem {
 
 	@Override
 	public void activate(Char ch) {
-		if (seal != null) Buff.affect(ch, BrokenSeal.WarriorShield.class).setArmor(this);
+		// Broken Seal remains strictly bound to the classic primary armor slot.
+		// Secondary stacked armors never overwrite WarriorShield's armor pointer.
+		if (seal != null && ch instanceof Hero && ((Hero)ch).belongings.armor == this) {
+			Buff.affect(ch, BrokenSeal.WarriorShield.class).setArmor(this);
+		}
 	}
 
 	public void affixSeal(BrokenSeal seal){
@@ -315,7 +343,7 @@ public class Armor extends EquipableItem {
 		if (seal.getGlyph() != null){
 			inscribe(seal.getGlyph());
 		}
-		if (isEquipped(Dungeon.hero)){
+		if (Dungeon.hero != null && Dungeon.hero.belongings.armor == this){
 			Buff.affect(Dungeon.hero, BrokenSeal.WarriorShield.class).setArmor(this);
 		}
 	}
@@ -323,7 +351,7 @@ public class Armor extends EquipableItem {
 	public BrokenSeal detachSeal(){
 		if (seal != null){
 
-			if (isEquipped(Dungeon.hero)) {
+			if (Dungeon.hero != null && Dungeon.hero.belongings.armor == this) {
 				BrokenSeal.WarriorShield sealBuff = Dungeon.hero.buff(BrokenSeal.WarriorShield.class);
 				if (sealBuff != null) sealBuff.setArmor(null);
 			}
@@ -351,6 +379,21 @@ public class Armor extends EquipableItem {
 
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
+		if (GenesisEcho.unrestrictedEquipment(hero) && hero.belongings.isStackEquipped(this)) {
+			boolean wasPrimary = hero.belongings.armor == this;
+			if (super.doUnequip(hero, collect, single)) {
+				hero.belongings.removeStackedEquipment(this);
+
+				if (wasPrimary) {
+					((HeroSprite)hero.sprite).updateArmor();
+					syncPrimarySeal(hero);
+				}
+				updateQuickslot();
+				return true;
+			}
+			return false;
+		}
+
 		if (super.doUnequip( hero, collect, single )) {
 
 			hero.belongings.armor = null;
@@ -367,10 +410,21 @@ public class Armor extends EquipableItem {
 
 		}
 	}
+
+	private static void syncPrimarySeal(Hero hero) {
+		if (hero == null) return;
+		Armor primary = hero.belongings.armor;
+		if (primary != null && primary.checkSeal() != null) {
+			Buff.affect(hero, BrokenSeal.WarriorShield.class).setArmor(primary);
+		} else {
+			BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
+			if (sealBuff != null) sealBuff.setArmor(null);
+		}
+	}
 	
 	@Override
 	public boolean isEquipped( Hero hero ) {
-		return hero != null && hero.belongings.armor() == this;
+		return hero != null && hero.belongings.isStackEquipped(this);
 	}
 
 	public final int DRMax(){
@@ -496,6 +550,35 @@ public class Armor extends EquipableItem {
 		return super.upgrade();
 	}
 	
+	public int procStackedSecondary(Char attacker, Char defender, int damage) {
+		if (defender.buff(MagicImmune.class) == null && glyph != null) {
+			damage = glyph.proc(this, attacker, defender, damage);
+			damage = Math.max(damage, 0);
+		}
+		recordIdentificationUse(defender);
+		return damage;
+	}
+
+	private void recordIdentificationUse(Char defender) {
+		if (!levelKnown && defender == Dungeon.hero) {
+			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
+			availableUsesToID -= uses;
+			usesLeftToID -= uses;
+			if (usesLeftToID <= 0) {
+				if (ShardOfOblivion.passiveIDDisabled()){
+					if (usesLeftToID > -1){
+						GLog.p(Messages.get(ShardOfOblivion.class, "identify_ready"), name());
+					}
+					setIDReady();
+				} else {
+					identify();
+					GLog.p(Messages.get(Armor.class, "identify"));
+					Badges.validateItemLevelAquired(this);
+				}
+			}
+		}
+	}
+
 	public int proc( Char attacker, Char defender, int damage ) {
 
 		if (defender.buff(MagicImmune.class) == null) {
@@ -540,23 +623,7 @@ public class Armor extends EquipableItem {
 			damage = Math.max(damage, 0);
 		}
 		
-		if (!levelKnown && defender == Dungeon.hero) {
-			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
-			availableUsesToID -= uses;
-			usesLeftToID -= uses;
-			if (usesLeftToID <= 0) {
-				if (ShardOfOblivion.passiveIDDisabled()){
-					if (usesLeftToID > -1){
-						GLog.p(Messages.get(ShardOfOblivion.class, "identify_ready"), name());
-					}
-					setIDReady();
-				} else {
-					identify();
-					GLog.p(Messages.get(Armor.class, "identify"));
-					Badges.validateItemLevelAquired(this);
-				}
-			}
-		}
+		recordIdentificationUse(defender);
 		
 		return damage;
 	}
