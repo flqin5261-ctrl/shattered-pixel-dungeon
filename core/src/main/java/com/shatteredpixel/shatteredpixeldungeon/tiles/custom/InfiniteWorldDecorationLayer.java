@@ -21,6 +21,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public static final int SOURCE_TOWN = 0;
     public static final int SOURCE_DUNGEON = 1;
     public static final int SOURCE_URBAN = 2;
+    public static final int SOURCE_BACKROOMS = 3;
 
     // Keep the original numeric ids 1..5 stable for old 0.5.8 save bundles.
     public static final int ROUND_TREE = 1;
@@ -71,6 +72,24 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public static final int BOLLARD = 40;
     public static final int REFUSE_BIN = 41;
 
+    // Assist 0.9.4 — purpose-built Backrooms material/prop atlas.
+    public static final int RED_LOCKER = 42;
+    public static final int BLUE_LOCKER = 43;
+    public static final int PLAY_BLOCKS = 44;
+    public static final int BACKROOMS_SHELF = 45;
+    public static final int SAFETY_PYLON = 46;
+    public static final int SERVICE_COUNTER = 47;
+    public static final int FLOOR_LAMP = 48;
+    public static final int LADDER = 49;
+    public static final int OFFICE_CHAIR = 50;
+    public static final int LOW_DESK = 51;
+    public static final int BED = 52;
+    public static final int METAL_RAIL = 53;
+    public static final int BATH_FIXTURE = 54;
+    public static final int ICE_SPIRE = 55;
+    public static final int WAYFINDING_PILLAR = 56;
+    public static final int ARCADE_CABINET = 57;
+
     private static final String SOURCE = "source";
     private static final String CELLS = "cells";
     private static final String KINDS = "kinds";
@@ -117,6 +136,24 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case BOLLARD:
             case REFUSE_BIN:
                 return SOURCE_URBAN;
+
+            case RED_LOCKER:
+            case BLUE_LOCKER:
+            case PLAY_BLOCKS:
+            case BACKROOMS_SHELF:
+            case SAFETY_PYLON:
+            case SERVICE_COUNTER:
+            case FLOOR_LAMP:
+            case LADDER:
+            case OFFICE_CHAIR:
+            case LOW_DESK:
+            case BED:
+            case METAL_RAIL:
+            case BATH_FIXTURE:
+            case ICE_SPIRE:
+            case WAYFINDING_PILLAR:
+            case ARCADE_CABINET:
+                return SOURCE_BACKROOMS;
 
             default:
                 return SOURCE_TOWN;
@@ -170,6 +207,9 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case REFUSE_BAGS:
             case BOLLARD:
             case REFUSE_BIN:
+            case PLAY_BLOCKS:
+            case METAL_RAIL:
+            case ICE_SPIRE:
                 return true;
             default:
                 return false;
@@ -181,6 +221,8 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             texture = Assets.Environment.ASSIST_KENNEY_TINY_DUNGEON;
         } else if (source == SOURCE_URBAN) {
             texture = Assets.Environment.ASSIST_KENNEY_RPG_URBAN;
+        } else if (source == SOURCE_BACKROOMS) {
+            texture = Assets.Environment.ASSIST_BACKROOMS_MATERIALS;
         } else {
             texture = Assets.Environment.ASSIST_KENNEY_TINY_TOWN;
         }
@@ -241,7 +283,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
                 case WEAPON_RACK:  return 122;
                 default:           return -1;
             }
-        } else {
+        } else if (source == SOURCE_URBAN) {
             switch (kind) {
                 case CURVED_STREET_LAMP: return 164;
                 case STREET_LAMP:        return 165;
@@ -255,6 +297,26 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
                 case BOLLARD:            return 272;
                 case REFUSE_BIN:         return 279;
                 default:                 return -1;
+            }
+        } else {
+            switch (kind) {
+                case RED_LOCKER:          return 32;
+                case BLUE_LOCKER:         return 33;
+                case PLAY_BLOCKS:         return 34;
+                case BACKROOMS_SHELF:     return 35;
+                case SAFETY_PYLON:        return 36;
+                case SERVICE_COUNTER:     return 37;
+                case FLOOR_LAMP:          return 38;
+                case LADDER:              return 39;
+                case OFFICE_CHAIR:        return 40;
+                case LOW_DESK:            return 41;
+                case BED:                 return 42;
+                case METAL_RAIL:          return 43;
+                case BATH_FIXTURE:        return 44;
+                case ICE_SPIRE:           return 45;
+                case WAYFINDING_PILLAR:   return 46;
+                case ARCADE_CABINET:      return 47;
+                default:                  return -1;
             }
         }
     }
@@ -302,6 +364,22 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case CITY_BENCH:         return "city_bench";
             case BOLLARD:            return "bollard";
             case REFUSE_BIN:         return "refuse_bin";
+            case RED_LOCKER:          return "red_locker";
+            case BLUE_LOCKER:         return "blue_locker";
+            case PLAY_BLOCKS:         return "play_blocks";
+            case BACKROOMS_SHELF:     return "backrooms_shelf";
+            case SAFETY_PYLON:        return "safety_pylon";
+            case SERVICE_COUNTER:     return "service_counter";
+            case FLOOR_LAMP:          return "floor_lamp";
+            case LADDER:              return "ladder";
+            case OFFICE_CHAIR:        return "office_chair";
+            case LOW_DESK:            return "low_desk";
+            case BED:                 return "bed";
+            case METAL_RAIL:          return "metal_rail";
+            case BATH_FIXTURE:        return "bath_fixture";
+            case ICE_SPIRE:           return "ice_spire";
+            case WAYFINDING_PILLAR:   return "wayfinding_pillar";
+            case ARCADE_CABINET:      return "arcade_cabinet";
             default:                 return null;
         }
     }
