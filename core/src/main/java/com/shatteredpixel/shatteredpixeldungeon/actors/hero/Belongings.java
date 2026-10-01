@@ -257,32 +257,40 @@ public class Belongings implements Iterable<Item> {
 		stackedArtifacts.clear();
 		stackedRings.clear();
 
-		for (Bundlable item : bundle.getCollection(STACKED_WEAPONS)) {
-			if (item instanceof KindOfWeapon) {
-				KindOfWeapon weapon = (KindOfWeapon)item;
-				stackedWeapons.add(weapon);
-				weapon.activate(owner);
+		if (bundle.contains(STACKED_WEAPONS)) {
+			for (Bundlable item : bundle.getCollection(STACKED_WEAPONS)) {
+				if (item instanceof KindOfWeapon) {
+					KindOfWeapon weapon = (KindOfWeapon)item;
+					stackedWeapons.add(weapon);
+					weapon.activate(owner);
+				}
 			}
 		}
-		for (Bundlable item : bundle.getCollection(STACKED_WANDS)) {
-			if (item instanceof Wand) {
-				Wand wand = (Wand)item;
-				stackedWands.add(wand);
-				wand.charge(owner);
+		if (bundle.contains(STACKED_WANDS)) {
+			for (Bundlable item : bundle.getCollection(STACKED_WANDS)) {
+				if (item instanceof Wand) {
+					Wand wand = (Wand)item;
+					stackedWands.add(wand);
+					wand.charge(owner);
+				}
 			}
 		}
-		for (Bundlable item : bundle.getCollection(STACKED_ARTIFACTS)) {
-			if (item instanceof Artifact) {
-				Artifact artifact = (Artifact)item;
-				stackedArtifacts.add(artifact);
-				artifact.activate(owner);
+		if (bundle.contains(STACKED_ARTIFACTS)) {
+			for (Bundlable item : bundle.getCollection(STACKED_ARTIFACTS)) {
+				if (item instanceof Artifact) {
+					Artifact artifact = (Artifact)item;
+					stackedArtifacts.add(artifact);
+					artifact.activate(owner);
+				}
 			}
 		}
-		for (Bundlable item : bundle.getCollection(STACKED_RINGS)) {
-			if (item instanceof Ring) {
-				Ring ring = (Ring)item;
-				stackedRings.add(ring);
-				ring.activate(owner);
+		if (bundle.contains(STACKED_RINGS)) {
+			for (Bundlable item : bundle.getCollection(STACKED_RINGS)) {
+				if (item instanceof Ring) {
+					Ring ring = (Ring)item;
+					stackedRings.add(ring);
+					ring.activate(owner);
+				}
 			}
 		}
 
@@ -672,4 +680,5 @@ public class Belongings implements Iterable<Item> {
 			}
 			lastItem = null;
 		}
-	}}
+	}
+}
