@@ -332,7 +332,9 @@ public class StatusPane extends Component {
 		Dot.x = shieldHP.x + shieldHP.width() - Dot.width();
 
 		if (oldHP != health || oldShield != shield || oldMax != max){
-			if (shield <= 0) {
+			if (GenesisEcho.active(Dungeon.hero)) {
+				hpText.text("∞/∞");
+			} else if (shield <= 0) {
 				hpText.text(health + "/" + max);
 			} else {
 				hpText.text(health + "+" + shield + "/" + max);
