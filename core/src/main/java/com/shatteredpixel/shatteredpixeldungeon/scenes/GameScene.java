@@ -110,6 +110,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.LootIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.MenuPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ResumeIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RightClickMenu;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StatusPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
@@ -180,6 +181,8 @@ public class GameScene extends PixelScene {
 	private ColorBlock infiniteWorldAmbientLight;
 	private Emitter infiniteWorldWeather;
 	private int infiniteWorldWeatherKind = Integer.MIN_VALUE;
+	private ColorBlock infiniteWorldHudBg;
+	private RenderedTextBlock infiniteWorldHud;
 	private HeroSprite hero;
 
 	private MenuPane menu;
@@ -557,6 +560,20 @@ public class GameScene extends PixelScene {
 		log.camera = uiCamera;
 		log.newLine();
 		add( log );
+
+		// Persistent World Cycle readout: always tells the player what the visual
+		// system believes the current day/season/time/weather/environment to be.
+		infiniteWorldHudBg = new ColorBlock(120, 20, 0x000000);
+		infiniteWorldHudBg.camera = uiCamera;
+		infiniteWorldHudBg.alpha(0.58f);
+		add(infiniteWorldHudBg);
+
+		infiniteWorldHud = PixelScene.renderTextBlock(6);
+		infiniteWorldHud.camera = uiCamera;
+		infiniteWorldHud.setHightlighting(false);
+		infiniteWorldHud.hardlight(0xF2F6FF);
+		add(infiniteWorldHud);
+		refreshInfiniteWorldHud();
 
 		if (uiSize > 0){
 			bringToFront(status);
@@ -1461,6 +1478,42 @@ public class GameScene extends PixelScene {
 		}
 	}
 
+	public static void refreshInfiniteWorldHud() {
+		if (scene == null || scene.infiniteWorldHud == null || scene.infiniteWorldHudBg == null) return;
+
+		if (!Dungeon.infiniteWorld
+				|| !(Dungeon.level instanceof InfiniteWorldLevel)
+				|| Dungeon.infiniteWorldState == null) {
+			scene.infiniteWorldHud.visible = false;
+			scene.infiniteWorldHudBg.visible = false;
+			return;
+		}
+
+		InfiniteWorldLevel level = (InfiniteWorldLevel)Dungeon.level;
+		InfiniteWorldCycle.ensureInitialized(Dungeon.infiniteWorldState, Dungeon.seed);
+		int anomaly = level.currentWorldCycleAnomaly();
+
+		String text = InfiniteWorldCycle.statusLine(Dungeon.infiniteWorldState, anomaly)
+				+ "\n" + InfiniteWorldCycle.environmentLine(Dungeon.infiniteWorldState, anomaly);
+		int maxWidth = Math.max(80, Math.min(150, (int)uiCamera.width - 12));
+		scene.infiniteWorldHud.text(text, maxWidth);
+		scene.infiniteWorldHud.align(RenderedTextBlock.CENTER_ALIGN);
+
+		float boxW = Math.min(uiCamera.width - 8, Math.max(112, scene.infiniteWorldHud.width() + 10));
+		float boxH = scene.infiniteWorldHud.height() + 7;
+		float boxX = (uiCamera.width - boxW) / 2f;
+		float boxY = 3f;
+
+		scene.infiniteWorldHudBg.size(boxW, boxH);
+		scene.infiniteWorldHudBg.x = boxX;
+		scene.infiniteWorldHudBg.y = boxY;
+		scene.infiniteWorldHud.setPos(
+				(uiCamera.width - scene.infiniteWorldHud.width()) / 2f,
+				boxY + 3f);
+		scene.infiniteWorldHud.visible = true;
+		scene.infiniteWorldHudBg.visible = true;
+	}
+
 	public static void flashInfiniteWorldLightning() {
 		if (scene == null || !Dungeon.infiniteWorld || !(Dungeon.level instanceof InfiniteWorldLevel)) return;
 		Game.runOnRenderThread(new Callback() {
@@ -1495,6 +1548,8 @@ public class GameScene extends PixelScene {
 			scene.infiniteWorldAmbientLight.color(color);
 			scene.infiniteWorldAmbientLight.alpha(alpha);
 			scene.infiniteWorldAmbientLight.visible = alpha > 0.001f;
+
+			refreshInfiniteWorldHud();
 
 			int weather = InfiniteWorldCycle.presentationWeather(Dungeon.infiniteWorldState, anomaly);
 			if (scene.infiniteWorldWeatherKind == weather) return;
