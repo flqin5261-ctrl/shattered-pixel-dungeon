@@ -1564,12 +1564,25 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item chestItem(int cx, int cy) {
+        if (state().generatorVersion >= 18) {
+            int roll = range(cx, cy, 7001, 0, 99);
+            if (roll < 16) return new PotionOfHealing();
+            if (roll < 29) return v6RandomFood(cx, cy, 7010);
+            if (roll < 43) return v6SafeScroll(cx, cy, 7020);
+            if (roll < 56) return v6RandomPotion(cx, cy, 7030);
+            if (roll < 67) return new Bomb();
+            if (roll < 76) return new StoneOfBlink();
+            if (roll < 83) return new Torch();
+            if (roll < 90) return new Gold(8 + range(cx, cy, 7040, 0, 24));
+            if (roll < 96) return v6EquipmentItem(cx, cy, 7050);
+            // Mining tools remain obtainable in ordinary exploration.
+            return new Pickaxe();
+        }
+
         int roll = (int)Math.floorMod(hash(cx, cy, 7001), 8L);
         if (roll <= 2) return new PotionOfHealing();
         if (roll <= 4) return new ScrollOfTeleportation();
         if (roll <= 6) return new Bomb();
-        // The pickaxe is intentionally obtainable here because v4 mineral veins
-        // use the game's native mining interaction.
         return new Pickaxe();
     }
 
@@ -1827,8 +1840,16 @@ public class InfiniteWorldLevel extends Level {
             public void visit(int cx, int cy, int ox, int oy) {
                 int count;
                 if (state().generatorVersion >= 9) {
-                    count = v9AnomalyType(cx, cy) == 0
-                            && Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                    if (v9AnomalyType(cx, cy) == 0) {
+                        if (state().generatorVersion >= 18) {
+                            long roll = Math.floorMod(hash(cx, cy, 19000), 100L);
+                            count = roll < 6 ? 2 : (roll < 44 ? 1 : 0);
+                        } else {
+                            count = Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                        }
+                    } else {
+                        count = 0;
+                    }
                 } else {
                     count = 1 + range(cx, cy, 19000, 0, 2);
                 }
@@ -1853,8 +1874,10 @@ public class InfiniteWorldLevel extends Level {
 
                 // Keys are intentionally separate from random loot so an endless
                 // world never runs out of ways to open remote locks.
-                int ironChance = state().generatorVersion >= 9 ? 8 : 38;
-                int crystalChance = state().generatorVersion >= 9 ? 5 : 32;
+                int ironChance = state().generatorVersion >= 18 ? 10
+                        : (state().generatorVersion >= 9 ? 8 : 38);
+                int crystalChance = state().generatorVersion >= 18 ? 6
+                        : (state().generatorVersion >= 9 ? 5 : 32);
                 if (v9AnomalyType(cx, cy) == 0
                         && Math.floorMod(hash(cx, cy, 19400), 100L) < ironChance) {
                     generateV6KeyHeap(cx, cy, ox, oy, 0, new IronKey(Dungeon.depth));
@@ -1895,8 +1918,16 @@ public class InfiniteWorldLevel extends Level {
             public void visit(int cx, int cy, int ox, int oy) {
                 int count;
                 if (state().generatorVersion >= 9) {
-                    count = v9AnomalyType(cx, cy) == 0
-                            && Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                    if (v9AnomalyType(cx, cy) == 0) {
+                        if (state().generatorVersion >= 18) {
+                            long roll = Math.floorMod(hash(cx, cy, 19000), 100L);
+                            count = roll < 6 ? 2 : (roll < 44 ? 1 : 0);
+                        } else {
+                            count = Math.floorMod(hash(cx, cy, 19000), 100L) < 30 ? 1 : 0;
+                        }
+                    } else {
+                        count = 0;
+                    }
                 } else {
                     count = 1 + range(cx, cy, 19000, 0, 2);
                 }
