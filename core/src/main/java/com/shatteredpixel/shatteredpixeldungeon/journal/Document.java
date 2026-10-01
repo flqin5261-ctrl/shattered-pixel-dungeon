@@ -309,6 +309,12 @@ public enum Document {
 		INFINITE_WORLD_NOTES.pagesStates.put("Level_11",         debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Level_37",         debug ? READ : NOT_FOUND);
 		INFINITE_WORLD_NOTES.pagesStates.put("Level_94",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_13",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_18",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_34",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_40",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_48",         debug ? READ : NOT_FOUND);
+		INFINITE_WORLD_NOTES.pagesStates.put("Level_974",        debug ? READ : NOT_FOUND);
 
 		INTROS.pagesStates.put("Dungeon",                       READ);
 		INTROS.pagesStates.put("Sewers",                        debug ? READ : NOT_FOUND);
