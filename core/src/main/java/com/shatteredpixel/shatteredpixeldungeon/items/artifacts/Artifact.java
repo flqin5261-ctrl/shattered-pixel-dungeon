@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -101,7 +102,48 @@ public class Artifact extends KindofMisc {
 			passiveBuff = null;
 		}
 		passiveBuff = passiveBuff();
-		passiveBuff.attachTo(ch);
+		if (passiveBuff != null) passiveBuff.attachTo(ch);
+	}
+
+	/**
+	 * 纵横八荒 can keep multiple artifacts equipped outside the two vanilla misc
+	 * slots. Every equipped artifact must keep its own passive ArtifactBuff in
+	 * both the Hero buff set and the Actor scheduler. If a save/load, slot swap,
+	 * or older stacked-equipment build lost that runtime actor, rebuild only that
+	 * artifact's own passive buff; its charge/cooldown fields stay untouched.
+	 */
+	public boolean ensurePassiveRuntime(Hero hero) {
+		if (hero == null || !isEquipped(hero)) return false;
+
+		ArtifactBuff expected = passiveBuff;
+		boolean attached = expected != null
+				&& expected.target == hero
+				&& hero.buffs().contains(expected)
+				&& Actor.all().contains(expected);
+
+		if (attached) return true;
+
+		if (expected != null && expected.target != null) {
+			expected.detach();
+		}
+		passiveBuff = passiveBuff();
+		if (passiveBuff == null) return true;
+
+		boolean ok = passiveBuff.attachTo(hero);
+		// attachTo normally schedules immediately if the Hero is already an Actor.
+		// Keep a defensive scheduler check for old saves restored mid-scene.
+		if (ok && Actor.chars().contains(hero) && !Actor.all().contains(passiveBuff)) {
+			Actor.add(passiveBuff);
+		}
+		return ok;
+	}
+
+	/**
+	 * Per-equipped-artifact experience hook. Subclasses whose native recharge
+	 * depends on hero XP override this; time/event based artifacts do nothing.
+	 */
+	public void onEquippedHeroGainExp(float levelPercent, Hero hero) {
+		// no-op by default
 	}
 
 	@Override
