@@ -44,9 +44,13 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldAccentTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldUrbanSurfaceLayer;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldBackroomsMaterialLayer;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.InfiniteWorldSeasonTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.custom.InfiniteWorldDecorationLayer;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.BArray;
 import com.watabou.utils.PathFinder;
@@ -92,6 +96,13 @@ public class InfiniteWorldLevel extends Level {
 
     private boolean shifting;
     private int streamingShiftsSinceCheckpoint;
+
+    // Assist 0.9.6 World Cycle runtime presentation/audio state. Persistent time
+    // and weather live in InfiniteWorldState; these are intentionally not saved.
+    private boolean worldCycleMusicSuppressed;
+    private float worldCycleAmbientCountdown;
+    private float worldCycleThunderCountdown;
+    private int worldCycleAudioTick;
 
     // Runtime-only throttles for per-step Infinite World housekeeping.
     private int lastProcessedHeroChunkX = Integer.MIN_VALUE;
@@ -188,6 +199,17 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     public void playLevelMusic() {
+        InfiniteWorldState st = state();
+        InfiniteWorldCycle.ensureInitialized(st, Dungeon.seed);
+        int weather = InfiniteWorldCycle.presentationWeather(st, currentWorldCycleAnomaly());
+        if (InfiniteWorldCycle.suppressesMusic(weather)) {
+            worldCycleMusicSuppressed = true;
+            Music.INSTANCE.stop();
+            return;
+        }
+
+        worldCycleMusicSuppressed = false;
+
         // Infinite World is a long-running exploration mode; rotate through all
         // normal regional tracks instead of looping a single song forever.
         String[] tracks = new String[]{
@@ -214,6 +236,8 @@ public class InfiniteWorldLevel extends Level {
         setSize(MAP_SIZE, MAP_SIZE);
 
         InfiniteWorldState st = state();
+        InfiniteWorldCycle.ensureInitialized(st, Dungeon.seed);
+        applyWorldCyclePalette();
         if (!st.heroWorldInitialized) {
             st.heroWorldX = 12;
             st.heroWorldY = 12;
@@ -735,6 +759,7 @@ public class InfiniteWorldLevel extends Level {
                 ensureV12AnomalyNoteNearby(hero);
             }
             ensureV13MerchantDiscovery(hero);
+            refreshWorldCyclePresentation(false);
         }
 
         // Mob pruning only needs coarse movement granularity. The hard cap is tiny,
@@ -811,10 +836,170 @@ public class InfiniteWorldLevel extends Level {
         InfiniteWorldState st = state();
         st.heroActionValue += time;
 
+        int cycleChanges = InfiniteWorldCycle.advance(st, time, Dungeon.seed);
+        if (cycleChanges != 0) {
+            boolean refreshSeason = (cycleChanges
+                    & (InfiniteWorldCycle.CHANGE_WEATHER | InfiniteWorldCycle.CHANGE_SEASON)) != 0;
+            refreshWorldCyclePresentation(refreshSeason);
+        }
+        tickWorldCycleAudio(time);
+
         if (st.artifactChestState == 0
                 && st.heroActionValue >= GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE) {
             spawnGuaranteedArtifactChest();
         }
+    }
+
+
+    public int currentWorldCycleAnomaly() {
+        if (state().generatorVersion < 9) return 0;
+        int cx = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
+        int cy = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
+        return v9AnomalyType(cx, cy);
+    }
+
+    private void applyWorldCyclePalette() {
+        int season = InfiniteWorldCycle.season(state());
+        switch (season) {
+            case InfiniteWorldCycle.SEASON_SPRING:
+                color1 = 0x3E8F4D;
+                color2 = 0x93D66D;
+                break;
+            case InfiniteWorldCycle.SEASON_SUMMER:
+                color1 = 0x285F35;
+                color2 = 0x6FAE4B;
+                break;
+            case InfiniteWorldCycle.SEASON_AUTUMN:
+                color1 = 0x8A4F1D;
+                color2 = 0xD3A12E;
+                break;
+            case InfiniteWorldCycle.SEASON_WINTER:
+            default:
+                color1 = 0xA7B7C7;
+                color2 = 0xE6F0F5;
+                break;
+        }
+    }
+
+    private void refreshWorldCyclePresentation(final boolean refreshSeasonLayers) {
+        applyWorldCyclePalette();
+        updateWorldCycleMusicPolicy();
+
+        Game.runOnRenderThread(new Callback() {
+            @Override
+            public void call() {
+                if (Dungeon.level != InfiniteWorldLevel.this) return;
+
+                if (refreshSeasonLayers && customTiles != null) {
+                    for (CustomTilemap visual : customTiles) {
+                        if (visual instanceof InfiniteWorldSeasonTilemap) {
+                            ((InfiniteWorldSeasonTilemap)visual).refresh();
+                        } else if (visual instanceof InfiniteWorldDecorationLayer) {
+                            ((InfiniteWorldDecorationLayer)visual).refreshSeason();
+                        }
+                    }
+                }
+                GameScene.refreshInfiniteWorldEnvironment();
+            }
+        });
+    }
+
+    private void updateWorldCycleMusicPolicy() {
+        int weather = InfiniteWorldCycle.presentationWeather(state(), currentWorldCycleAnomaly());
+        final boolean suppress = InfiniteWorldCycle.suppressesMusic(weather);
+        if (suppress == worldCycleMusicSuppressed) return;
+
+        worldCycleMusicSuppressed = suppress;
+        if (suppress) {
+            Music.INSTANCE.fadeOut(0.8f, new Callback() {
+                @Override
+                public void call() {
+                    if (Dungeon.level == InfiniteWorldLevel.this && worldCycleMusicSuppressed) {
+                        Music.INSTANCE.stop();
+                    }
+                }
+            });
+        } else {
+            playLevelMusic();
+        }
+    }
+
+    private void tickWorldCycleAudio(float time) {
+        worldCycleAmbientCountdown -= time;
+        worldCycleThunderCountdown -= time;
+
+        int anomaly = currentWorldCycleAnomaly();
+        int weather = InfiniteWorldCycle.presentationWeather(state(), anomaly);
+
+        if (weather == InfiniteWorldCycle.WEATHER_STORM && worldCycleThunderCountdown <= 0f) {
+            Sample.INSTANCE.play(Assets.Sounds.LIGHTNING, 0.78f, cycleAudioRange(9101, 0.86f, 1.05f));
+            worldCycleThunderCountdown = cycleAudioRange(9102, 18f, 42f);
+        }
+
+        if (worldCycleAmbientCountdown > 0f) return;
+        worldCycleAudioTick++;
+
+        if (anomaly != 0) {
+            // A few strong environmental identities get lightweight ambience;
+            // all Backrooms levels still reject ordinary rain/snow/wind.
+            switch (anomaly) {
+                case 7: // Level 6: dark ventilation / low wind-like rumble.
+                    Sample.INSTANCE.play(Assets.Sounds.GAS, 0.11f, 0.58f);
+                    worldCycleAmbientCountdown = cycleAudioRange(9120, 16f, 30f);
+                    return;
+                case 10: // Level 9: midnight vegetation.
+                    Sample.INSTANCE.play(Assets.Sounds.GRASS, 0.10f, 0.82f);
+                    worldCycleAmbientCountdown = cycleAudioRange(9121, 14f, 28f);
+                    return;
+                case 13: // Level 37: poolrooms.
+                case 19: // Level 48: beach.
+                    Sample.INSTANCE.play(Assets.Sounds.WATER, 0.16f, 0.82f);
+                    worldCycleAmbientCountdown = cycleAudioRange(9122, 10f, 22f);
+                    return;
+                case 18: // Level 40: arcade/electrical.
+                    Sample.INSTANCE.play(Assets.Sounds.CHARGEUP, 0.08f, 0.68f);
+                    worldCycleAmbientCountdown = cycleAudioRange(9123, 18f, 34f);
+                    return;
+                default:
+                    worldCycleAmbientCountdown = cycleAudioRange(9124, 20f, 40f);
+                    return;
+            }
+        }
+
+        switch (weather) {
+            case InfiniteWorldCycle.WEATHER_RAIN:
+                Sample.INSTANCE.play(Assets.Sounds.WATER, 0.20f, cycleAudioRange(9130, 0.72f, 0.96f));
+                worldCycleAmbientCountdown = cycleAudioRange(9131, 3.5f, 7f);
+                break;
+            case InfiniteWorldCycle.WEATHER_STORM:
+                Sample.INSTANCE.play(Assets.Sounds.WATER, 0.28f, cycleAudioRange(9132, 0.68f, 0.90f));
+                worldCycleAmbientCountdown = cycleAudioRange(9133, 2.5f, 5f);
+                break;
+            case InfiniteWorldCycle.WEATHER_WIND:
+                Sample.INSTANCE.play(Assets.Sounds.GAS, 0.20f, cycleAudioRange(9134, 0.52f, 0.70f));
+                worldCycleAmbientCountdown = cycleAudioRange(9135, 5f, 10f);
+                break;
+            case InfiniteWorldCycle.WEATHER_SNOW:
+                Sample.INSTANCE.play(Assets.Sounds.GAS, 0.08f, cycleAudioRange(9136, 0.46f, 0.58f));
+                worldCycleAmbientCountdown = cycleAudioRange(9137, 12f, 24f);
+                break;
+            case InfiniteWorldCycle.WEATHER_FOG:
+                Sample.INSTANCE.play(Assets.Sounds.GRASS, 0.06f, 0.72f);
+                worldCycleAmbientCountdown = cycleAudioRange(9138, 18f, 32f);
+                break;
+            default:
+                // Quiet clear/cloudy ambience changes with season via level palette
+                // and leaves enough room for the normal soundtrack.
+                worldCycleAmbientCountdown = cycleAudioRange(9139, 22f, 42f);
+                break;
+        }
+    }
+
+    private float cycleAudioRange(int salt, float min, float max) {
+        int mixedSalt = salt + worldCycleAudioTick * 37;
+        long h = hash(state().heroWorldX, state().heroWorldY, mixedSalt);
+        float t = Math.floorMod(h, 1000L) / 999f;
+        return min + (max - min) * t;
     }
 
 
@@ -6290,6 +6475,27 @@ public class InfiniteWorldLevel extends Level {
                         customWalls.add(roomWalls);
                     }
                 }
+            }
+        }
+
+        addWorldCycleSeasonLayers();
+    }
+
+    private void addWorldCycleSeasonLayers() {
+        if (customTiles == null) return;
+
+        for (int wy = -HALF_WINDOW; wy <= HALF_WINDOW; wy++) {
+            for (int wx = -HALF_WINDOW; wx <= HALF_WINDOW; wx++) {
+                int cx = state().centerChunkX + wx;
+                int cy = state().centerChunkY + wy;
+                if (state().generatorVersion >= 9 && v9AnomalyType(cx, cy) != 0) continue;
+
+                int localX = (wx + HALF_WINDOW) * CHUNK_SIZE;
+                int localY = (wy + HALF_WINDOW) * CHUNK_SIZE;
+                InfiniteWorldSeasonTilemap season = new InfiniteWorldSeasonTilemap(
+                        (int)hash(cx, cy, 31060));
+                season.setRect(localX, localY, CHUNK_SIZE, CHUNK_SIZE);
+                customTiles.add(season);
             }
         }
     }
