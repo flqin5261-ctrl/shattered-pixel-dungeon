@@ -289,6 +289,14 @@ public class EtherealChains extends Artifact {
 	}
 	
 	@Override
+	public void onEquippedHeroGainExp(float levelPercent, Hero hero) {
+		ensurePassiveRuntime(hero);
+		if (passiveBuff instanceof chainsRecharge) {
+			((chainsRecharge)passiveBuff).gainExp(levelPercent);
+		}
+	}
+
+	@Override
 	public void charge(Hero target, float amount) {
 		if (cursed || target.buff(MagicImmune.class) != null) return;
 		int chargeTarget = 5+(level()*2);
