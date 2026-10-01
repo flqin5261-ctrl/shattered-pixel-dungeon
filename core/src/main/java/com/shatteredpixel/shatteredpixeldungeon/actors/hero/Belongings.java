@@ -44,9 +44,11 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Bundlable;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 
 public class Belongings implements Iterable<Item> {
@@ -94,6 +96,16 @@ public class Belongings implements Iterable<Item> {
 	public BreakthroughCertificate breakthroughCertificate = null;
 	public KindofMisc misc = null;
 	public Ring ring = null;
+
+	// 纵横八荒 stacked equipment. These are deliberately separate from the
+	// classic slots so old saves and vanilla combat code remain compatible.
+	// The classic slot stays the primary/representative item; additional items
+	// are truly equipped and remain owned by the Hero without occupying backpack
+	// cells.
+	private final ArrayList<KindOfWeapon> stackedWeapons = new ArrayList<>();
+	private final ArrayList<Wand> stackedWands = new ArrayList<>();
+	private final ArrayList<Artifact> stackedArtifacts = new ArrayList<>();
+	private final ArrayList<Ring> stackedRings = new ArrayList<>();
 
 	//used when thrown weapons temporary become the current weapon
 	public KindOfWeapon thrownWeapon = null;
@@ -191,6 +203,10 @@ public class Belongings implements Iterable<Item> {
 	private static final String RING       = "ring";
 
 	private static final String SECOND_WEP = "second_wep";
+	private static final String STACKED_WEAPONS = "genesis_stacked_weapons";
+	private static final String STACKED_WANDS = "genesis_stacked_wands";
+	private static final String STACKED_ARTIFACTS = "genesis_stacked_artifacts";
+	private static final String STACKED_RINGS = "genesis_stacked_rings";
 
 	public void storeInBundle( Bundle bundle ) {
 		
@@ -203,6 +219,10 @@ public class Belongings implements Iterable<Item> {
 		bundle.put( MISC, misc );
 		bundle.put( RING, ring );
 		bundle.put( SECOND_WEP, secondWep );
+		bundle.put( STACKED_WEAPONS, stackedWeapons );
+		bundle.put( STACKED_WANDS, stackedWands );
+		bundle.put( STACKED_ARTIFACTS, stackedArtifacts );
+		bundle.put( STACKED_RINGS, stackedRings );
 	}
 
 	public static boolean bundleRestoring = false;
@@ -233,6 +253,40 @@ public class Belongings implements Iterable<Item> {
 		secondWep = (KindOfWeapon) bundle.get(SECOND_WEP);
 		if (secondWep() != null)    secondWep().activate(owner);
 
+		stackedWeapons.clear();
+		stackedWands.clear();
+		stackedArtifacts.clear();
+		stackedRings.clear();
+
+		for (Bundlable item : bundle.getCollection(STACKED_WEAPONS)) {
+			if (item instanceof KindOfWeapon) {
+				KindOfWeapon weapon = (KindOfWeapon)item;
+				stackedWeapons.add(weapon);
+				weapon.activate(owner);
+			}
+		}
+		for (Bundlable item : bundle.getCollection(STACKED_WANDS)) {
+			if (item instanceof Wand) {
+				Wand wand = (Wand)item;
+				stackedWands.add(wand);
+				wand.charge(owner);
+			}
+		}
+		for (Bundlable item : bundle.getCollection(STACKED_ARTIFACTS)) {
+			if (item instanceof Artifact) {
+				Artifact artifact = (Artifact)item;
+				stackedArtifacts.add(artifact);
+				artifact.activate(owner);
+			}
+		}
+		for (Bundlable item : bundle.getCollection(STACKED_RINGS)) {
+			if (item instanceof Ring) {
+				Ring ring = (Ring)item;
+				stackedRings.add(ring);
+				ring.activate(owner);
+			}
+		}
+
 		bundleRestoring = false;
 	}
 
@@ -244,8 +298,122 @@ public class Belongings implements Iterable<Item> {
 		breakthroughCertificate = null;
 		misc = null;
 		ring = null;
+		stackedWeapons.clear();
+		stackedWands.clear();
+		stackedArtifacts.clear();
+		stackedRings.clear();
 	}
 	
+	public boolean equipStackedWeapon(KindOfWeapon item) {
+		if (item == null || isStackEquipped(item)) return false;
+		if (weapon == null) weapon = item;
+		else stackedWeapons.add(item);
+		return true;
+	}
+
+	public boolean equipStackedWand(Wand item) {
+		if (item == null || isStackEquipped(item)) return false;
+		stackedWands.add(item);
+		return true;
+	}
+
+	public boolean equipStackedMisc(KindofMisc item) {
+		if (item == null || isStackEquipped(item)) return false;
+		if (item instanceof Artifact) {
+			if (artifact == null) artifact = (Artifact)item;
+			else stackedArtifacts.add((Artifact)item);
+			return true;
+		}
+		if (item instanceof Ring) {
+			if (ring == null) ring = (Ring)item;
+			else stackedRings.add((Ring)item);
+			return true;
+		}
+		return false;
+	}
+
+	public boolean removeStackedEquipment(Item item) {
+		if (item == null) return false;
+		if (weapon == item) {
+			weapon = stackedWeapons.isEmpty() ? null : stackedWeapons.remove(0);
+			return true;
+		}
+		if (secondWep == item) {
+			secondWep = null;
+			return true;
+		}
+		if (stackedWeapons.remove(item)) return true;
+		if (stackedWands.remove(item)) return true;
+		if (artifact == item) {
+			artifact = stackedArtifacts.isEmpty() ? null : stackedArtifacts.remove(0);
+			return true;
+		}
+		if (ring == item) {
+			ring = stackedRings.isEmpty() ? null : stackedRings.remove(0);
+			return true;
+		}
+		if (misc == item) {
+			misc = null;
+			return true;
+		}
+		if (stackedArtifacts.remove(item)) return true;
+		return stackedRings.remove(item);
+	}
+
+	public boolean isStackEquipped(Item item) {
+		if (item == null) return false;
+		return item == weapon || item == secondWep || item == artifact || item == misc || item == ring
+				|| stackedWeapons.contains(item) || stackedWands.contains(item)
+				|| stackedArtifacts.contains(item) || stackedRings.contains(item);
+	}
+
+	public ArrayList<KindOfWeapon> equippedWeapons() {
+		ArrayList<KindOfWeapon> result = new ArrayList<>();
+		if (weapon != null) result.add(weapon);
+		if (secondWep != null && !result.contains(secondWep)) result.add(secondWep);
+		for (KindOfWeapon item : stackedWeapons) if (item != null && !result.contains(item)) result.add(item);
+		return result;
+	}
+
+	public ArrayList<Wand> equippedWands() {
+		return new ArrayList<>(stackedWands);
+	}
+
+	public ArrayList<Artifact> equippedArtifacts() {
+		ArrayList<Artifact> result = new ArrayList<>();
+		if (artifact != null) result.add(artifact);
+		if (misc instanceof Artifact && !result.contains(misc)) result.add((Artifact)misc);
+		for (Artifact item : stackedArtifacts) if (item != null && !result.contains(item)) result.add(item);
+		return result;
+	}
+
+	public ArrayList<Ring> equippedRings() {
+		ArrayList<Ring> result = new ArrayList<>();
+		if (ring != null) result.add(ring);
+		if (misc instanceof Ring && !result.contains(misc)) result.add((Ring)misc);
+		for (Ring item : stackedRings) if (item != null && !result.contains(item)) result.add(item);
+		return result;
+	}
+
+	public KindOfWeapon displayWeapon() {
+		ArrayList<KindOfWeapon> items = equippedWeapons();
+		return items.isEmpty() ? null : items.get(0);
+	}
+
+	public Wand displayWand() {
+		return stackedWands.isEmpty() ? null : stackedWands.get(0);
+	}
+
+	public Artifact displayArtifact() {
+		ArrayList<Artifact> items = equippedArtifacts();
+		return items.isEmpty() ? null : items.get(0);
+	}
+
+	public Ring displayRing() {
+		ArrayList<Ring> items = equippedRings();
+		return items.isEmpty() ? null : items.get(0);
+	}
+
 	public static void preview( GamesInProgress.Info info, Bundle bundle ) {
 		if (bundle.contains( ARMOR )){
 			Armor armor = ((Armor)bundle.get( ARMOR ));
@@ -445,65 +613,57 @@ public class Belongings implements Iterable<Item> {
 	
 	private class ItemIterator implements Iterator<Item> {
 
+		private final ArrayList<Item> equippedItems = new ArrayList<>();
+		private final Iterator<Item> backpackIterator = backpack.iterator();
 		private int index = 0;
-		
-		private Iterator<Item> backpackIterator = backpack.iterator();
-		
-		private Item[] equipped = {weapon, armor, artifact, breakthroughCertificate, misc, ring, secondWep};
-		private int backpackIndex = equipped.length;
-		
+		private Item lastItem = null;
+		private boolean lastFromBackpack = false;
+
+		ItemIterator() {
+			addEquipped(weapon);
+			addEquipped(armor);
+			addEquipped(artifact);
+			addEquipped(breakthroughCertificate);
+			addEquipped(misc);
+			addEquipped(ring);
+			addEquipped(secondWep);
+			for (KindOfWeapon item : stackedWeapons) addEquipped(item);
+			for (Wand item : stackedWands) addEquipped(item);
+			for (Artifact item : stackedArtifacts) addEquipped(item);
+			for (Ring item : stackedRings) addEquipped(item);
+		}
+
+		private void addEquipped(Item item) {
+			if (item != null && !equippedItems.contains(item)) equippedItems.add(item);
+		}
+
 		@Override
 		public boolean hasNext() {
-			
-			for (int i=index; i < backpackIndex; i++) {
-				if (equipped[i] != null) {
-					return true;
-				}
-			}
-			
-			return backpackIterator.hasNext();
+			return index < equippedItems.size() || backpackIterator.hasNext();
 		}
 
 		@Override
 		public Item next() {
-			
-			while (index < backpackIndex) {
-				Item item = equipped[index++];
-				if (item != null) {
-					return item;
-				}
+			if (index < equippedItems.size()) {
+				lastFromBackpack = false;
+				lastItem = equippedItems.get(index++);
+				return lastItem;
 			}
-			
-			return backpackIterator.next();
+			lastFromBackpack = true;
+			lastItem = backpackIterator.next();
+			return lastItem;
 		}
 
 		@Override
 		public void remove() {
-			switch (index) {
-			case 0:
-				equipped[0] = weapon = null;
-				break;
-			case 1:
-				equipped[1] = armor = null;
-				break;
-			case 2:
-				equipped[2] = artifact = null;
-				break;
-			case 3:
-				equipped[3] = breakthroughCertificate = null;
-				break;
-			case 4:
-				equipped[4] = misc = null;
-				break;
-			case 5:
-				equipped[5] = ring = null;
-				break;
-			case 6:
-				equipped[6] = secondWep = null;
-				break;
-			default:
+			if (lastItem == null) return;
+			if (lastFromBackpack) {
 				backpackIterator.remove();
+			} else {
+				removeStackedEquipment(lastItem);
+				if (lastItem == armor) armor = null;
+				if (lastItem == breakthroughCertificate) breakthroughCertificate = null;
 			}
+			lastItem = null;
 		}
-	}
-}
+	}}
