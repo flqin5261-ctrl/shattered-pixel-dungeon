@@ -53,6 +53,7 @@ on:
       - assist-0.8.5-crystal-cheat-spawn
       - assist-0.8.6-mimic-wand-cap
       - assist-0.8.7-mimic-upgrade-ui
+      - assist-0.8.8-mimic-recharge-fastlaws
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
