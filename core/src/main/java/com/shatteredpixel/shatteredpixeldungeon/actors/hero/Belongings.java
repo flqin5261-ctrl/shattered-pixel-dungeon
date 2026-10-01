@@ -464,7 +464,22 @@ public class Belongings implements Iterable<Item> {
 		ArrayList<Artifact> items = equippedArtifacts();
 		if (items.isEmpty()) return null;
 		if (items.size() == 1) return items.get(0);
-		makeStackPrimary(items.get(1));
+
+		// Rotate instead of swapping with just one item, otherwise 3+ artifacts
+		// would bounce between the first two forever.
+		Artifact oldPrimary = artifact;
+		if (misc instanceof Artifact) {
+			artifact = (Artifact)misc;
+			if (!stackedArtifacts.isEmpty()) {
+				misc = stackedArtifacts.remove(0);
+				if (oldPrimary != null) stackedArtifacts.add(oldPrimary);
+			} else {
+				misc = oldPrimary;
+			}
+		} else if (!stackedArtifacts.isEmpty()) {
+			artifact = stackedArtifacts.remove(0);
+			if (oldPrimary != null) stackedArtifacts.add(oldPrimary);
+		}
 		return displayArtifact();
 	}
 
