@@ -115,7 +115,15 @@ public class Heap implements Bundlable {
 		type = Type.HEAP;
 		ArrayList<Item> bonus = RingOfWealth.tryForBonusDrop(hero, 1);
 		if (bonus != null && !bonus.isEmpty()) {
-			items.addAll(0, bonus);
+			// Crystal chests advertise the category of their original first prize
+			// through the magnifying-glass inspection. Keep that advertised prize
+			// at the front after opening; bonus loot must never replace what the
+			// player was told would come out of the chest.
+			if (openedType == Type.CRYSTAL_CHEST) {
+				items.addAll(bonus);
+			} else {
+				items.addAll(0, bonus);
+			}
 			RingOfWealth.showFlareForBonusDrop(sprite);
 		}
 
