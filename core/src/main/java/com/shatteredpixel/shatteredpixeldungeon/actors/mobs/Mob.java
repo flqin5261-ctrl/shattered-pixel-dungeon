@@ -998,6 +998,13 @@ public abstract class Mob extends Char {
 		}
 		
 		super.damage( dmg, src );
+
+		// Yuanji Zhaofa makes every wand damage packet an execution even without
+		// Miracle World. With Miracle World equipped the same path is inherited
+		// from Final Judgement. This also catches secondary/AOE wand victims.
+		if (isAlive() && src instanceof Wand && Dungeon.hero != null) {
+			GenesisEcho.tryWandExecute(Dungeon.hero, this);
+		}
 	}
 	
 	
