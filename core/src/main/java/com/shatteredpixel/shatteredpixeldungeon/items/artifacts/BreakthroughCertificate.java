@@ -369,7 +369,10 @@ public class BreakthroughCertificate extends EquipableItem {
     }
 
     public static void beginConsumableBoost(Hero hero) {
-        if (hero == null || equipped(hero) == null) return;
+        if (hero == null) return;
+        // 元级肇法 is a permanent tier-7 authority and must keep the >=999
+        // consumable duration even after 奇迹·世界 is unequipped.
+        if (equipped(hero) == null && !GenesisEcho.ultraSpellcast(hero)) return;
         consumableBoostHero = hero;
         consumableBoostDepth++;
     }
@@ -453,28 +456,33 @@ public class BreakthroughCertificate extends EquipableItem {
     @Override
     public String desc() {
         if (certificateLevel >= 60) {
-            return Messages.get(this, "miracle_desc",
-                    Math.round((healthMultiplier()-1f)*100f),
-                    strengthBonus(),
-                    Math.round((damageMultiplier()-1f)*100f),
-                    Math.round((accuracyMultiplier()-1f)*100f),
-                    Math.round((evasionMultiplier()-1f)*100f),
-                    Math.round((1f-damageTakenMultiplier())*100f),
-                    Math.round((1f-negativeEffectMultiplier())*100f),
-                    Math.round((1f-hungerMultiplier())*100f),
-                    Math.round((goldMultiplier()-1f)*100f),
-                    Math.round((speedMultiplier()-1f)*100f),
-                    visionBonus(),
-                    searchDistanceBonus(),
-                    Math.round(searchChanceBonus()*100f),
-                    Math.round((wandChargeMultiplier()-1f)*100f),
-                    Math.round((consumableDurationMultiplier()-1f)*100f),
-                    Math.round((1f-shopPriceMultiplier())*100f),
-                    Math.round(chestBonusChance()*100f),
+            Hero hero = Dungeon.hero;
+            boolean live = hero != null && isEquipped(hero);
+            int liveCopies = live ? copies(hero) : 1;
+            String result = Messages.get(this, "miracle_desc",
+                    Math.round(((live ? effectiveHealthMultiplier(hero) : healthMultiplier())-1f)*100f),
+                    live ? effectiveStrengthBonus(hero) : strengthBonus(),
+                    Math.round(((live ? effectiveDamageMultiplier(hero) : damageMultiplier())-1f)*100f),
+                    Math.round(((live ? effectiveAccuracyMultiplier(hero) : accuracyMultiplier())-1f)*100f),
+                    Math.round(((live ? effectiveEvasionMultiplier(hero) : evasionMultiplier())-1f)*100f),
+                    Math.round((1f-(live ? effectiveDamageTakenMultiplier(hero) : damageTakenMultiplier()))*100f),
+                    Math.round((1f-(live ? effectiveNegativeEffectMultiplier(hero) : negativeEffectMultiplier()))*100f),
+                    Math.round((1f-(live ? effectiveHungerMultiplier(hero) : hungerMultiplier()))*100f),
+                    Math.round(((live ? effectiveGoldMultiplier(hero) : goldMultiplier())-1f)*100f),
+                    Math.round(((live ? effectiveSpeedMultiplier(hero) : speedMultiplier())-1f)*100f),
+                    live ? effectiveVisionBonus(hero) : visionBonus(),
+                    live ? effectiveSearchDistanceBonus(hero) : searchDistanceBonus(),
+                    Math.round((live ? effectiveSearchChanceBonus(hero) : searchChanceBonus())*100f),
+                    Math.round(((live ? effectiveWandChargeMultiplier(hero) : wandChargeMultiplier())-1f)*100f),
+                    Math.round(((live ? effectiveConsumableDurationMultiplier(hero) : consumableDurationMultiplier())-1f)*100f),
+                    Math.round((1f-(live ? effectiveShopPriceMultiplier(hero) : shopPriceMultiplier()))*100f),
+                    Math.round((live ? effectiveChestBonusChance(hero) : chestBonusChance())*100f),
                     Math.round(regenInterval()),
+                    liveCopies,
                     Math.round(reviveChargeRequired()),
                     Math.round(reviveHpFraction()*100f),
                     reviveChargePercent());
+            return result + "\n\n" + Messages.get(this, "miracle_layers", liveCopies);
         }
 
         return Messages.get(this, "desc",
@@ -685,28 +693,32 @@ public class BreakthroughCertificate extends EquipableItem {
 
             String current;
             if (cert.certificateLevel() >= 60) {
+                Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+                int liveCopies = hero == null ? 1 : copies(hero);
                 current = Messages.get(BreakthroughCertificate.class, "miracle_blessing_desc",
-                        Math.round((cert.healthMultiplier()-1f)*100f),
-                        cert.strengthBonus(),
-                        Math.round((cert.damageMultiplier()-1f)*100f),
-                        Math.round((cert.accuracyMultiplier()-1f)*100f),
-                        Math.round((cert.evasionMultiplier()-1f)*100f),
-                        Math.round((1f-cert.damageTakenMultiplier())*100f),
-                        Math.round((1f-cert.negativeEffectMultiplier())*100f),
-                        Math.round((1f-cert.hungerMultiplier())*100f),
-                        Math.round((cert.goldMultiplier()-1f)*100f),
-                        Math.round((cert.speedMultiplier()-1f)*100f),
-                        cert.visionBonus(),
-                        cert.searchDistanceBonus(),
-                        Math.round(cert.searchChanceBonus()*100f),
-                        Math.round((cert.wandChargeMultiplier()-1f)*100f),
-                        Math.round((cert.consumableDurationMultiplier()-1f)*100f),
-                        Math.round((1f-cert.shopPriceMultiplier())*100f),
-                        Math.round(cert.chestBonusChance()*100f),
+                        Math.round((cert.effectiveHealthMultiplier(hero)-1f)*100f),
+                        cert.effectiveStrengthBonus(hero),
+                        Math.round((cert.effectiveDamageMultiplier(hero)-1f)*100f),
+                        Math.round((cert.effectiveAccuracyMultiplier(hero)-1f)*100f),
+                        Math.round((cert.effectiveEvasionMultiplier(hero)-1f)*100f),
+                        Math.round((1f-cert.effectiveDamageTakenMultiplier(hero))*100f),
+                        Math.round((1f-cert.effectiveNegativeEffectMultiplier(hero))*100f),
+                        Math.round((1f-cert.effectiveHungerMultiplier(hero))*100f),
+                        Math.round((cert.effectiveGoldMultiplier(hero)-1f)*100f),
+                        Math.round((cert.effectiveSpeedMultiplier(hero)-1f)*100f),
+                        cert.effectiveVisionBonus(hero),
+                        cert.effectiveSearchDistanceBonus(hero),
+                        Math.round(cert.effectiveSearchChanceBonus(hero)*100f),
+                        Math.round((cert.effectiveWandChargeMultiplier(hero)-1f)*100f),
+                        Math.round((cert.effectiveConsumableDurationMultiplier(hero)-1f)*100f),
+                        Math.round((1f-cert.effectiveShopPriceMultiplier(hero))*100f),
+                        Math.round(cert.effectiveChestBonusChance(hero)*100f),
                         Math.round(cert.regenInterval()),
+                        liveCopies,
                         Math.round(cert.reviveChargeRequired()),
                         Math.round(cert.reviveHpFraction()*100f),
                         cert.reviveChargePercent());
+                current += "\n\n" + Messages.get(BreakthroughCertificate.class, "miracle_layers", liveCopies);
             } else {
                 current = Messages.get(BreakthroughCertificate.class, "blessing_desc",
                         cert.certificateLevel(),
