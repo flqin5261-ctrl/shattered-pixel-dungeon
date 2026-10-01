@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
@@ -137,7 +138,11 @@ public class CrystalMimic extends Mimic {
 			}
 
 			if (!candidates.isEmpty()){
-				ScrollOfTeleportation.appear(enemy, Random.element(candidates));
+				if (enemy == Dungeon.hero && GenesisEcho.blocksForcedTeleport(enemy, CrystalMimic.class)) {
+					GenesisEcho.showForcedTeleportDenial(Dungeon.hero);
+				} else {
+					ScrollOfTeleportation.appear(enemy, Random.element(candidates));
+				}
 			}
 
 			if (alignment == Alignment.ENEMY) state = FLEEING;
