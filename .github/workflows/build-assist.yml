@@ -49,6 +49,7 @@ on:
       - assist-0.6.22-artifact-runtime
       - assist-0.8.2-artifact-runtime
       - assist-0.8.3-doubletap-ecology
+      - assist-0.8.4-lowlevel-mimic
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
