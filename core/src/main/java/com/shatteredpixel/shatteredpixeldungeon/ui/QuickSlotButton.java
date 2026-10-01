@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -38,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndStackedEquipment;
 import com.watabou.input.GameAction;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
@@ -58,8 +60,11 @@ public class QuickSlotButton extends Button {
 	public static Char lastTarget = null;
 
 	private static final float GENESIS_WAND_DOUBLE_TAP = 0.35f;
+	private static final float GENESIS_ARTIFACT_DOUBLE_TAP = 0.28f;
 	private Wand genesisTapWand;
 	private float genesisTapTimer;
+	private Artifact genesisTapArtifact;
+	private float genesisArtifactTapTimer;
 	
 	public QuickSlotButton( int slotNum ) {
 		super();
@@ -95,6 +100,27 @@ public class QuickSlotButton extends Button {
 				}
 
 				Item tappedItem = select(slotNum);
+
+				// 纵横八荒 artifacts use the normal quickslots. A single tap uses the
+				// current artifact; a double tap opens the equipped-artifact picker so
+				// the player chooses exactly which artifact this quickslot should hold.
+				if (tappedItem instanceof Artifact
+						&& GenesisEcho.unrestrictedEquipment(Dungeon.hero)
+						&& Dungeon.hero.belongings.isStackEquipped(tappedItem)) {
+					Artifact artifact = (Artifact)tappedItem;
+
+					if (genesisTapArtifact == artifact && genesisArtifactTapTimer > 0f) {
+						genesisTapArtifact = null;
+						genesisArtifactTapTimer = 0f;
+						openArtifactSelector();
+						return;
+					}
+
+					genesisTapArtifact = artifact;
+					genesisArtifactTapTimer = GENESIS_ARTIFACT_DOUBLE_TAP;
+					return;
+				}
+
 				if (tappedItem instanceof Wand && GenesisEcho.ultraSpellcast(Dungeon.hero)) {
 					Wand wand = (Wand)tappedItem;
 
@@ -215,9 +241,60 @@ public class QuickSlotButton extends Button {
 				genesisTapWand = null;
 			}
 		}
+
+		if (genesisArtifactTapTimer > 0f) {
+			genesisArtifactTapTimer -= Game.elapsed;
+			if (genesisArtifactTapTimer <= 0f) {
+				Artifact artifact = genesisTapArtifact;
+				genesisArtifactTapTimer = 0f;
+				genesisTapArtifact = null;
+				useArtifactFromQuickslot(artifact);
+			}
+		}
 		if (targetingSlot != -1 && lastTarget != null && lastTarget.sprite != null){
 			crossM.point(lastTarget.sprite.center(crossM));
 		}
+	}
+
+	private void useArtifactFromQuickslot(Artifact artifact) {
+		if (artifact == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
+				|| !Dungeon.hero.ready || !Dungeon.hero.belongings.isStackEquipped(artifact)) {
+			return;
+		}
+
+		if (!GameScene.cancel()) {
+			GameScene.centerNextWndOnInvPane();
+			artifact.execute(Dungeon.hero);
+			if (artifact.usesTargeting) useTargeting();
+		}
+	}
+
+	private void openArtifactSelector() {
+		if (Dungeon.hero == null || !Dungeon.hero.ready) return;
+
+		Game.scene().addToFront(new WndStackedEquipment(
+				null,
+				WndStackedEquipment.Category.ARTIFACT,
+				new WndBag.ItemSelector() {
+					@Override
+					public String textPrompt() {
+						return "选择快捷神器";
+					}
+
+					@Override
+					public boolean itemSelectable(Item item) {
+						return item instanceof Artifact
+								&& Dungeon.hero.belongings.isStackEquipped(item);
+					}
+
+					@Override
+					public void onSelect(Item item) {
+						if (item instanceof Artifact) {
+							set(slotNum, item);
+						}
+					}
+				}
+		));
 	}
 
 	@Override
