@@ -277,7 +277,8 @@ public class WndBag extends WndTabbed {
 		if (GenesisEcho.unrestrictedEquipment(Dungeon.hero)) {
 			placeItem(stuff.displayWeapon() != null ? stuff.displayWeapon() : new Placeholder(ItemSpriteSheet.WEAPON_HOLDER),
 					WndStackedEquipment.Category.WEAPON);
-			placeItem(stuff.armor != null ? stuff.armor : new Placeholder(ItemSpriteSheet.ARMOR_HOLDER));
+			placeItem(stuff.displayArmor() != null ? stuff.displayArmor() : new Placeholder(ItemSpriteSheet.ARMOR_HOLDER),
+					WndStackedEquipment.Category.ARMOR);
 			placeItem(stuff.displayArtifact() != null ? stuff.displayArtifact() : new Placeholder(ItemSpriteSheet.ARTIFACT_HOLDER),
 					WndStackedEquipment.Category.ARTIFACT);
 			placeItem(stuff.breakthroughCertificate != null ? stuff.breakthroughCertificate : new Placeholder(ItemSpriteSheet.ARTIFACT_HOLDER));
