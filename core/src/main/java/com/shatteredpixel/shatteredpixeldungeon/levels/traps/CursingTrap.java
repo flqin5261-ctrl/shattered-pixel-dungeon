@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
@@ -69,6 +70,13 @@ public class CursingTrap extends Trap {
 	}
 
 	public static void curse(Hero hero){
+		// 万厄·归寂 also covers direct equipment curses which never create a Buff
+		// and therefore cannot be rejected by Hero.add()/Buff.attachTo().
+		if (GenesisEcho.miracleLinked(hero)) {
+			GenesisEcho.showCurseDenial(hero);
+			return;
+		}
+
 		//items the trap wants to curse because it will create a more negative effect
 		ArrayList<Item> priorityCurse = new ArrayList<>();
 		//items the trap can curse if nothing else is available.
