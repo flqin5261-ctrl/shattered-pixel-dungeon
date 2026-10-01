@@ -258,8 +258,9 @@ public class TimekeepersHourglass extends Artifact {
 					&& target.buff(MagicImmune.class) == null
 					&& Regeneration.regenOn()) {
 				//90 turns to charge at full, 60 turns to charge at 0/10
-				float chargeGain = 1 / (90f - (chargeCap - charge)*3f);
+				float chargeGain = 1 / Math.max(1f, 90f - (chargeCap - charge)*3f);
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= assistOverlevelChargeMultiplier();
 				partialCharge += chargeGain;
 
 				while (partialCharge >= 1) {
@@ -513,7 +514,7 @@ public class TimekeepersHourglass extends Artifact {
 				hourglass.upgrade();
 				Catalog.countUses(hourglass.getClass(), 2);
 				Sample.INSTANCE.play( Assets.Sounds.DEWDROP );
-				if (hourglass.level() == hourglass.levelCap)
+				if (hourglass.level() >= hourglass.levelCap)
 					GLog.p( Messages.get(this, "maxlevel") );
 				else
 					GLog.i( Messages.get(this, "levelup") );
