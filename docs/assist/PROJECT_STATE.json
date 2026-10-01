@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.17-stable",
     "development_branch": "assist-0.6.17-eternal-edict",
-    "release_code_sha": "8c5305671269923b4139122792d5b53a4cccfaee",
+    "release_code_sha": "4bcb84afafe33e4f7948449718854927d6068543",
     "world_generator_version": 17
   },
   "build": {
