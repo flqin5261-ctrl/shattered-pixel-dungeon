@@ -333,6 +333,17 @@ public class Armor extends EquipableItem {
 	}
 
 	public void affixSeal(BrokenSeal seal){
+		// If the seal is attached directly to an already-stacked secondary armor,
+		// promote that armor first. This preserves the invariant that the Broken
+		// Seal and WarriorShield always belong to exactly one primary armor.
+		if (Dungeon.hero != null
+				&& GenesisEcho.unrestrictedEquipment(Dungeon.hero)
+				&& Dungeon.hero.belongings.isStackEquipped(this)
+				&& Dungeon.hero.belongings.armor != this) {
+			Dungeon.hero.belongings.makeArmorPrimary(this);
+			((HeroSprite)Dungeon.hero.sprite).updateArmor();
+		}
+
 		this.seal = seal;
 		if (seal.level() > 0){
 			//doesn't trigger upgrading logic such as affecting curses/glyphs
