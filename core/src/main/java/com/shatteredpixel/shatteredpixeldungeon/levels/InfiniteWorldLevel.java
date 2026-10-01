@@ -1582,20 +1582,96 @@ public class InfiniteWorldLevel extends Level {
 
             int wx = worldXForLocalCell(cell);
             int wy = worldYForLocalCell(cell);
-            int roll = (int)Math.floorMod(hash(wx, wy, 18100), 7L);
             Trap trap;
-            switch (roll) {
-                case 0: trap = new TeleportationTrap(); break;
-                case 1: trap = new BurningTrap(); break;
-                case 2: trap = new ChillingTrap(); break;
-                case 3: trap = new PoisonDartTrap(); break;
-                case 4: trap = new OozeTrap(); break;
-                case 5: trap = new ConfusionTrap(); break;
-                default:trap = new GrippingTrap(); break;
+
+            if (state().generatorVersion >= 18) {
+                int cx = Math.floorDiv(wx, CHUNK_SIZE);
+                int cy = Math.floorDiv(wy, CHUNK_SIZE);
+                int anomaly = v9AnomalyType(cx, cy);
+                trap = anomaly == 0
+                        ? v18OrdinaryTrap(wx, wy)
+                        : v18AnomalyTrap(wx, wy, anomaly);
+            } else {
+                int roll = (int)Math.floorMod(hash(wx, wy, 18100), 7L);
+                switch (roll) {
+                    case 0: trap = new TeleportationTrap(); break;
+                    case 1: trap = new BurningTrap(); break;
+                    case 2: trap = new ChillingTrap(); break;
+                    case 3: trap = new PoisonDartTrap(); break;
+                    case 4: trap = new OozeTrap(); break;
+                    case 5: trap = new ConfusionTrap(); break;
+                    default:trap = new GrippingTrap(); break;
+                }
             }
             trap.set(cell);
             trap.visible = map[cell] == Terrain.TRAP;
             traps.put(cell, trap);
+        }
+    }
+
+    private Trap v18OrdinaryTrap(int wx, int wy) {
+        switch ((int)Math.floorMod(hash(wx, wy, 18120), 12L)) {
+            case 0: return new TeleportationTrap();
+            case 1: return new BurningTrap();
+            case 2: return new ChillingTrap();
+            case 3: return new PoisonDartTrap();
+            case 4: return new OozeTrap();
+            case 5: return new ConfusionTrap();
+            case 6: return new GrippingTrap();
+            case 7: return new ShockingTrap();
+            case 8: return new FlashingTrap();
+            case 9: return new CorrosionTrap();
+            case 10:return new AlarmTrap();
+            default:return new WornDartTrap();
+        }
+    }
+
+    private Trap v18AnomalyTrap(int wx, int wy, int anomaly) {
+        int roll = (int)Math.floorMod(hash(wx, wy, 18140 + anomaly), 4L);
+        switch (anomaly) {
+            case 1: // Level 0 — disorientation
+                return roll < 2 ? new ConfusionTrap()
+                        : (roll == 2 ? new TeleportationTrap() : new GrippingTrap());
+            case 2: // Level 1 — storage/service
+                return roll < 2 ? new WornDartTrap()
+                        : (roll == 2 ? new AlarmTrap() : new PoisonDartTrap());
+            case 3: // Level 2 — heat and pipes
+                return roll < 2 ? new BurningTrap()
+                        : (roll == 2 ? new CorrosionTrap() : new GrippingTrap());
+            case 4: // Level 3 — electrical station
+                return roll < 2 ? new ShockingTrap()
+                        : (roll == 2 ? new FlashingTrap() : new StormTrap());
+            case 5: // Level 4 — abandoned offices
+                return roll < 2 ? new AlarmTrap()
+                        : (roll == 2 ? new ConfusionTrap() : new TeleportationTrap());
+            case 6: // Level 5 — hotel
+                return roll < 2 ? new AlarmTrap()
+                        : (roll == 2 ? new GrippingTrap() : new ConfusionTrap());
+            case 7: // Level 6 — lights out
+                return roll < 2 ? new GrippingTrap()
+                        : (roll == 2 ? new TeleportationTrap() : new ConfusionTrap());
+            case 8: // Level 7 — water
+                return roll < 2 ? new ChillingTrap()
+                        : (roll == 2 ? new FrostTrap() : new GeyserTrap());
+            case 9: // Level 8 — caves
+                return roll < 2 ? new GrippingTrap()
+                        : (roll == 2 ? new RockfallTrap() : new PoisonDartTrap());
+            case 10: // Level 9 — suburbs
+                return roll < 2 ? new AlarmTrap()
+                        : (roll == 2 ? new GrippingTrap() : new PoisonDartTrap());
+            case 11: // Level 10 — fields
+                return roll < 2 ? new GrippingTrap()
+                        : (roll == 2 ? new PoisonDartTrap() : new WornDartTrap());
+            case 12: // Level 11 — city
+                return roll < 2 ? new AlarmTrap()
+                        : (roll == 2 ? new ShockingTrap() : new PoisonDartTrap());
+            case 13: // Level 37 — poolrooms
+                return roll < 2 ? new GeyserTrap()
+                        : (roll == 2 ? new ChillingTrap() : new FrostTrap());
+            case 14: // Level 94 — Motion
+            default:
+                return roll < 2 ? new ConfusionTrap()
+                        : (roll == 2 ? new TeleportationTrap() : new AlarmTrap());
         }
     }
 
@@ -1656,6 +1732,11 @@ public class InfiniteWorldLevel extends Level {
     private int v5ContainerCount(int cx, int cy) {
         if (state().generatorVersion >= 9) {
             if (v9AnomalyType(cx, cy) != 0) return 0;
+            if (state().generatorVersion >= 18) {
+                long roll = Math.floorMod(hash(cx, cy, 18200), 100L);
+                if (roll < 7) return 2;
+                return roll < 40 ? 1 : 0;
+            }
             return Math.floorMod(hash(cx, cy, 18200), 100L) < 28 ? 1 : 0;
         }
         return 2 + range(cx, cy, 18200, 0, 3);
