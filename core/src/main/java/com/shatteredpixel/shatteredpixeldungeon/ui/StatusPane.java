@@ -292,6 +292,7 @@ public class StatusPane extends Component {
 	private int oldHP = 0;
 	private int oldShield = 0;
 	private int oldMax = 0;
+	private boolean oldEternalLife = false;
 
 	@Override
 	public void update() {
@@ -331,8 +332,9 @@ public class StatusPane extends Component {
 		Dot.scale.x = Math.min(DOTPercent, shieldHP.scale.x);
 		Dot.x = shieldHP.x + shieldHP.width() - Dot.width();
 
-		if (oldHP != health || oldShield != shield || oldMax != max){
-			if (GenesisEcho.active(Dungeon.hero)) {
+		boolean eternalLife = GenesisEcho.active(Dungeon.hero);
+		if (oldHP != health || oldShield != shield || oldMax != max || oldEternalLife != eternalLife){
+			if (eternalLife) {
 				hpText.text("∞/∞");
 			} else if (shield <= 0) {
 				hpText.text(health + "/" + max);
@@ -342,6 +344,7 @@ public class StatusPane extends Component {
 			oldHP = health;
 			oldShield = shield;
 			oldMax = max;
+			oldEternalLife = eternalLife;
 		}
 
 		if (large) {
