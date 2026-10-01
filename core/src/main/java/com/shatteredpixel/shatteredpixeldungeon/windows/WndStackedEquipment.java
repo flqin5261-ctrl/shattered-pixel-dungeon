@@ -75,7 +75,7 @@ public class WndStackedEquipment extends Window {
                         if (!selector.itemSelectable(item)) return;
                         if (selector.hideAfterSelecting()) {
                             hide();
-                            if (owner != null && owner.parent != null) owner.hide();
+                            if (owner != null) owner.hide();
                         }
                         selector.onSelect(item);
                         return;
@@ -84,6 +84,7 @@ public class WndStackedEquipment extends Window {
                     Dungeon.hero.belongings.makeStackPrimary(item);
                     Item.updateQuickslot();
                     hide();
+                    if (owner != null) owner.hide();
                     // Show a fresh action window rather than nesting it under this
                     // compact ScrollPane. This fixes the previous "tap does nothing"
                     // behavior on touch devices and makes the selected item obvious.
