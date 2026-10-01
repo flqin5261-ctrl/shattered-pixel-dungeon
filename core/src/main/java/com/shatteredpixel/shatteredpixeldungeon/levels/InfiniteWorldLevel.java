@@ -2335,6 +2335,25 @@ public class InfiniteWorldLevel extends Level {
         return item == null ? null : item.random();
     }
 
+    @SuppressWarnings("unchecked")
+    private Item v22NormalCategoryItem(Generator.Category category, long ordinal) {
+        Class<?>[] classes = category.classes;
+        ArrayList<Class<?>> available = new ArrayList<>();
+
+        for (int i = 0; i < classes.length; i++) {
+            if (category.defaultProbs == null
+                    || i >= category.defaultProbs.length
+                    || category.defaultProbs[i] > 0f) {
+                available.add(classes[i]);
+            }
+        }
+        if (available.isEmpty()) return null;
+
+        int index = (int)Math.floorMod(ordinal, (long)available.size());
+        Item item = (Item)Reflection.newInstance((Class<? extends Item>)available.get(index));
+        return item == null ? null : item.random();
+    }
+
     private Item v22FoodItem(long ordinal) {
         switch ((int)Math.floorMod(ordinal, 6L)) {
             case 0: return new Food();
@@ -2377,7 +2396,7 @@ public class InfiniteWorldLevel extends Level {
 
         switch (family) {
             case 0:
-                return v22CategoryItem(v22MeleeTier(variant), variant / 5L, 0);
+                return v22NormalCategoryItem(v22MeleeTier(variant), variant / 5L);
             case 1: {
                 // Only the five ordinary armor tiers are world loot; class armor
                 // remains tied to its own progression systems.
@@ -2391,7 +2410,7 @@ public class InfiniteWorldLevel extends Level {
             case 3:
                 return v22CategoryItem(Generator.Category.RING, variant, 0);
             default:
-                return v22CategoryItem(v22MissileTier(variant), variant / 5L, 0);
+                return v22NormalCategoryItem(v22MissileTier(variant), variant / 5L);
         }
     }
 
@@ -3014,6 +3033,10 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v15MerchantSpecialItem(int cx, int cy, int progressTier) {
+        if (state().generatorVersion >= 22) {
+            return v22BalancedSupplyItem(cx, cy, Math.max(0, progressTier), 25150);
+        }
+
         if (progressTier <= 0) {
             switch (range(cx, cy, 25150, 0, 4)) {
                 case 0: return new Bomb();
