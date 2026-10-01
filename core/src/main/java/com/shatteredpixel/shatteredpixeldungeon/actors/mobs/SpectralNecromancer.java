@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -114,14 +115,19 @@ public class SpectralNecromancer extends Necromancer {
 				}
 			}
 
-			//no push if char is immovable
-			if (Char.hasProp(Actor.findChar(summoningPos), Property.IMMOVABLE)){
+			Char blockerAtSummon = Actor.findChar(summoningPos);
+			// no push if char is immovable or protected by 万法·不羁
+			if (Char.hasProp(blockerAtSummon, Property.IMMOVABLE)
+					|| (blockerAtSummon == Dungeon.hero && GenesisEcho.active(Dungeon.hero))){
+				if (blockerAtSummon == Dungeon.hero && GenesisEcho.active(Dungeon.hero)) {
+					GenesisEcho.showForcedMovementDenial(Dungeon.hero);
+				}
 				pushPos = pos;
 			}
 
 			//push enemy, or wait a turn if there is no valid pushing position
 			if (pushPos != pos) {
-				Char ch = Actor.findChar(summoningPos);
+				Char ch = blockerAtSummon;
 				Actor.add( new Pushing( ch, ch.pos, pushPos ) );
 
 				ch.pos = pushPos;
