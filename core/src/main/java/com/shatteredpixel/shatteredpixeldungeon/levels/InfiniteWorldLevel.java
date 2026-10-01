@@ -5514,6 +5514,9 @@ public class InfiniteWorldLevel extends Level {
         final InfiniteWorldDecorationLayer dungeonLayer =
                 new InfiniteWorldDecorationLayer(
                         InfiniteWorldDecorationLayer.SOURCE_DUNGEON, width(), height());
+        final InfiniteWorldDecorationLayer urbanLayer =
+                new InfiniteWorldDecorationLayer(
+                        InfiniteWorldDecorationLayer.SOURCE_URBAN, width(), height());
 
         forEachActiveChunk(new ChunkVisitor() {
             @Override
@@ -5541,10 +5544,10 @@ public class InfiniteWorldLevel extends Level {
                         }
                     }
 
-                    InfiniteWorldDecorationLayer layer =
-                            InfiniteWorldDecorationLayer.sourceForKind(kind)
-                                    == InfiniteWorldDecorationLayer.SOURCE_DUNGEON
-                                    ? dungeonLayer : townLayer;
+                    int source = InfiniteWorldDecorationLayer.sourceForKind(kind);
+                    InfiniteWorldDecorationLayer layer = source == InfiniteWorldDecorationLayer.SOURCE_DUNGEON
+                            ? dungeonLayer
+                            : (source == InfiniteWorldDecorationLayer.SOURCE_URBAN ? urbanLayer : townLayer);
                     layer.put(cell, kind, InfiniteWorldLevel.this);
                 }
             }
@@ -5552,6 +5555,7 @@ public class InfiniteWorldLevel extends Level {
 
         if (!townLayer.isEmpty()) customTiles.add(townLayer);
         if (!dungeonLayer.isEmpty()) customTiles.add(dungeonLayer);
+        if (!urbanLayer.isEmpty()) customTiles.add(urbanLayer);
     }
 
     private ArrayList<V16DecorationPlacement> v16DecorationPlan(
@@ -5610,6 +5614,26 @@ public class InfiniteWorldLevel extends Level {
 
     private int v16DecorationCount(int cx, int cy, int anomaly) {
         if (cx == 0 && cy == 0) return 3;
+
+        if (state().generatorVersion >= 18) {
+            switch (anomaly) {
+                case 1:  return 3 + range(cx, cy, 29080, 0, 2); // Level 0: sparse, repetitive
+                case 2:  return 7 + range(cx, cy, 29081, 0, 3); // storage/service
+                case 3:  return 8 + range(cx, cy, 29082, 0, 3); // hot utility
+                case 4:  return 9 + range(cx, cy, 29083, 0, 3); // electrical machinery
+                case 5:  return 7 + range(cx, cy, 29084, 0, 3); // office
+                case 6:  return 7 + range(cx, cy, 29085, 0, 3); // hotel
+                case 7:  return 2 + range(cx, cy, 29086, 0, 2); // lights out: intentionally bare
+                case 8:  return 2 + range(cx, cy, 29087, 0, 1); // ocean: almost empty
+                case 9:  return 7 + range(cx, cy, 29088, 0, 3); // caves
+                case 10: return 9 + range(cx, cy, 29089, 0, 4); // suburbs
+                case 11: return 8 + range(cx, cy, 29090, 0, 3); // fields
+                case 12: return 10 + range(cx, cy, 29091, 0, 4); // city
+                case 13: return 4 + range(cx, cy, 29092, 0, 2); // poolrooms
+                case 14: return 10 + range(cx, cy, 29093, 0, 4); // Motion
+                default: return 3 + range(cx, cy, 29094, 0, 3);
+            }
+        }
 
         switch (anomaly) {
             case 1:  return 4 + range(cx, cy, 29100, 0, 2); // Level 0: intentionally sparse
@@ -5838,6 +5862,138 @@ public class InfiniteWorldLevel extends Level {
 
     private int v16DecorationKind(int cx, int cy, int slot, int anomaly) {
         int roll = range(cx, cy, 29600 + slot * 13, 0, 99);
+
+        if (state().generatorVersion >= 18) {
+            switch (anomaly) {
+                case 1: // Level 0: minimal office clutter, no medieval props.
+                    if (roll < 30) return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    if (roll < 55) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 75) return InfiniteWorldDecorationLayer.CUPBOARD;
+                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+
+                case 2: // Level 1: concrete storage/service halls.
+                    if (roll < 18) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+                    if (roll < 34) return InfiniteWorldDecorationLayer.RED_UTILITY;
+                    if (roll < 50) return InfiniteWorldDecorationLayer.ROAD_BARRIER;
+                    if (roll < 65) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    if (roll < 80) return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+                    if (roll < 90) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                    return InfiniteWorldDecorationLayer.BOLLARD;
+
+                case 3: // Level 2: hot maintenance corridors and pipe-like utilities.
+                    if (roll < 22) return InfiniteWorldDecorationLayer.RED_UTILITY;
+                    if (roll < 42) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+                    if (roll < 58) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                    if (roll < 72) return InfiniteWorldDecorationLayer.ROAD_BARRIER;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.WARNING_SIGN;
+                    if (roll < 93) return InfiniteWorldDecorationLayer.RUBBLE;
+                    return InfiniteWorldDecorationLayer.BOLLARD;
+
+                case 4: // Level 3: electrical station.
+                    if (roll < 20) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+                    if (roll < 37) return InfiniteWorldDecorationLayer.RED_UTILITY;
+                    if (roll < 52) return InfiniteWorldDecorationLayer.WARNING_SIGN;
+                    if (roll < 66) return InfiniteWorldDecorationLayer.ROAD_BARRIER;
+                    if (roll < 79) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                    if (roll < 90) return InfiniteWorldDecorationLayer.BOLLARD;
+                    return InfiniteWorldDecorationLayer.REFUSE_BIN;
+
+                case 5: // Level 4: abandoned office.
+                    if (roll < 24) return InfiniteWorldDecorationLayer.TABLE;
+                    if (roll < 42) return InfiniteWorldDecorationLayer.STOOL;
+                    if (roll < 58) return InfiniteWorldDecorationLayer.CUPBOARD;
+                    if (roll < 72) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 84) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    if (roll < 93) return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+
+                case 6: // Level 5: hotel; furniture, not storage/industrial clutter.
+                    if (roll < 26) return InfiniteWorldDecorationLayer.TABLE;
+                    if (roll < 46) return InfiniteWorldDecorationLayer.STOOL;
+                    if (roll < 64) return InfiniteWorldDecorationLayer.CUPBOARD;
+                    if (roll < 78) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 89) return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    return InfiniteWorldDecorationLayer.EMPTY_TUB;
+
+                case 7: // Level 6: lights out — sparse obstacles, absolutely no torches/graves.
+                    if (roll < 34) return InfiniteWorldDecorationLayer.RUBBLE;
+                    if (roll < 60) return InfiniteWorldDecorationLayer.IRON_RAIL;
+                    if (roll < 80) return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+                    return InfiniteWorldDecorationLayer.BOLLARD;
+
+                case 8: // Level 7: ocean — almost nothing artificial.
+                    if (roll < 45) return InfiniteWorldDecorationLayer.ROCK;
+                    if (roll < 78) return InfiniteWorldDecorationLayer.LOG;
+                    return InfiniteWorldDecorationLayer.BARREL;
+
+                case 9: // Level 8: caves.
+                    if (roll < 35) return InfiniteWorldDecorationLayer.ROCK;
+                    if (roll < 58) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.RUBBLE;
+                    if (roll < 90) return InfiniteWorldDecorationLayer.LOG;
+                    return InfiniteWorldDecorationLayer.CAMPFIRE;
+
+                case 10: // Level 9: suburbs.
+                    if (roll < 15) return InfiniteWorldDecorationLayer.STREET_LAMP;
+                    if (roll < 28) return InfiniteWorldDecorationLayer.CURVED_STREET_LAMP;
+                    if (roll < 40) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 52) return InfiniteWorldDecorationLayer.URBAN_SIGN;
+                    if (roll < 64) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    if (roll < 76) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                    if (roll < 88) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+
+                case 11: // Level 10: fields.
+                    if (roll < 22) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 40) return InfiniteWorldDecorationLayer.FERN;
+                    if (roll < 56) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                    if (roll < 70) return InfiniteWorldDecorationLayer.FENCE_POST;
+                    if (roll < 83) return InfiniteWorldDecorationLayer.LOG;
+                    if (roll < 92) return InfiniteWorldDecorationLayer.BARREL;
+                    return InfiniteWorldDecorationLayer.URBAN_SIGN;
+
+                case 12: // Level 11: city.
+                    if (roll < 16) return InfiniteWorldDecorationLayer.STREET_LAMP;
+                    if (roll < 30) return InfiniteWorldDecorationLayer.CURVED_STREET_LAMP;
+                    if (roll < 43) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 56) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    if (roll < 67) return InfiniteWorldDecorationLayer.BOLLARD;
+                    if (roll < 78) return InfiniteWorldDecorationLayer.URBAN_SIGN;
+                    if (roll < 88) return InfiniteWorldDecorationLayer.ROAD_BARRIER;
+                    if (roll < 95) return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+                    return InfiniteWorldDecorationLayer.REFUSE_BAGS;
+
+                case 13: // Level 37: Poolrooms — clean architecture, very little clutter.
+                    if (roll < 30) return InfiniteWorldDecorationLayer.STONE_BASIN;
+                    if (roll < 55) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 75) return InfiniteWorldDecorationLayer.BOLLARD;
+                    if (roll < 90) return InfiniteWorldDecorationLayer.SIGNBOARD;
+                    return InfiniteWorldDecorationLayer.BLUE_UTILITY;
+
+                case 14: // Level 94: toy-like staged town.
+                    if (roll < 15) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 28) return InfiniteWorldDecorationLayer.ROUND_TREE_AUTUMN;
+                    if (roll < 40) return InfiniteWorldDecorationLayer.STREET_LAMP;
+                    if (roll < 52) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 64) return InfiniteWorldDecorationLayer.FENCE_RAIL;
+                    if (roll < 75) return InfiniteWorldDecorationLayer.URBAN_SIGN;
+                    if (roll < 86) return InfiniteWorldDecorationLayer.FERN;
+                    if (roll < 94) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    return InfiniteWorldDecorationLayer.SIGNBOARD;
+
+                default:
+                    if (roll < 12) return InfiniteWorldDecorationLayer.ROUND_TREE;
+                    if (roll < 22) return InfiniteWorldDecorationLayer.MUSHROOMS;
+                    if (roll < 32) return InfiniteWorldDecorationLayer.BARREL;
+                    if (roll < 42) return InfiniteWorldDecorationLayer.WOODEN_CRATE;
+                    if (roll < 52) return InfiniteWorldDecorationLayer.ROCK;
+                    if (roll < 62) return InfiniteWorldDecorationLayer.REFUSE_BIN;
+                    if (roll < 72) return InfiniteWorldDecorationLayer.CITY_BENCH;
+                    if (roll < 82) return InfiniteWorldDecorationLayer.URBAN_SIGN;
+                    if (roll < 91) return InfiniteWorldDecorationLayer.RUBBLE;
+                    return InfiniteWorldDecorationLayer.CAMPFIRE;
+            }
+        }
 
         switch (anomaly) {
             case 1: // Level 0: deliberately minimal, uncanny office clutter.
