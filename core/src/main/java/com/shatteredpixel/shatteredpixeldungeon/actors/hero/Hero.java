@@ -706,9 +706,18 @@ public class Hero extends Char {
 			}
 			if (armDr > 0) dr += armDr;
 		}
-		if (belongings.weapon() != null && !RingOfForce.fightingUnarmed(this))  {
+
+		if (GenesisEcho.unrestrictedEquipment(this)) {
+			// 纵横八荒: every equipped weapon contributes its real blocking/defense
+			// value. This is a combat calculation, not merely a UI total.
+			for (KindOfWeapon stacked : belongings.equippedWeapons()) {
+				if (stacked == null) continue;
+				int factor = Math.max(0, stacked.defenseFactor(this));
+				if (factor > 0) dr += Random.NormalIntRange(0, factor);
+			}
+		} else if (belongings.weapon() != null && !RingOfForce.fightingUnarmed(this))  {
 			int wepDr = Random.NormalIntRange( 0 , belongings.weapon().defenseFactor( this ) );
-			if (!GenesisEcho.unrestrictedEquipment(this) && STR() < ((Weapon)belongings.weapon()).STRReq()){
+			if (STR() < ((Weapon)belongings.weapon()).STRReq()){
 				wepDr -= 2*(((Weapon)belongings.weapon()).STRReq() - STR());
 			}
 			if (wepDr > 0) dr += wepDr;
@@ -727,7 +736,18 @@ public class Hero extends Char {
 		int dmg;
 
 		if (!RingOfForce.fightingUnarmed(this)) {
-			dmg = wep.damageRoll( this );
+			if (GenesisEcho.unrestrictedEquipment(this)) {
+				// 纵横八荒 weapon fusion: every equipped weapon contributes its own
+				// fully-levelled real damage roll. The primary weapon still controls
+				// reach, attack delay and active weapon behavior.
+				dmg = 0;
+				for (KindOfWeapon stacked : belongings.equippedWeapons()) {
+					if (stacked != null) dmg += stacked.damageRoll(this);
+				}
+				if (dmg == 0 && wep != null) dmg = wep.damageRoll(this);
+			} else {
+				dmg = wep.damageRoll( this );
+			}
 
 			if (!(wep instanceof MissileWeapon)) dmg += RingOfForce.armedDamageBonus(this);
 		} else {
