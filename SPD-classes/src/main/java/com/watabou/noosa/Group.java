@@ -292,6 +292,23 @@ public class Group extends Gizmo {
 		members.clear();
 		length = 0;
 	}
+
+	/**
+	 * Removes and destroys every child. Unlike clear(), this is safe for
+	 * repeatedly rebuilt render groups whose children own GL resources such as
+	 * Tilemap vertex buffers.
+	 */
+	public synchronized void clearAndDestroy() {
+		if (length == 0) return;
+		for (int i=0; i < length; i++) {
+			Gizmo g = members.get(i);
+			if (g != null) {
+				g.destroy();
+			}
+		}
+		members.clear();
+		length = 0;
+	}
 	
 	public synchronized Gizmo bringToFront( Gizmo g ) {
 		if (members.contains( g )) {
