@@ -163,8 +163,7 @@ public abstract class MimicRing extends Ring {
     }
 
     public int currentChargesAfterUpgrade() {
-        int nextMax = maxChargesAfterUpgrade();
-        return maxCharges() < MAX_CHARGES ? Math.min(nextMax, curCharges + 1) : curCharges;
+        return Math.min(maxChargesAfterUpgrade(), curCharges + 1);
     }
 
     protected void rollInitialAbility() {
@@ -210,9 +209,10 @@ public abstract class MimicRing extends Ring {
             chargeUpgrades++;
         }
         int newMax = maxCharges();
-        if (newMax > oldMax) {
-            curCharges = Math.min(newMax, curCharges + 1);
-        }
+        // Every Scroll of Upgrade also restores one actual use immediately.
+        // This remains true after max capacity has reached 10; later scrolls
+        // continue to reroll the ability and recharge 1/10 at a time.
+        curCharges = Math.min(newMax, curCharges + 1);
 
         // Keep the ordinary ring's small curse-cleansing chance.
         if (Random.Int(3) == 0) {
