@@ -1960,3 +1960,26 @@ Before entering, note HP, inventory item counts, equipment, gold, energy, and po
 - [ ] 进入新 chunk 后后室信息、商人发现仍能正常触发。
 - [ ] 远处怪物裁剪与怪物硬上限仍正常工作。
 - [ ] 普通传送卷轴仍维持原0.4秒视觉淡入；超距离传送使用更短0.12秒反馈。
+
+# B34. 0.6.17 Eternal Edict regression
+
+- [ ] Existing level-60 save loads and the permanent buff is displayed as 八荒·亘古元敕, not 创世回响.
+- [ ] With Miracle World unequipped, direct melee/environment/DOT damage leaves HP unchanged and shows a suitable “敕免” message.
+- [ ] Direct instant-death mechanics cannot kill the Hero; HP remains full.
+- [ ] HP HUD shows infinity while 八荒·亘古元敕 is active.
+- [ ] Blindness, paralysis, roots, vertigo, cripple, charm, terror, amok, sleep, slow, chill/frost and forced teleport are rejected with matching feedback.
+- [ ] With Miracle World unequipped, curse/weakness/degrade-type non-control debuffs are not globally rejected unless their actual damage is denied by 元墟·绝殛.
+- [ ] Equip Miracle World: NEGATIVE curse/debuff layer is rejected by 万厄·归寂.
+- [ ] Equip Miracle World: melee, thrown/ranged and wand damage all terminate normal and special-death enemies through 终末·裁决.
+- [ ] Kill one true hostile: permanent max HP increases by exactly10 and STR by exactly1; far-distance Infinite World despawn gives no growth.
+- [ ] Load an old save with N prior permanent STR kills: permanent HP growth is at least N×10 after migration.
+- [ ] Pick up an unidentified potion/scroll/ring/wand after awakening: 通识古今 immediately identifies it and exposes full item information.
+- [ ] Tier-7 UI names are 无界遁诰 / 寰墟指殛 / 元级肇法 / 万运隆敕.
+- [ ] Select 元级肇法, remove Miracle World, and hit enemies with normal single-target wand casts: every wand-damaged hostile is still executed.
+- [ ] Select 元级肇法, remove Miracle World, double-tap a quickslot wand: every visible hostile hit by the full-screen action is executed; one cast consumes only one normal charge/action.
+- [ ] New Infinite World run always has, near spawn, one normal chest, one loose Crystal Key and one Crystal Chest.
+- [ ] Normal starter chest totals exactly five food units, five scroll units and five potion units before optional unrelated chest bonuses.
+- [ ] Starter Crystal Chest contains one ring and one wand.
+- [ ] New-run scroll/potion/ring/wand starter loot is not pre-identified before acquisition when the relevant type was not previously known.
+- [ ] Stream away from spawn and return: unopened starter cache remains exactly once; opened/taken contents do not respawn.
+- [ ] Save/load before and after opening each starter container does not duplicate or delete the cache.
