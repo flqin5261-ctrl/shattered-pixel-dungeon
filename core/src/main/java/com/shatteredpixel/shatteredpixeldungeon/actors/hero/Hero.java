@@ -99,6 +99,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Stone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
@@ -2229,17 +2230,13 @@ public class Hero extends Char {
 		}
 		float percent = exp/(float)maxExp();
 
-		EtherealChains.chainsRecharge chains = buff(EtherealChains.chainsRecharge.class);
-		if (chains != null) chains.gainExp(percent);
-
-		HornOfPlenty.hornRecharge horn = buff(HornOfPlenty.hornRecharge.class);
-		if (horn != null) horn.gainCharge(percent);
-		
-		AlchemistsToolkit.kitEnergy kit = buff(AlchemistsToolkit.kitEnergy.class);
-		if (kit != null) kit.gainCharge(percent);
-
-		MasterThievesArmband.Thievery armband = buff(MasterThievesArmband.Thievery.class);
-		if (armband != null) armband.gainCharge(percent);
+		// 纵横八荒 may equip several artifacts at once. Do not look up a single
+		// Hero buff by class: that only reaches the first matching runtime and makes
+		// later stacked artifacts stop receiving XP-based recharge. Route the same
+		// native XP fraction to each equipped artifact instance instead.
+		for (Artifact artifact : belongings.equippedArtifacts()) {
+			if (artifact != null) artifact.onEquippedHeroGainExp(percent, this);
+		}
 
 		Berserk berserk = buff(Berserk.class);
 		if (berserk != null) berserk.recover(percent);
