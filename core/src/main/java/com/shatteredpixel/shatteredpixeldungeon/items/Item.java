@@ -208,10 +208,6 @@ public class Item implements Bundlable {
 	
 	public boolean collect( Bag container ) {
 
-		if (container != null && container.owner instanceof Hero) {
-			GenesisEcho.onItemAcquired((Hero)container.owner, this);
-		}
-
 		if (quantity <= 0){
 			return true;
 		}
@@ -239,6 +235,9 @@ public class Item implements Bundlable {
 				if (isSimilar( item )) {
 					item.merge( this );
 					item.updateQuickslot();
+					if (container.owner instanceof Hero) {
+						GenesisEcho.onItemAcquired((Hero)container.owner, item);
+					}
 					if (Dungeon.hero != null && Dungeon.hero.isAlive()) {
 						Badges.validateItemLevelAquired( this );
 						Talent.onItemCollected(Dungeon.hero, item);
@@ -279,6 +278,9 @@ public class Item implements Bundlable {
 		}
 
 		items.add( this );
+		if (container.owner instanceof Hero) {
+			GenesisEcho.onItemAcquired((Hero)container.owner, this);
+		}
 		Dungeon.quickslot.replacePlaceholder(this);
 		Collections.sort( items, itemComparator );
 		updateQuickslot();
