@@ -88,32 +88,32 @@ public class GenesisEcho extends Buff {
     public static void showImmunityFeedback(Hero hero, Class<?> cls) {
         if (hero == null || cls == null || !active(hero)) return;
         String text;
-        if (Burning.class.isAssignableFrom(cls)) text = "灼烧免疫";
-        else if (Poison.class.isAssignableFrom(cls)) text = "中毒免疫";
-        else if (Bleeding.class.isAssignableFrom(cls)) text = "流血免疫";
-        else if (Corrosion.class.isAssignableFrom(cls)) text = "腐蚀免疫";
-        else if (Ooze.class.isAssignableFrom(cls)) text = "黏液免疫";
-        else if (Paralysis.class.isAssignableFrom(cls)) text = "麻痹免疫";
-        else if (Roots.class.isAssignableFrom(cls)) text = "束缚免疫";
-        else if (Blindness.class.isAssignableFrom(cls)) text = "致盲免疫";
-        else if (Vertigo.class.isAssignableFrom(cls)) text = "混乱免疫";
-        else if (Cripple.class.isAssignableFrom(cls)) text = "残废免疫";
-        else if (Charm.class.isAssignableFrom(cls)) text = "魅惑免疫";
-        else if (Terror.class.isAssignableFrom(cls)) text = "恐惧免疫";
-        else if (Amok.class.isAssignableFrom(cls)) text = "狂乱免疫";
-        else if (Slow.class.isAssignableFrom(cls)) text = "迟缓免疫";
-        else if (Chill.class.isAssignableFrom(cls) || Frost.class.isAssignableFrom(cls)) text = "寒冷免疫";
-        else if (Weakness.class.isAssignableFrom(cls)) text = "虚弱免疫";
-        else if (Vulnerable.class.isAssignableFrom(cls)) text = "易伤免疫";
-        else if (Degrade.class.isAssignableFrom(cls)) text = "降级免疫";
-        else if (Hex.class.isAssignableFrom(cls) || Doom.class.isAssignableFrom(cls)) text = "诅咒免疫";
-        else text = "负面状态免疫";
+        if (Burning.class.isAssignableFrom(cls)) text = "灼烧敕免";
+        else if (Poison.class.isAssignableFrom(cls)) text = "中毒敕免";
+        else if (Bleeding.class.isAssignableFrom(cls)) text = "流血敕免";
+        else if (Corrosion.class.isAssignableFrom(cls)) text = "腐蚀敕免";
+        else if (Ooze.class.isAssignableFrom(cls)) text = "黏液敕免";
+        else if (Paralysis.class.isAssignableFrom(cls)) text = "麻痹敕免";
+        else if (Roots.class.isAssignableFrom(cls)) text = "束缚敕免";
+        else if (Blindness.class.isAssignableFrom(cls)) text = "致盲敕免";
+        else if (Vertigo.class.isAssignableFrom(cls)) text = "混乱敕免";
+        else if (Cripple.class.isAssignableFrom(cls)) text = "残废敕免";
+        else if (Charm.class.isAssignableFrom(cls)) text = "魅惑敕免";
+        else if (Terror.class.isAssignableFrom(cls)) text = "恐惧敕免";
+        else if (Amok.class.isAssignableFrom(cls)) text = "狂乱敕免";
+        else if (Slow.class.isAssignableFrom(cls)) text = "迟缓敕免";
+        else if (Chill.class.isAssignableFrom(cls) || Frost.class.isAssignableFrom(cls)) text = "寒冷敕免";
+        else if (Weakness.class.isAssignableFrom(cls)) text = "虚弱敕免";
+        else if (Vulnerable.class.isAssignableFrom(cls)) text = "易伤敕免";
+        else if (Degrade.class.isAssignableFrom(cls)) text = "降级敕免";
+        else if (Hex.class.isAssignableFrom(cls) || Doom.class.isAssignableFrom(cls)) text = "诅咒敕免";
+        else text = "负面敕免";
         GLog.p(text);
         if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
     }
 
     public static boolean damageImmune(Hero hero) {
-        return miracleLinked(hero);
+        return active(hero);
     }
 
     private static boolean controlClass(Class<?> cls) {
@@ -163,6 +163,10 @@ public class GenesisEcho extends Buff {
 
     @Override
     public boolean act() {
+        Hero hero = target instanceof Hero ? (Hero)target : null;
+        if (hero != null && hero.isAlive()) {
+            hero.HP = hero.HT;
+        }
         spend(TICK);
         return true;
     }
@@ -185,37 +189,10 @@ public class GenesisEcho extends Buff {
     @Override
     public String desc() {
         Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
-        BreakthroughCertificate seal = BreakthroughCertificate.equipped(hero);
-        boolean linked = seal != null && seal.certificateLevel() >= 60;
-
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        if (!linked) {
-            return Messages.get(this, "desc_unlinked",
-                    st.genesisKillHpBonus,
-                    st.genesisKillStrBonus);
-        }
-
-        return Messages.get(this, "desc_linked",
+        return Messages.get(this, miracleLinked(hero) ? "desc_linked" : "desc_unlinked",
                 st.genesisKillHpBonus,
-                st.genesisKillStrBonus,
-                Math.round((seal.healthMultiplier()-1f)*100f),
-                seal.strengthBonus(),
-                Math.round((seal.damageMultiplier()-1f)*100f),
-                Math.round((seal.accuracyMultiplier()-1f)*100f),
-                Math.round((seal.evasionMultiplier()-1f)*100f),
-                Math.round((1f-seal.damageTakenMultiplier())*100f),
-                Math.round((1f-seal.negativeEffectMultiplier())*100f),
-                Math.round((1f-seal.hungerMultiplier())*100f),
-                Math.round((seal.goldMultiplier()-1f)*100f),
-                Math.round((seal.speedMultiplier()-1f)*100f),
-                seal.visionBonus(),
-                seal.searchDistanceBonus(),
-                Math.round(seal.searchChanceBonus()*100f),
-                Math.round((seal.wandChargeMultiplier()-1f)*100f),
-                Math.round((seal.consumableDurationMultiplier()-1f)*100f),
-                Math.round((1f-seal.shopPriceMultiplier())*100f),
-                Math.round(seal.chestBonusChance()*100f),
-                Math.round(seal.regenInterval()));
+                st.genesisKillStrBonus);
     }
 
     public static boolean active(Hero hero) {
@@ -231,7 +208,7 @@ public class GenesisEcho extends Buff {
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         cleanseBlockedEffects(hero);
         if (first) {
-            GLog.p("奇迹·世界完成升格——常驻权能「创世回响」已经觉醒。");
+            GLog.p("奇迹·世界完成升格——「八荒·亘古元敕」已经觉醒。");
         }
         return echo;
     }
@@ -244,6 +221,8 @@ public class GenesisEcho extends Buff {
         }
         if (st.genesisEchoUnlocked) {
             cleanseBlockedEffects(hero);
+            identifyOwnedItems(hero);
+            hero.HP = hero.HT;
             syncTier7Buff(hero);
         }
     }
@@ -307,8 +286,19 @@ public class GenesisEcho extends Buff {
         return miracleLinked(hero);
     }
 
+    public static boolean wandExecutionActive(Hero hero) {
+        return miracleExecutionActive(hero) || ultraSpellcast(hero);
+    }
+
     public static boolean tryMiracleExecute(Hero hero, Char enemy) {
         if (!miracleExecutionActive(hero) || enemy == null || enemy == hero || !enemy.isAlive()) return false;
+        if (enemy.alignment == Char.Alignment.ALLY) return false;
+        forceSlay(hero, enemy);
+        return true;
+    }
+
+    public static boolean tryWandExecute(Hero hero, Char enemy) {
+        if (!wandExecutionActive(hero) || enemy == null || enemy == hero || !enemy.isAlive()) return false;
         if (enemy.alignment == Char.Alignment.ALLY) return false;
         forceSlay(hero, enemy);
         return true;
@@ -360,10 +350,10 @@ public class GenesisEcho extends Buff {
     }
 
     public static void onUltraWandZap(Hero hero, int aimedCell, int collisionCell) {
-        if (hero == null || !miracleExecutionActive(hero)) return;
+        if (hero == null || !wandExecutionActive(hero)) return;
         Char target = Actor.findChar(aimedCell);
         if (target == null) target = Actor.findChar(collisionCell);
-        tryMiracleExecute(hero, target);
+        tryWandExecute(hero, target);
     }
 
     public static class GenesisTalentAuthority extends Buff {
@@ -393,14 +383,14 @@ public class GenesisEcho extends Buff {
         public String name() {
             Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
             Talent t = selectedTier7(hero);
-            return t == null ? "创世权能" : t.title();
+            return t == null ? "亘古元敕" : t.title();
         }
 
         @Override
         public String desc() {
             Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
             Talent t = selectedTier7(hero);
-            if (t == null) return "当前没有选择第七层创世天赋。";
+            if (t == null) return "当前没有选择第七层天赋。";
             return t.desc();
         }
     }
@@ -435,11 +425,11 @@ public class GenesisEcho extends Buff {
         if (hero == null || !active(hero) || !Dungeon.infiniteWorld) return;
 
         InfiniteWorldState st = InfiniteWorldProgression.state();
-        st.genesisKillHpBonus++;
+        st.genesisKillHpBonus += 10;
         st.genesisKillStrBonus++;
 
-        // updateHT(true) also heals the newly gained permanent max-HP point.
         hero.updateHT(true);
+        hero.HP = hero.HT;
     }
 
     public static int permanentHpBonus(Hero hero) {
@@ -454,6 +444,21 @@ public class GenesisEcho extends Buff {
 
     public static boolean freeShop(Hero hero) {
         return active(hero);
+    }
+
+    public static void onItemAcquired(Hero hero, com.shatteredpixel.shatteredpixeldungeon.items.Item item) {
+        if (hero == null || item == null || !active(hero)) return;
+        if (!item.isIdentified()) {
+            item.identify();
+            GLog.p("通识古今：已知悉「" + item.name() + "」的全部信息。");
+        }
+    }
+
+    public static void identifyOwnedItems(Hero hero) {
+        if (hero == null || !active(hero)) return;
+        for (com.shatteredpixel.shatteredpixeldungeon.items.Item item : hero.belongings) {
+            if (item != null && !item.isIdentified()) item.identify();
+        }
     }
 
     // Geometric distribution: most purchases give no extra copy, some give one
