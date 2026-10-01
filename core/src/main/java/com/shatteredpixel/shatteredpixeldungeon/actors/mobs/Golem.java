@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -161,7 +162,11 @@ public class Golem extends Mob {
 		}
 
 		if (bestPos != enemy.pos){
-			ScrollOfTeleportation.appear(enemy, bestPos);
+			if (enemy instanceof Hero && GenesisEcho.blocksForcedTeleport(enemy, Golem.class)) {
+				GenesisEcho.showForcedTeleportDenial((Hero)enemy);
+			} else {
+				ScrollOfTeleportation.appear(enemy, bestPos);
+			}
 			if (enemy instanceof Hero){
 				((Hero) enemy).interrupt();
 				Dungeon.observe();
