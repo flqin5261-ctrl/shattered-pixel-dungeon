@@ -20,6 +20,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
 
     public static final int SOURCE_TOWN = 0;
     public static final int SOURCE_DUNGEON = 1;
+    public static final int SOURCE_URBAN = 2;
 
     // Keep the original numeric ids 1..5 stable for old 0.5.8 save bundles.
     public static final int ROUND_TREE = 1;
@@ -57,6 +58,19 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     public static final int CAMPFIRE = 29;
     public static final int WEAPON_RACK = 30;
 
+    // Assist 0.9.0 — Kenney RPG Urban Pack (CC0). Keep ids stable once shipped.
+    public static final int CURVED_STREET_LAMP = 31;
+    public static final int STREET_LAMP = 32;
+    public static final int RED_UTILITY = 33;
+    public static final int BLUE_UTILITY = 34;
+    public static final int ROAD_BARRIER = 35;
+    public static final int URBAN_SIGN = 36;
+    public static final int SIGNBOARD = 37;
+    public static final int REFUSE_BAGS = 38;
+    public static final int CITY_BENCH = 39;
+    public static final int BOLLARD = 40;
+    public static final int REFUSE_BIN = 41;
+
     private static final String SOURCE = "source";
     private static final String CELLS = "cells";
     private static final String KINDS = "kinds";
@@ -90,6 +104,20 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case CAMPFIRE:
             case WEAPON_RACK:
                 return SOURCE_DUNGEON;
+
+            case CURVED_STREET_LAMP:
+            case STREET_LAMP:
+            case RED_UTILITY:
+            case BLUE_UTILITY:
+            case ROAD_BARRIER:
+            case URBAN_SIGN:
+            case SIGNBOARD:
+            case REFUSE_BAGS:
+            case CITY_BENCH:
+            case BOLLARD:
+            case REFUSE_BIN:
+                return SOURCE_URBAN;
+
             default:
                 return SOURCE_TOWN;
         }
@@ -138,6 +166,10 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case WOODEN_POST:
             case RUBBLE:
             case IRON_RAIL:
+            case ROAD_BARRIER:
+            case REFUSE_BAGS:
+            case BOLLARD:
+            case REFUSE_BIN:
                 return true;
             default:
                 return false;
@@ -145,9 +177,13 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
     }
 
     private void updateTexture() {
-        texture = source == SOURCE_DUNGEON
-                ? Assets.Environment.ASSIST_KENNEY_TINY_DUNGEON
-                : Assets.Environment.ASSIST_KENNEY_TINY_TOWN;
+        if (source == SOURCE_DUNGEON) {
+            texture = Assets.Environment.ASSIST_KENNEY_TINY_DUNGEON;
+        } else if (source == SOURCE_URBAN) {
+            texture = Assets.Environment.ASSIST_KENNEY_RPG_URBAN;
+        } else {
+            texture = Assets.Environment.ASSIST_KENNEY_TINY_TOWN;
+        }
     }
 
     public boolean isEmpty() {
@@ -188,7 +224,7 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
                 case WOODEN_POST:        return 71;
                 default:                 return -1;
             }
-        } else {
+        } else if (source == SOURCE_DUNGEON) {
             switch (kind) {
                 case CASKET:       return 66;
                 case TORCH:        return 29;
@@ -204,6 +240,21 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
                 case CAMPFIRE:     return 120;
                 case WEAPON_RACK:  return 122;
                 default:           return -1;
+            }
+        } else {
+            switch (kind) {
+                case CURVED_STREET_LAMP: return 164;
+                case STREET_LAMP:        return 165;
+                case RED_UTILITY:        return 166;
+                case BLUE_UTILITY:       return 168;
+                case ROAD_BARRIER:       return 222;
+                case URBAN_SIGN:         return 223;
+                case SIGNBOARD:          return 250;
+                case REFUSE_BAGS:        return 254;
+                case CITY_BENCH:         return 270;
+                case BOLLARD:            return 272;
+                case REFUSE_BIN:         return 279;
+                default:                 return -1;
             }
         }
     }
@@ -240,6 +291,17 @@ public class InfiniteWorldDecorationLayer extends CustomTilemap {
             case IRON_RAIL:          return "iron_rail";
             case CAMPFIRE:           return "campfire";
             case WEAPON_RACK:        return "weapon_rack";
+            case CURVED_STREET_LAMP: return "curved_street_lamp";
+            case STREET_LAMP:        return "street_lamp";
+            case RED_UTILITY:        return "red_utility";
+            case BLUE_UTILITY:       return "blue_utility";
+            case ROAD_BARRIER:       return "road_barrier";
+            case URBAN_SIGN:         return "urban_sign";
+            case SIGNBOARD:          return "signboard";
+            case REFUSE_BAGS:        return "refuse_bags";
+            case CITY_BENCH:         return "city_bench";
+            case BOLLARD:            return "bollard";
+            case REFUSE_BIN:         return "refuse_bin";
             default:                 return null;
         }
     }
