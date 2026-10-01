@@ -2272,6 +2272,23 @@ public class Hero extends Char {
 	
 	public void earnExp( int exp, Class source ) {
 
+		// Assist 0.9.8: Infinite World early levels were too slow because the mode
+		// deliberately keeps early monster density low. Boost ordinary earned XP
+		// instead of spawning extra mobs, so exploration stays sparse and readable.
+		// Potions/progression-script XP are excluded to avoid compounding special
+		// rewards. The level-30 breakthrough gate is unchanged below.
+		if (Dungeon.infiniteWorld && exp > 0
+				&& source != InfiniteWorldProgression.class
+				&& source != AscensionChallenge.class
+				&& source != PotionOfExperience.class) {
+			float multiplier;
+			if (lvl <= 10) multiplier = 2.0f;
+			else if (lvl <= 20) multiplier = 1.5f;
+			else if (lvl < InfiniteWorldProgression.PRE_BREAKTHROUGH_LEVEL_CAP) multiplier = 1.25f;
+			else multiplier = 1.0f;
+			exp = Math.max(exp, Math.round(exp * multiplier));
+		}
+
 		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(this);
 		if (exp > 0 && certificate != null
 				&& source != InfiniteWorldProgression.class
