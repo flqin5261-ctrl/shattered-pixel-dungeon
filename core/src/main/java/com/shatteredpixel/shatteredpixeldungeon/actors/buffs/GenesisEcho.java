@@ -338,7 +338,7 @@ public class GenesisEcho extends Buff {
             enemy.destroy();
             if (enemy.sprite != null) enemy.sprite.die();
         }
-        GLog.p("秒杀：" + enemy.name());
+        GLog.p("敕杀：" + enemy.name());
     }
 
     public static boolean teleportToVisited(Hero hero, int cell) {
@@ -368,7 +368,7 @@ public class GenesisEcho extends Buff {
         // issue a second full GameScene.updateFog() here.
         Dungeon.observe();
 
-        GLog.p("超距离传送");
+        GLog.p("无界遁诰");
         return true;
     }
 
