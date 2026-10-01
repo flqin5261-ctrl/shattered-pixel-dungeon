@@ -10,7 +10,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
@@ -206,6 +212,9 @@ public class GenesisEcho extends Buff {
         Hero hero = target instanceof Hero ? (Hero)target : null;
         if (hero != null && hero.isAlive()) {
             hero.HP = hero.HT;
+            if (hero.buff(EquipmentSummary.class) == null) {
+                Buff.affect(hero, EquipmentSummary.class);
+            }
         }
         spend(TICK);
         return true;
@@ -246,6 +255,7 @@ public class GenesisEcho extends Buff {
         boolean growthMigrated = retireLegacyKillGrowth(st);
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
+        Buff.affect(hero, EquipmentSummary.class);
         if (growthMigrated) hero.updateHT(true);
         cleanseBlockedEffects(hero);
         identifyOwnedItems(hero);
@@ -268,6 +278,7 @@ public class GenesisEcho extends Buff {
             cleanseBlockedEffects(hero);
             identifyOwnedItems(hero);
             hero.HP = hero.HT;
+            Buff.affect(hero, EquipmentSummary.class);
             syncTier7Buff(hero);
         }
     }
@@ -399,6 +410,122 @@ public class GenesisEcho extends Buff {
         Char target = Actor.findChar(aimedCell);
         if (target == null) target = Actor.findChar(collisionCell);
         tryWandExecute(hero, target);
+    }
+
+    public static class EquipmentSummary extends Buff {
+        {
+            type = buffType.POSITIVE;
+            announced = true;
+            revivePersists = true;
+        }
+
+        @Override
+        public boolean act() {
+            spend(TICK);
+            return true;
+        }
+
+        @Override
+        public int icon() {
+            return BuffIndicator.WEAPON;
+        }
+
+        @Override
+        public String iconTextDisplay() {
+            Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+            if (hero == null) return "+";
+            return Integer.toString(Math.min(99, hero.belongings.equippedWeapons().size()));
+        }
+
+        @Override
+        public String name() {
+            return "纵横八荒·装备共鸣";
+        }
+
+        @Override
+        public String desc() {
+            Hero hero = target instanceof Hero ? (Hero)target : Dungeon.hero;
+            if (hero == null) return "当前没有可读取的装备数据。";
+
+            StringBuilder out = new StringBuilder();
+            out.append("_实战数据_\n");
+
+            java.util.ArrayList<KindOfWeapon> weapons = hero.belongings.equippedWeapons();
+            int weaponMin = 0;
+            int weaponMax = 0;
+            int weaponBlock = 0;
+            for (KindOfWeapon weapon : weapons) {
+                if (weapon == null) continue;
+                weaponMin += Math.max(0, weapon.min());
+                weaponMax += Math.max(0, weapon.max());
+                weaponBlock += Math.max(0, weapon.defenseFactor(hero));
+            }
+            KindOfWeapon primary = hero.belongings.attackingWeapon();
+            if (!weapons.isEmpty() && !(primary instanceof MissileWeapon)) {
+                int force = RingOfForce.armedDamageBonus(hero);
+                weaponMin += force;
+                weaponMax += force;
+            }
+
+            BreakthroughCertificate cert = BreakthroughCertificate.equipped(hero);
+            if (cert != null) {
+                float mult = cert.effectiveDamageMultiplier(hero);
+                weaponMin = Math.round(weaponMin * mult);
+                weaponMax = Math.round(weaponMax * mult);
+            }
+
+            int unarmedMin = RingOfForce.unarmedMin(hero);
+            int unarmedMax = RingOfForce.unarmedMax(hero);
+            if (cert != null) {
+                float mult = cert.effectiveDamageMultiplier(hero);
+                unarmedMin = Math.round(unarmedMin * mult);
+                unarmedMax = Math.round(unarmedMax * mult);
+            }
+
+            out.append("武器：").append(weapons.size()).append("件");
+            if (!weapons.isEmpty()) {
+                out.append("，合击伤害 ").append(weaponMin).append("～").append(weaponMax);
+            }
+            out.append("\n空手伤害：").append(unarmedMin).append("～").append(unarmedMax);
+
+            int armorMin = 0;
+            int armorMax = 0;
+            Armor armor = hero.belongings.armor();
+            if (armor != null) {
+                armorMin = Math.max(0, armor.DRMin());
+                armorMax = Math.max(0, armor.DRMax());
+            }
+            out.append("\n装备减伤：").append(armorMin).append("～").append(armorMax + weaponBlock);
+            if (weaponBlock > 0) {
+                out.append("（武器格挡上限 +").append(weaponBlock).append("）");
+            }
+            out.append("\n防具：").append(armor == null ? "未装备" : armor.name()).append("（仍为单件槽）");
+
+            java.util.ArrayList<Ring> rings = hero.belongings.equippedRings();
+            out.append("\n\n_戒指真实叠加_\n共 ").append(rings.size()).append(" 枚");
+            HashSet<Class> seen = new HashSet<>();
+            for (Ring ring : rings) {
+                if (ring == null || !seen.add(ring.getClass())) continue;
+                String info = ring.stackedStatsInfo();
+                if (info == null) info = "";
+                info = info.replace("\n\n", "；").replace("\n", "；");
+                out.append("\n").append(ring.name());
+                if (!info.isEmpty()) out.append("：").append(info);
+            }
+
+            int wandCount = hero.belongings.equippedWands().size();
+            out.append("\n\n_法杖合流_\n已装备 ").append(wandCount)
+                    .append(" 根；释放任意已装备法杖时，其余已装备法杖的正常命中伤害与状态效果同时作用于同一目标。");
+
+            java.util.ArrayList<Artifact> artifacts = hero.belongings.equippedArtifacts();
+            out.append("\n\n_神器共鸣_\n已装备 ").append(artifacts.size()).append(" 件");
+            Artifact selected = hero.belongings.displayArtifact();
+            if (selected != null) {
+                out.append("；快捷神器：").append(selected.name());
+            }
+
+            return out.toString();
+        }
     }
 
     public static class GenesisTalentAuthority extends Buff {
