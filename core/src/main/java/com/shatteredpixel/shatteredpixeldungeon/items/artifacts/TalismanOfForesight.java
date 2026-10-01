@@ -282,8 +282,9 @@ public class TalismanOfForesight extends Artifact {
 					&& target.buff(MagicImmune.class) == null
 					&& Regeneration.regenOn()) {
 				//fully charges in 2000 turns at +0, scaling to 1000 turns at +10.
-				float chargeGain = (0.05f+(level()*0.005f));
+				float chargeGain = (0.05f+(nativeLevel()*0.005f));
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= assistOverlevelChargeMultiplier();
 				partialCharge += chargeGain;
 
 				while (partialCharge >= 1){
