@@ -202,7 +202,7 @@ public abstract class Wand extends Item {
 	 * applied by their original implementations instead of being simulated text.
 	 */
 	private void applyStackedWandEffects(Hero hero, int target) {
-		if (hero == null || !GenesisEcho.unrestrictedEquipment(hero)) return;
+		if (hero == null || !GenesisEcho.unrestrictedEquipment(hero) || !isEquipped(hero)) return;
 		ArrayList<Wand> equipped = hero.belongings.equippedWands();
 		if (equipped.size() <= 1) return;
 
