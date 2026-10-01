@@ -40,7 +40,7 @@ public class AllLawsArtifact extends Artifact {
         image = ItemSpriteSheet.ARTIFACT_SPELLBOOK;
 
         levelCap = 10;
-        chargeCap = 5;
+        chargeCap = 10;
         charge = chargeCap;
         partialCharge = 0f;
         exp = 0;
@@ -61,10 +61,9 @@ public class AllLawsArtifact extends Artifact {
 
     @Override
     public int targetingPos(Hero user, int dst) {
+        if (user == null) return dst;
         WandOfAllLaws wand = preparedDelegate();
-        return wand.collisionProperties(dst) == Ballistica.PROJECTILE
-                ? dst
-                : new Ballistica(user.pos, dst, wand.collisionProperties(dst)).collisionPos;
+        return new Ballistica(user.pos, dst, wand.collisionProperties(dst)).collisionPos;
     }
 
     @Override
@@ -165,30 +164,16 @@ public class AllLawsArtifact extends Artifact {
         int threshold = 3 + nativeLevel();
         if (exp >= threshold) {
             exp = 0;
-            int oldCap = chargeCap;
             upgrade();
-            refreshChargeCap();
-            charge = Math.min(chargeCap, charge + Math.max(1, chargeCap - oldCap));
+            charge = Math.min(chargeCap, charge + 1);
             GLog.p(Messages.get(this, "levelup"));
         }
-    }
-
-    private void refreshChargeCap() {
-        chargeCap = 5 + nativeLevel() / 2;
-        if (charge > chargeCap) charge = chargeCap;
-    }
-
-    @Override
-    public Item upgrade() {
-        Item result = super.upgrade();
-        refreshChargeCap();
-        return result;
     }
 
     @Override
     public void resetForTrinity(int visibleLevel) {
         super.resetForTrinity(visibleLevel);
-        refreshChargeCap();
+        chargeCap = 10;
         charge = chargeCap;
         partialCharge = 0f;
     }
@@ -233,5 +218,13 @@ public class AllLawsArtifact extends Artifact {
             spend(TICK);
             return true;
         }
+    }
+
+    @Override
+    public String desc() {
+        int lvl = Math.max(0, buffedLvl());
+        int effects = 1 + lvl / 3;
+        return super.desc() + "\n\n" + Messages.get(this, "stats_desc",
+                2 + lvl, 8 + 2 * lvl, effects, charge, chargeCap);
     }
 }
