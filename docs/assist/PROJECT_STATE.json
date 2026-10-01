@@ -13,7 +13,7 @@
     "application_id": "com.shatteredpixel.shatteredpixeldungeon.assist",
     "stable_branch": "assist-0.6.17-stable",
     "development_branch": "assist-0.6.17-eternal-edict",
-    "release_code_sha": "4bcb84afafe33e4f7948449718854927d6068543",
+    "release_code_sha": "7aa65a7f8963cfc7f2e884586dd715a07bc95525",
     "world_generator_version": 17
   },
   "build": {
@@ -444,7 +444,7 @@
       "normal_chest": "5 random food + 5 random scrolls + 5 random potions",
       "loose_key": "one CrystalKey at current depth",
       "crystal_chest": "one random ring + one random wand",
-      "initial_identification": "starter magical items are not force-identified; fresh-run potion/scroll/ring/wand identities remain unknown until normal identification or Eternal Wisdom acquisition",
+      "initial_identification": "every starter-cache item begins unrevealed: food uses a dedicated unidentified-food state, potions/scrolls use their normal unknown-type handlers, and ring/wand level/curse information remains unknown until identification",
       "placement": "guaranteed near origin; searches natural nearby floor first and carves a fallback floor only if necessary",
       "persistence": "world coordinates, chest states, object state and remaining contents persist through streaming/save-load"
     }
