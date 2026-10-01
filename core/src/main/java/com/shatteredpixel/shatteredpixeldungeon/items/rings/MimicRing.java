@@ -50,6 +50,16 @@ public abstract class MimicRing extends Ring {
         bones = true;
     }
 
+    public MimicRing() {
+        super();
+        // Normal dungeon generation calls random(), but debug/Assist item grants
+        // instantiate items directly. Roll here as well so a granted ring does
+        // not always default to the first scroll/potion in its pool.
+        rollInitialAbility();
+        curCharges = MAX_CHARGES;
+        partialCharge = 0f;
+    }
+
     protected abstract Class<? extends Item>[] abilityPool();
 
     protected abstract int mimicImage();
