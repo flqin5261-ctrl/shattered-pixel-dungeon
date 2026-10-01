@@ -10,12 +10,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventorySlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
-import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
 
 import java.util.ArrayList;
@@ -23,9 +23,12 @@ import java.util.ArrayList;
 /**
  * Compact one-row view for 纵横八荒 stacked equipment.
  *
- * The regular bag keeps one representative icon per equipment family. Tapping
- * that representative opens this row so every actually equipped item remains
- * inspectable/unequippable without flooding the root backpack grid.
+ * Normal mode:
+ * - tap an item -> make it the representative/primary item and open its action window.
+ *
+ * Selector mode:
+ * - used by upgrade/identify/etc. inventory selectors so every stacked item can be
+ *   targeted instead of only the first representative item.
  */
 public class WndStackedEquipment extends Window {
 
@@ -38,8 +41,17 @@ public class WndStackedEquipment extends Window {
     private static final int WIDTH_MIN = 96;
     private static final int WIDTH_MAX = 160;
 
+    private final Window owner;
+    private final WndBag.ItemSelector selector;
+
     public WndStackedEquipment(Category category) {
+        this(null, category, null);
+    }
+
+    public WndStackedEquipment(Window owner, Category category, WndBag.ItemSelector selector) {
         super();
+        this.owner = owner;
+        this.selector = selector;
 
         final ArrayList<Item> items = itemsFor(category);
         int desired = Math.max(WIDTH_MIN, items.size() * (SLOT + GAP) - GAP);
@@ -59,10 +71,29 @@ public class WndStackedEquipment extends Window {
             InventorySlot slot = new InventorySlot(item) {
                 @Override
                 protected void onClick() {
-                    Game.scene().addToFront(new WndUseItem(WndStackedEquipment.this, item));
+                    if (selector != null) {
+                        if (!selector.itemSelectable(item)) return;
+                        if (selector.hideAfterSelecting()) {
+                            hide();
+                            if (owner != null && owner.parent != null) owner.hide();
+                        }
+                        selector.onSelect(item);
+                        return;
+                    }
+
+                    Dungeon.hero.belongings.makeStackPrimary(item);
+                    Item.updateQuickslot();
+                    hide();
+                    // Show a fresh action window rather than nesting it under this
+                    // compact ScrollPane. This fixes the previous "tap does nothing"
+                    // behavior on touch devices and makes the selected item obvious.
+                    GameScene.show(new WndUseItem(null, item));
                 }
             };
             slot.setRect(left, 0, SLOT, SLOT);
+            if (selector != null && !selector.itemSelectable(item)) {
+                slot.enable(false);
+            }
             content.add(slot);
             left += SLOT + GAP;
         }
@@ -71,13 +102,12 @@ public class WndStackedEquipment extends Window {
         ScrollPane scroll = new ScrollPane(content);
         add(scroll);
 
-        // Keep the safe ScrollPane lifecycle used by the fixed bag/buff windows:
-        // construct -> add -> resize -> setRect.
+        // construct -> add -> resize -> setRect avoids ScrollPane clipping.
         resize(width, (int)Math.ceil(paneY + SLOT + 2));
         scroll.setRect(0, paneY, width, SLOT);
     }
 
-    private static ArrayList<Item> itemsFor(Category category) {
+    public static ArrayList<Item> itemsFor(Category category) {
         ArrayList<Item> result = new ArrayList<>();
         Belongings b = Dungeon.hero.belongings;
         switch (category) {
