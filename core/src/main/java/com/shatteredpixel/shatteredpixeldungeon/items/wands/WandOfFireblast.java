@@ -212,7 +212,6 @@ public class WandOfFireblast extends DamageWand {
 	}
 
 	@Override
-	@Override
 	public void prepareForFastZap(Ballistica bolt) {
 		int maxDist = 3 + 2*chargesPerCast();
 		cone = new ConeAOE( bolt,
@@ -221,6 +220,7 @@ public class WandOfFireblast extends DamageWand {
 				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
 	}
 
+	@Override
 	public void fx(Ballistica bolt, Callback callback) {
 		//need to perform flame spread logic here so we can determine what cells to put flames in.
 		prepareForFastZap(bolt);
