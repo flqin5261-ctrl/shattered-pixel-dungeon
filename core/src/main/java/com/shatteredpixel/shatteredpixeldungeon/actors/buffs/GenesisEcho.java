@@ -96,11 +96,13 @@ public class GenesisEcho extends Buff {
         else if (Paralysis.class.isAssignableFrom(cls)) text = "麻痹敕免";
         else if (Roots.class.isAssignableFrom(cls)) text = "束缚敕免";
         else if (Blindness.class.isAssignableFrom(cls)) text = "致盲敕免";
+        else if (Daze.class.isAssignableFrom(cls)) text = "眩晕敕免";
         else if (Vertigo.class.isAssignableFrom(cls)) text = "混乱敕免";
         else if (Cripple.class.isAssignableFrom(cls)) text = "残废敕免";
         else if (Charm.class.isAssignableFrom(cls)) text = "魅惑敕免";
         else if (Terror.class.isAssignableFrom(cls)) text = "恐惧敕免";
         else if (Amok.class.isAssignableFrom(cls)) text = "狂乱敕免";
+        else if (Drowsy.class.isAssignableFrom(cls) || Sleep.class.isAssignableFrom(cls)) text = "睡眠敕免";
         else if (Slow.class.isAssignableFrom(cls)) text = "迟缓敕免";
         else if (Chill.class.isAssignableFrom(cls) || Frost.class.isAssignableFrom(cls)) text = "寒冷敕免";
         else if (Weakness.class.isAssignableFrom(cls)) text = "虚弱敕免";
@@ -114,6 +116,21 @@ public class GenesisEcho extends Buff {
 
     public static boolean damageImmune(Hero hero) {
         return active(hero);
+    }
+
+    public static void showDamageDenial(Hero hero, Object source) {
+        if (hero == null || !active(hero)) return;
+        String text = "伤害敕免";
+        if (source != null) {
+            Class<?> cls = source instanceof Class ? (Class<?>)source : source.getClass();
+            if (Burning.class.isAssignableFrom(cls)) text = "灼烧敕免";
+            else if (Poison.class.isAssignableFrom(cls)) text = "中毒敕免";
+            else if (Bleeding.class.isAssignableFrom(cls)) text = "流血敕免";
+            else if (Corrosion.class.isAssignableFrom(cls)) text = "腐蚀敕免";
+            else if (Ooze.class.isAssignableFrom(cls)) text = "黏液敕免";
+        }
+        GLog.p(text);
+        if (hero.sprite != null) hero.sprite.showStatus(0x66FFCC, text);
     }
 
     private static boolean controlClass(Class<?> cls) {
@@ -207,6 +224,8 @@ public class GenesisEcho extends Buff {
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         cleanseBlockedEffects(hero);
+        identifyOwnedItems(hero);
+        hero.HP = hero.HT;
         if (first) {
             GLog.p("奇迹·世界完成升格——「八荒·亘古元敕」已经觉醒。");
         }
