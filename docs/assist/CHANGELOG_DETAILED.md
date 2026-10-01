@@ -2600,4 +2600,4 @@ Major changes:
 - Miracle World-linked curse immunity, execution, tier-1-to-6 mastery, and copied Miracle World bonuses remain, under the new names 万厄·归寂 / 终末·裁决 / 无限·天资 / 寰宇·映射.
 - Tier-7 talents renamed to 无界遁诰 / 寰墟指殛 / 元级肇法 / 万运隆敕.
 - 元级肇法 now makes all wand damage targets execute even without Miracle World, including secondary/AOE wand victims. The double-tap screen-wide wand action remains.
-- Added a persistent guaranteed starter cache near Infinite World spawn: normal chest with 5 food + 5 scrolls + 5 potions, loose Crystal Key, and Crystal Chest with one random ring + one random wand.
+- Added a persistent guaranteed starter cache near Infinite World spawn: normal chest with 5 food + 5 scrolls + 5 potions, loose Crystal Key, and Crystal Chest with one random ring + one random wand. Starter food now has a dedicated unidentified presentation so every cache item can genuinely begin unknown.
