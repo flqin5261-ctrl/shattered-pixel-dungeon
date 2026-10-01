@@ -100,11 +100,11 @@ public class InfiniteWorldLevel extends Level {
     // does not immediately force a 7x7 window rebuild.
     private boolean genesisTeleportGrace;
 
-    // Infinite World ecology scales with Hero progression: very sparse early,
-    // gradually denser in the middle game, and only moderately busy late game.
-    // Five remains the normal late-game target; six is only the hard safety cap.
-    private static final int MOB_SPAWN_TARGET_CAP = 5;
-    private static final int MOB_HARD_CAP = 6;
+    // Infinite World ecology scales with Hero progression: still sparse early,
+    // but 0.8.5 raises mid/late dynamic pressure one step over 0.8.4.
+    // Six is the normal late-game target; seven remains the hard safety cap.
+    private static final int MOB_SPAWN_TARGET_CAP = 6;
+    private static final int MOB_HARD_CAP = 7;
     private static final int MOB_SPAWN_MIN_DISTANCE = 14;
     private static final int MOB_SPAWN_MAX_DISTANCE = 28;
     private static final int MOB_DESPAWN_DISTANCE = 40;
@@ -264,45 +264,45 @@ public class InfiniteWorldLevel extends Level {
         switch (mobEcologyStage()) {
             case 0: return 2;
             case 1: return 3;
-            case 2: return 4;
+            case 2: return 5;
             default:return MOB_SPAWN_TARGET_CAP;
         }
     }
 
     private float mobRespawnMinTurns() {
         switch (mobEcologyStage()) {
-            case 0: return 48f;
-            case 1: return 40f;
-            case 2: return 32f;
-            default:return 26f;
+            case 0: return 42f;
+            case 1: return 34f;
+            case 2: return 27f;
+            default:return 22f;
         }
     }
 
     private float mobRespawnMaxTurns() {
         switch (mobEcologyStage()) {
-            case 0: return 72f;
-            case 1: return 60f;
-            case 2: return 48f;
-            default:return 40f;
+            case 0: return 62f;
+            case 1: return 52f;
+            case 2: return 40f;
+            default:return 34f;
         }
     }
 
     private float mobSpawnChance(int count) {
         switch (mobEcologyStage()) {
             case 0:
-                return count == 0 ? 0.42f : 0.18f;
+                return count == 0 ? 0.48f : 0.24f;
             case 1:
-                if (count == 0) return 0.58f;
-                if (count == 1) return 0.40f;
-                return 0.22f;
+                if (count == 0) return 0.65f;
+                if (count == 1) return 0.47f;
+                return 0.28f;
             case 2:
-                if (count == 0) return 0.70f;
-                if (count <= 1) return 0.52f;
-                return 0.32f;
-            default:
                 if (count == 0) return 0.78f;
-                if (count <= 2) return 0.60f;
-                return 0.40f;
+                if (count <= 1) return 0.60f;
+                return 0.38f;
+            default:
+                if (count == 0) return 0.86f;
+                if (count <= 2) return 0.70f;
+                return 0.48f;
         }
     }
 
