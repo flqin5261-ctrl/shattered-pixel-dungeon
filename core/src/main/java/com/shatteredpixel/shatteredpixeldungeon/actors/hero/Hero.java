@@ -2586,7 +2586,18 @@ public class Hero extends Char {
 
 	@Override
 	public boolean isAlive() {
-		
+
+		// 八荒·亘古元敕 is a true immortality authority, not just a damage hook.
+		// Some special mechanics write HP directly before asking isAlive(), so repair
+		// HP here as the final safety net as well. Keep ordinary integer HP/HT values
+		// internally to avoid overflow; only the UI represents eternal life as ∞/∞.
+		if (GenesisEcho.active(this)) {
+			berserk = null;
+			if (HT > 0) HP = HT;
+			else HP = Math.max(1, HP);
+			return true;
+		}
+
 		if (HP <= 0){
 			if (berserk == null) berserk = buff(Berserk.class);
 			return berserk != null && berserk.berserking();
