@@ -212,6 +212,12 @@ public class Ring extends KindofMisc {
 		return "";
 	}
 
+	// Public read-only wrapper used by the 纵横八荒 equipment summary. Each ring
+	// subclass still owns the actual wording/calculation in statsInfo().
+	public String stackedStatsInfo(){
+		return statsInfo();
+	}
+
 	public String upgradeStat1(int level){
 		return null;
 	}
