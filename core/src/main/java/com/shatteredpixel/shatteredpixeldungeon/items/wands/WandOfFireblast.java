@@ -212,16 +212,18 @@ public class WandOfFireblast extends DamageWand {
 	}
 
 	@Override
-	public void fx(Ballistica bolt, Callback callback) {
-		//need to perform flame spread logic here so we can determine what cells to put flames in.
-
-		// 5/7/9 distance
+	@Override
+	public void prepareForFastZap(Ballistica bolt) {
 		int maxDist = 3 + 2*chargesPerCast();
-
 		cone = new ConeAOE( bolt,
 				maxDist,
 				30 + 20*chargesPerCast(),
 				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
+	}
+
+	public void fx(Ballistica bolt, Callback callback) {
+		//need to perform flame spread logic here so we can determine what cells to put flames in.
+		prepareForFastZap(bolt);
 
 		//cast to cells at the tip, rather than all cells, better performance.
 		Ballistica longestRay = null;
