@@ -1392,18 +1392,18 @@ public class GameScene extends PixelScene {
 		if (scene == null || Dungeon.level == null || Dungeon.hero == null) return;
 
 		synchronized (scene) {
-			scene.heaps.clear();
+			scene.heaps.clearAndDestroy();
 			for (Heap heap : Dungeon.level.heaps.valueList()) {
 				scene.addHeapSprite(heap);
 			}
 
 			// Chunk streaming may regenerate the visual-only mixed-material overlays.
 			// Rebuild both floor and wall environment layers together with the logical window.
-			scene.customTiles.clear();
+			scene.customTiles.clearAndDestroy();
 			for (CustomTilemap visual : Dungeon.level.customTiles) {
 				scene.addCustomTile(visual);
 			}
-			scene.customWalls.clear();
+			scene.customWalls.clearAndDestroy();
 			for (CustomTilemap visual : Dungeon.level.customWalls) {
 				scene.addCustomWall(visual);
 			}
@@ -1504,12 +1504,12 @@ public class GameScene extends PixelScene {
 		if (scene == null || !Dungeon.infiniteWorld || Dungeon.level == null) return;
 
 		synchronized (scene) {
-			scene.customTiles.clear();
+			scene.customTiles.clearAndDestroy();
 			for (CustomTilemap visual : Dungeon.level.customTiles) {
 				scene.addCustomTile(visual);
 			}
 
-			scene.customWalls.clear();
+			scene.customWalls.clearAndDestroy();
 			for (CustomTilemap visual : Dungeon.level.customWalls) {
 				scene.addCustomWall(visual);
 			}
