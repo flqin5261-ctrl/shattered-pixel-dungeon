@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新已验证发布基线：**1.0.4**
-- 当前发布 versionCode：**1000**
-- 当前发布分支：`assist-1.0.4-random-events`
-- 当前发布代码 SHA：`d519a44eab422507bb6ff297f87410f4c932e790`
-- 当前开发分支：`assist-1.0.5-genesis-action-deadlock`
-- 当前开发版本：**1.0.5 / versionCode 1001**
+- 当前最新已验证发布基线：**1.0.5**
+- 当前发布 versionCode：**1001**
+- 当前发布分支：`assist-1.0.5-genesis-action-deadlock`
+- 当前发布代码 SHA：`55fe138ae25fe418aa8b09c35a801a43653f135e`
+- 当前开发分支：`assist-1.0.6-artifact-charge-deadlock`
+- 当前开发版本：**1.0.6 / versionCode 1002**
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 23**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -2338,3 +2338,51 @@ Genesis Reach remote pickup still uses Item.doPickUp(), whose successful path ca
 - local/original pickup behavior is unchanged.
 
 This hotfix deliberately avoids a generic timeout/watchdog: the scheduler/action lifecycle is corrected at the source so no action, drop, XP, or kill is silently skipped or duplicated.
+
+
+## Assist 1.0.6 — Monster Carnival / artifact charge deadlock hotfix
+
+- Version: **1.0.6 / versionCode 1002**
+- Branch: `assist-1.0.6-artifact-charge-deadlock`
+- Base: Assist 1.0.5, HEAD `55fe138ae25fe418aa8b09c35a801a43653f135e`
+- `WORLD_GEN_VERSION = 23` unchanged. No terrain/world identity migration.
+
+### Real-device symptom
+At Hero level 60 with Genesis Reach selected, during Monster Carnival a remote instant kill could freeze with the action spinner running forever. A captured frame showed the last GLog line:
+`狂欢掉落：一只怪物额外掉落了神器 炼金工具箱！`
+and no later `敕杀：...` line.
+
+That proves the 1.0.5 stale HeroAction fix was working, but the actor thread was now stuck *inside* `enemy.die(hero)`, after Carnival loot creation and before `GenesisEcho.forceSlay()` returned.
+
+### Root cause
+`Mob.destroy()` grants effective XP even at the Infinite World level-60 cap so equipped XP-driven artifacts can continue charging. `Hero.earnExp()` forwards that level fraction to every equipped artifact.
+
+Ring of Energy uses exponential recharge:
+`1.175 ^ combinedBuffedBonus`.
+
+纵横八荒 permits stacked rings and Assist permits very large custom equipment levels. Around a combined Energy-ring bonus of roughly +550, the double result is already too large for a float and the old cast could become `Float.POSITIVE_INFINITY`.
+
+`AlchemistsToolkit.kitEnergy.gainCharge()` then did:
+`partialCharge += chargeGain`
+followed by a per-energy:
+`while (partialCharge >= 1) { charge++; partialCharge--; }`.
+
+With very large finite charge it could execute an excessive number of iterations; with Infinity it could never terminate because `Infinity - 1 == Infinity`. This blocks the Actor thread in the monster death pipeline, leaving the UI spinner permanently active.
+
+### Fix
+1. `RingOfEnergy` now computes recharge multipliers through a finite safety function.
+   - NaN is normalized.
+   - Infinite/extreme results saturate at `1_000_000x`.
+   - Wand/artifact/armor charge paths share the same protection.
+   - At this scale ordinary capped charge systems are already effectively instant, so saturation prevents numeric failure without changing practical capped-artifact behavior.
+2. `Artifact` now provides `addUncappedChargeProgress(float)`.
+   - O(1) whole/fractional conversion; no value-proportional loop.
+   - safely handles NaN/Infinity.
+   - saturates at `Integer.MAX_VALUE` before integer overflow.
+3. `AlchemistsToolkit` uses that O(1) accumulator for both generic charge() and XP-based kitEnergy.gainCharge().
+   - no per-point while loop remains in the level-60 kill path.
+4. `GenesisEcho.onEnemySlain()` was audited and is a compatibility no-op, so legacy kill growth is not involved.
+5. `Hero.maxExp(60)` was audited: it returns 305, so the freeze was not an XP divide-by-zero issue.
+
+### 1.0.5 fix retained
+Genesis Reach still clears `Hero.curAction` / `attackTarget` before immediate execution and remote pickup clears its queued action before `Item.doPickUp()`. 1.0.6 is a second, independent death-pipeline fix.
