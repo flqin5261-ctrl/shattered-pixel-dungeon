@@ -559,7 +559,13 @@ public enum Talent {
 			}
 		}
 
-		if (talent == HEIGHTENED_SENSES || talent == FARSIGHT || talent == DIVINE_SENSE){
+		// These two Assist talents change cached/visible hero state and must take
+		// effect on the same tap that spends the talent point.
+		if (talent == ASCENDANT_VITALITY){
+			hero.updateHT(true);
+		}
+		if (talent == HEIGHTENED_SENSES || talent == FARSIGHT || talent == DIVINE_SENSE
+				|| talent == TRANSCENDENT_VISION){
 			Dungeon.observe();
 		}
 
