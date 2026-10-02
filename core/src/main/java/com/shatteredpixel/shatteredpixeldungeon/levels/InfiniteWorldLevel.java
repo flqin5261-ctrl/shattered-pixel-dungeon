@@ -2539,8 +2539,8 @@ public class InfiniteWorldLevel extends Level {
             case 2: return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
             case 3: return new StoneOfAugmentation();
             case 4: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
-            case 5: return Generator.randomUsingDefaults(Generator.Category.WAND);
-            default:return Generator.randomUsingDefaults(Generator.Category.RING);
+            case 5: return v22CategoryItem(Generator.Category.WAND, ordinal, 0);
+            default:return v22CategoryItem(Generator.Category.RING, ordinal, 0);
         }
     }
 
