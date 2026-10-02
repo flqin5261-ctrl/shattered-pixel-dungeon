@@ -16,11 +16,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.*;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.InfiniteWorldShopkeeper;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.InfiniteWorldSupplyNPC;
+import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.*;
@@ -33,6 +37,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibili
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.*;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.*;
@@ -137,6 +143,11 @@ public class InfiniteWorldLevel extends Level {
     private static final int MERCHANT_SPACING_CHUNKS_V15 = 3;
     private static final int MERCHANT_STOCK_SLOTS = 6;
     private static final int MERCHANT_ROOM_THEME = 10;
+
+    // Original quest NPC appearances are reused as low-frequency supply contacts.
+    // A 5x5 lattice averages roughly two candidate sites in the full 7x7 render
+    // window, before Backrooms and merchant exclusions, so encounters stay uncommon.
+    private static final int SUPPLY_NPC_SPACING_CHUNKS = 5;
 
     // V17 pacing guarantees: after 1000 positive hero action-time the run receives
     // exactly one visible crystal chest in the Hero-centered 3x3 neighbourhood.
@@ -635,7 +646,7 @@ public class InfiniteWorldLevel extends Level {
         int hy = Dungeon.hero.pos / width();
 
         for (Mob mob : mobs.toArray(new Mob[0])) {
-            if (mob instanceof InfiniteWorldShopkeeper) {
+            if (mob instanceof InfiniteWorldShopkeeper || mob instanceof InfiniteWorldSupplyNPC) {
                 int oldX = mob.pos % width();
                 int oldY = mob.pos / width();
                 int newX = oldX - shiftedCellsX;
@@ -696,6 +707,7 @@ public class InfiniteWorldLevel extends Level {
         restoreGuaranteedArtifactChest();
         generateStarterSupplies();
         rebuildV15DecorationProps();
+        ensureInfiniteWorldSupplyNPCs(false);
     }
 
     @Override
@@ -742,6 +754,9 @@ public class InfiniteWorldLevel extends Level {
                 ensureV12AnomalyNoteNearby(hero);
             }
             ensureV13MerchantDiscovery(hero);
+            // Seed NPC contacts into old V22 saves as soon as the player crosses
+            // a chunk boundary; no world regeneration is required.
+            ensureInfiniteWorldSupplyNPCs(true);
         }
 
         // Mob pruning only needs coarse movement granularity. The hard cap is tiny,
@@ -1161,6 +1176,7 @@ public class InfiniteWorldLevel extends Level {
 
         rebaseInfiniteWorldMobs(shiftedCellsX, shiftedCellsY);
         ensureV11Shopkeeper(true);
+        ensureInfiniteWorldSupplyNPCs(true);
         ensureV13MerchantDiscovery(hero);
 
         hero.curAction = rebaseCellAction(hero.curAction, curTargetWorldX, curTargetWorldY, st);
@@ -2179,7 +2195,7 @@ public class InfiniteWorldLevel extends Level {
     private Item v6LooseItem(int cx, int cy, int index) {
         if (state().generatorVersion >= 22) {
             if (index > 0) return v22BonusSupplyItem(cx, cy, index);
-            return v22BalancedSupplySequence(v22LooseSupplySequence(cx, cy));
+            return balancedSupplySequence(v22LooseSupplySequence(cx, cy));
         }
 
         int roll = range(cx, cy, 19800 + index, 0, 99);
@@ -2447,7 +2463,39 @@ public class InfiniteWorldLevel extends Level {
 
     private Item v22BalancedSupplyItem(int cx, int cy, int index, int salt) {
         long seq = v22SpiralOrdinal(cx, cy) + index + (long)salt;
-        return v22BalancedSupplySequence(seq);
+        return balancedSupplySequence(seq);
+    }
+
+    private Item balancedSupplySequence(long seq) {
+        return state().generatorVersion >= 23
+                ? v23BalancedSupplySequence(seq)
+                : v22BalancedSupplySequence(seq);
+    }
+
+    private Item v23BalancedSupplySequence(long seq) {
+        // Preserve V22 family balance for 17/18 drops. The remaining slot
+        // rotates through vanilla utility items omitted from Generator.Category.
+        int slot = (int)Math.floorMod(seq, 18L);
+        long cycle = Math.floorDiv(seq, 18L);
+        if (slot == 17) return v23CoverageUtilityItem(cycle);
+        return v22BalancedSupplySequence(cycle * 17L + slot);
+    }
+
+    private Item v23CoverageUtilityItem(long ordinal) {
+        switch ((int)Math.floorMod(ordinal, 6L)) {
+            case 0:
+                return new Ankh();
+            case 1:
+                return new Stylus();
+            case 2:
+                return new Honeypot();
+            case 3:
+                return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
+            case 4:
+                return new StoneOfAugmentation();
+            default:
+                return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+        }
     }
 
     private Item v22BalancedSupplySequence(long seq) {
@@ -2480,6 +2528,154 @@ public class InfiniteWorldLevel extends Level {
             default:
                 return v22EquipmentItem(cycle + 1L);
         }
+    }
+
+
+    private Item v23MerchantCoverageItem(int cx, int cy, int progressTier) {
+        long ordinal = v22VariantOrdinal(cx, cy, 25270 + progressTier);
+        switch ((int)Math.floorMod(ordinal, 7L)) {
+            case 0: return new Stylus();
+            case 1: return new Honeypot();
+            case 2: return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
+            case 3: return new StoneOfAugmentation();
+            case 4: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+            case 5: return Generator.randomUsingDefaults(Generator.Category.WAND);
+            default:return Generator.randomUsingDefaults(Generator.Category.RING);
+        }
+    }
+
+    private long infiniteWorldNpcObjectKey(int cx, int cy) {
+        long world = encodeWorld((long)cx * CHUNK_SIZE + CHUNK_SIZE / 2L,
+                (long)cy * CHUNK_SIZE + CHUNK_SIZE / 2L);
+        return world ^ 0x63D94C2A7B18E5F1L;
+    }
+
+    public boolean infiniteWorldNpcRewardClaimed(int cx, int cy) {
+        return state().objectState(infiniteWorldNpcObjectKey(cx, cy)) != 0;
+    }
+
+    public Item claimInfiniteWorldNpcReward(InfiniteWorldSupplyNPC npc) {
+        if (npc == null) return null;
+        int cx = npc.siteChunkX();
+        int cy = npc.siteChunkY();
+        long key = infiniteWorldNpcObjectKey(cx, cy);
+        if (state().objectState(key) != 0) return null;
+
+        Item reward = infiniteWorldNpcReward(npc.persona(), cx, cy);
+        if (reward == null) return null;
+
+        // Claim before insertion/drop so a full backpack cannot duplicate a gift.
+        state().setObjectState(key, 1);
+        return reward;
+    }
+
+    private Item infiniteWorldNpcReward(int persona, int cx, int cy) {
+        Random.pushGenerator(hash(cx, cy, 27340 + persona));
+        try {
+            int variant = range(cx, cy, 27341 + persona, 0, 5);
+            switch (persona) {
+                case InfiniteWorldSupplyNPC.WANDMAKER:
+                    switch (variant) {
+                        case 0: return Generator.randomUsingDefaults(Generator.Category.WAND);
+                        case 1: return v6SafeScroll(cx, cy, 27350);
+                        case 2: return v6RandomPotion(cx, cy, 27351);
+                        case 3: return new Alchemize().quantity(2);
+                        case 4: return new Ankh();
+                        default:return Generator.random(Generator.Category.ARTIFACT);
+                    }
+                case InfiniteWorldSupplyNPC.BLACKSMITH:
+                    switch (variant) {
+                        case 0: return v6EquipmentItem(cx, cy, 27360);
+                        case 1: return Generator.randomWeapon(true);
+                        case 2: return Generator.randomArmor(range(cx, cy, 27361, 0, 4));
+                        case 3: return new Stylus();
+                        case 4: return new StoneOfAugmentation();
+                        default:return new Ankh();
+                    }
+                case InfiniteWorldSupplyNPC.IMP:
+                    switch (variant) {
+                        case 0: return Generator.randomUsingDefaults(Generator.Category.RING);
+                        case 1: return new Honeypot();
+                        case 2: return new Ankh();
+                        case 3: return Generator.randomUsingDefaults(Generator.Category.WAND);
+                        case 4: return v6SafeScroll(cx, cy, 27370);
+                        default:return Generator.random(Generator.Category.ARTIFACT);
+                    }
+                case InfiniteWorldSupplyNPC.GHOST:
+                default:
+                    switch (variant) {
+                        case 0: return Generator.randomWeapon(true);
+                        case 1: return Generator.randomArmor(range(cx, cy, 27380, 0, 4));
+                        case 2: return v6RandomFood(cx, cy, 27381);
+                        case 3: return v6RandomPotion(cx, cy, 27382);
+                        case 4: return new Ankh();
+                        default:return Generator.randomUsingDefaults(Generator.Category.RING);
+                    }
+            }
+        } finally {
+            Random.popGenerator();
+        }
+    }
+
+    private boolean isInfiniteWorldSupplyNpcChunk(int cx, int cy) {
+        if (cx == 0 && cy == 0) return false;
+        if (v9AnomalyType(cx, cy) != 0) return false;
+        if (isV11MerchantChunk(cx, cy)) return false;
+
+        int baseX = (int)Math.floorMod(hash(0, 0, 27200),
+                (long)SUPPLY_NPC_SPACING_CHUNKS);
+        int baseY = (int)Math.floorMod(hash(0, 0, 27201),
+                (long)SUPPLY_NPC_SPACING_CHUNKS);
+        return Math.floorMod(cx - baseX, SUPPLY_NPC_SPACING_CHUNKS) == 0
+                && Math.floorMod(cy - baseY, SUPPLY_NPC_SPACING_CHUNKS) == 0;
+    }
+
+    private int infiniteWorldSupplyNpcPersona(int cx, int cy) {
+        return (int)Math.floorMod(hash(cx, cy, 27202), 4L);
+    }
+
+    private InfiniteWorldSupplyNPC findInfiniteWorldSupplyNpc(int cx, int cy) {
+        for (Mob mob : mobs.toArray(new Mob[0])) {
+            if (!(mob instanceof InfiniteWorldSupplyNPC)) continue;
+            InfiniteWorldSupplyNPC npc = (InfiniteWorldSupplyNPC)mob;
+            if (npc.siteChunkX() == cx && npc.siteChunkY() == cy) return npc;
+        }
+        return null;
+    }
+
+    private int infiniteWorldSupplyNpcCell(int cx, int cy, int ox, int oy) {
+        for (int attempt = 0; attempt < 24; attempt++) {
+            int salt = 27220 + attempt * 3;
+            int lx = 2 + range(cx, cy, salt, 0, CHUNK_SIZE - 5);
+            int ly = 2 + range(cx, cy, salt + 1, 0, CHUNK_SIZE - 5);
+            int cell = ox + lx + (oy + ly) * width();
+            if (cell < 0 || cell >= length()) continue;
+            if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
+            if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+            if (findMob(cell) != null || Actor.findChar(cell) != null) continue;
+            return cell;
+        }
+        return -1;
+    }
+
+    private void ensureInfiniteWorldSupplyNPCs(boolean addToScene) {
+        forEachActiveChunk(new ChunkVisitor() {
+            @Override
+            public void visit(int cx, int cy, int ox, int oy) {
+                if (!isInfiniteWorldSupplyNpcChunk(cx, cy)) return;
+                if (infiniteWorldNpcRewardClaimed(cx, cy)) return;
+                if (findInfiniteWorldSupplyNpc(cx, cy) != null) return;
+
+                int cell = infiniteWorldSupplyNpcCell(cx, cy, ox, oy);
+                if (cell < 0) return;
+
+                InfiniteWorldSupplyNPC npc = new InfiniteWorldSupplyNPC(
+                        infiniteWorldSupplyNpcPersona(cx, cy), cx, cy);
+                npc.pos = cell;
+                if (addToScene) GameScene.add(npc);
+                else mobs.add(npc);
+            }
+        });
     }
 
     private long v15MerchantSiteKey(int cx, int cy) {
@@ -2967,7 +3163,16 @@ public class InfiniteWorldLevel extends Level {
                 case 4:
                     return v11MerchantEquipment(cx, cy);
                 default:
-                    return v15MerchantSpecialItem(cx, cy, progressTier);
+                    // Vanilla shops always stock an Ankh. Infinite World V22
+                    // omitted it from every pool, so reserve this flexible slot
+                    // until the hero owns one.
+                    if (Dungeon.hero != null
+                            && Dungeon.hero.belongings.getItem(Ankh.class) == null) {
+                        return new Ankh();
+                    }
+                    return state().generatorVersion >= 23
+                            ? v23MerchantCoverageItem(cx, cy, progressTier)
+                            : v15MerchantSpecialItem(cx, cy, progressTier);
             }
         }
 
