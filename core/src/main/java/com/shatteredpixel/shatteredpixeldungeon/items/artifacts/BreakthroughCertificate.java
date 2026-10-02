@@ -505,6 +505,7 @@ public class BreakthroughCertificate extends EquipableItem {
                 Math.round((1f-shopPriceMultiplier())*100f),
                 Math.round(chestBonusChance()*100f),
                 Math.round(regenInterval()),
+                1,
                 Math.round(reviveChargeRequired()),
                 Math.round(reviveHpFraction()*100f),
                 reviveChargePercent());
@@ -741,6 +742,7 @@ public class BreakthroughCertificate extends EquipableItem {
                         Math.round((1f-cert.shopPriceMultiplier())*100f),
                         Math.round(cert.chestBonusChance()*100f),
                         Math.round(cert.regenInterval()),
+                        1,
                         Math.round(cert.reviveChargeRequired()),
                         Math.round(cert.reviveHpFraction()*100f),
                         cert.reviveChargePercent());
@@ -773,6 +775,7 @@ public class BreakthroughCertificate extends EquipableItem {
                     Math.round((1f-preview.shopPriceMultiplier())*100f),
                     Math.round(preview.chestBonusChance()*100f),
                     Math.round(preview.regenInterval()),
+                    1,
                     Math.round(preview.reviveChargeRequired()),
                     Math.round(preview.reviveHpFraction()*100f));
         }
