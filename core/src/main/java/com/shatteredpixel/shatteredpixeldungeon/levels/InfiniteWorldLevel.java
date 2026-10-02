@@ -2589,7 +2589,7 @@ public class InfiniteWorldLevel extends Level {
     private Item infiniteWorldNpcReward(int persona, int cx, int cy) {
         Random.pushGenerator(hash(cx, cy, 27340 + persona));
         try {
-            int variant = range(cx, cy, 27341 + persona, 0, 5);
+            int variant = range(cx, cy, 27341 + persona, 0, 7);
             switch (persona) {
                 case InfiniteWorldSupplyNPC.WANDMAKER:
                     switch (variant) {
@@ -2598,7 +2598,10 @@ public class InfiniteWorldLevel extends Level {
                         case 2: return v6RandomPotion(cx, cy, 27351);
                         case 3: return new Alchemize().quantity(2);
                         case 4: return new Ankh();
-                        default:return Generator.random(Generator.Category.ARTIFACT);
+                        case 5: return Generator.random(Generator.Category.ARTIFACT);
+                        case 6: return v22NormalCategoryItem(Generator.Category.TRINKET,
+                                v22VariantOrdinal(cx, cy, 27352));
+                        default:return TippedDart.randomTipped(2);
                     }
                 case InfiniteWorldSupplyNPC.BLACKSMITH:
                     switch (variant) {
@@ -2607,7 +2610,9 @@ public class InfiniteWorldLevel extends Level {
                         case 2: return Generator.randomArmor(range(cx, cy, 27361, 0, 4));
                         case 3: return new Stylus();
                         case 4: return new StoneOfAugmentation();
-                        default:return new Ankh();
+                        case 5: return new Ankh();
+                        case 6: return new Bomb.DoubleBomb();
+                        default:return TippedDart.randomTipped(2);
                     }
                 case InfiniteWorldSupplyNPC.IMP:
                     switch (variant) {
@@ -2616,7 +2621,10 @@ public class InfiniteWorldLevel extends Level {
                         case 2: return new Ankh();
                         case 3: return Generator.randomUsingDefaults(Generator.Category.WAND);
                         case 4: return v6SafeScroll(cx, cy, 27370);
-                        default:return Generator.random(Generator.Category.ARTIFACT);
+                        case 5: return Generator.random(Generator.Category.ARTIFACT);
+                        case 6: return v22NormalCategoryItem(Generator.Category.TRINKET,
+                                v22VariantOrdinal(cx, cy, 27371));
+                        default:return new Bomb.DoubleBomb();
                     }
                 case InfiniteWorldSupplyNPC.GHOST:
                 default:
@@ -2626,7 +2634,10 @@ public class InfiniteWorldLevel extends Level {
                         case 2: return v6RandomFood(cx, cy, 27381);
                         case 3: return v6RandomPotion(cx, cy, 27382);
                         case 4: return new Ankh();
-                        default:return Generator.randomUsingDefaults(Generator.Category.RING);
+                        case 5: return Generator.randomUsingDefaults(Generator.Category.RING);
+                        case 6: return TippedDart.randomTipped(2);
+                        default:return v22NormalCategoryItem(Generator.Category.TRINKET,
+                                v22VariantOrdinal(cx, cy, 27383));
                     }
             }
         } finally {
