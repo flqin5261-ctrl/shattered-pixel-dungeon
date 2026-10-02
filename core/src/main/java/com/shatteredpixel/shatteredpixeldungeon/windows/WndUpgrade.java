@@ -495,7 +495,10 @@ public class WndUpgrade extends Window {
 
 				if (upgrader instanceof MimicScrollRing) {
 					MimicScrollRing ring = (MimicScrollRing)upgrader;
-					if (ring.hasMimicCharge() && upgraded != null && upgraded.isUpgradable()) {
+					if (ring.hasMimicCharge()
+							&& ring.hasStoredUpgradeAbility()
+							&& upgraded != null
+							&& upgraded.isUpgradable()) {
 						GameScene.show(new WndUpgrade(ring, upgraded, false));
 					}
 				} else if (moreUpgradeItem != null && toUpgrade.isUpgradable()){
