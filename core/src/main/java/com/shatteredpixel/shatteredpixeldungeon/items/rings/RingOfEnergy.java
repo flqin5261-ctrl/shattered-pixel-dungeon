@@ -61,28 +61,52 @@ public class RingOfEnergy extends Ring {
 		return new Energy();
 	}
 	
+	// Beyond this point capped charge systems are already effectively instant.
+	// Keeping the runtime multiplier finite also prevents custom high-level /
+	// stacked rings from producing Infinity in artifact charge state machines.
+	private static final float MAX_ASSIST_CHARGE_MULTIPLIER = 1_000_000f;
+
+	private static float safeChargeMultiplier(Char target) {
+		double raw = Math.pow(1.175d, getBuffedBonus(target, Energy.class));
+		if (Double.isNaN(raw)) return 1f;
+		if (raw <= 0d) return 0f;
+		if (!Double.isFinite(raw) || raw >= MAX_ASSIST_CHARGE_MULTIPLIER) {
+			return MAX_ASSIST_CHARGE_MULTIPLIER;
+		}
+		return (float)raw;
+	}
+
+	private static float clampAssistChargeMultiplier(float value) {
+		if (Float.isNaN(value)) return 1f;
+		if (value <= 0f) return 0f;
+		if (!Float.isFinite(value) || value >= MAX_ASSIST_CHARGE_MULTIPLIER) {
+			return MAX_ASSIST_CHARGE_MULTIPLIER;
+		}
+		return value;
+	}
+
 	public static float wandChargeMultiplier( Char target ){
-		float bonus = (float)Math.pow(1.175, getBuffedBonus(target, Energy.class));
+		float bonus = safeChargeMultiplier(target);
 
 		if (target instanceof Hero && ((Hero) target).heroClass != HeroClass.CLERIC && ((Hero) target).hasTalent(Talent.LIGHT_READING)){
 			bonus *= 1f + (0.2f * ((Hero) target).pointsInTalent(Talent.LIGHT_READING)/3f);
 		}
 
-		return bonus;
+		return clampAssistChargeMultiplier(bonus);
 	}
 
 	public static float artifactChargeMultiplier( Char target ){
-		float bonus = (float)Math.pow(1.175, getBuffedBonus(target, Energy.class));
+		float bonus = safeChargeMultiplier(target);
 
 		if (target instanceof Hero && ((Hero) target).heroClass != HeroClass.ROGUE && ((Hero) target).hasTalent(Talent.LIGHT_CLOAK)){
 			bonus *= 1f + (0.2f * ((Hero) target).pointsInTalent(Talent.LIGHT_CLOAK)/3f);
 		}
 
-		return bonus;
+		return clampAssistChargeMultiplier(bonus);
 	}
 
 	public static float armorChargeMultiplier( Char target ){
-		return (float)Math.pow(1.175, getBuffedBonus(target, Energy.class));
+		return safeChargeMultiplier(target);
 	}
 	
 	public class Energy extends RingBuff {
