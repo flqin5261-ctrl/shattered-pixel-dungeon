@@ -78,6 +78,9 @@ public class InfiniteWorldState implements Bundlable {
     // Event-created world loot (primarily "一路繁花", carnival artifacts and
     // dark-day boss rewards) is world-space persistent so streaming cannot erase it.
     private final LinkedHashMap<Long, EventLootRecord> randomEventLoot = new LinkedHashMap<>();
+    // Runtime-only spatial index. The authoritative records above are serialized;
+    // this index is rebuilt on load so streaming never scans the whole run history.
+    private final HashMap<Long, ArrayList<EventLootRecord>> randomEventLootByChunk = new HashMap<>();
 
     public static class EventLootRecord {
         public long key;
@@ -241,19 +244,69 @@ public class InfiniteWorldState implements Bundlable {
         else objectStates.put(key, state);
     }
 
+    private long randomEventLootChunkKey(int worldX, int worldY) {
+        return chunkKey(Math.floorDiv(worldX, CHUNK_SIZE), Math.floorDiv(worldY, CHUNK_SIZE));
+    }
+
+    private void indexRandomEventLoot(EventLootRecord record) {
+        if (record == null) return;
+        long chunk = randomEventLootChunkKey(record.worldX, record.worldY);
+        ArrayList<EventLootRecord> records = randomEventLootByChunk.get(chunk);
+        if (records == null) {
+            records = new ArrayList<>();
+            randomEventLootByChunk.put(chunk, records);
+        }
+        records.add(record);
+    }
+
     public long addRandomEventLoot(int worldX, int worldY, Item item) {
         if (item == null) return 0L;
         long key = Math.max(1L, randomEventNextLootKey++);
-        randomEventLoot.put(key, new EventLootRecord(key, worldX, worldY, item.duplicate()));
+        EventLootRecord record = new EventLootRecord(key, worldX, worldY, item.duplicate());
+        randomEventLoot.put(key, record);
+        indexRandomEventLoot(record);
         return key;
     }
 
     public void removeRandomEventLoot(long key) {
-        randomEventLoot.remove(key);
+        EventLootRecord record = randomEventLoot.remove(key);
+        if (record == null) return;
+
+        long chunk = randomEventLootChunkKey(record.worldX, record.worldY);
+        ArrayList<EventLootRecord> records = randomEventLootByChunk.get(chunk);
+        if (records != null) {
+            records.remove(record);
+            if (records.isEmpty()) randomEventLootByChunk.remove(chunk);
+        }
     }
 
     public ArrayList<EventLootRecord> randomEventLootRecords() {
         return new ArrayList<>(randomEventLoot.values());
+    }
+
+    public ArrayList<EventLootRecord> randomEventLootRecordsAt(int worldX, int worldY) {
+        ArrayList<EventLootRecord> result = new ArrayList<>();
+        ArrayList<EventLootRecord> records =
+                randomEventLootByChunk.get(randomEventLootChunkKey(worldX, worldY));
+        if (records == null) return result;
+
+        for (EventLootRecord record : records) {
+            if (record.worldX == worldX && record.worldY == worldY) result.add(record);
+        }
+        return result;
+    }
+
+    public ArrayList<EventLootRecord> randomEventLootRecordsInWindow(
+            int centerChunkX, int centerChunkY, int radius) {
+        ArrayList<EventLootRecord> result = new ArrayList<>();
+        for (int cy = centerChunkY - radius; cy <= centerChunkY + radius; cy++) {
+            for (int cx = centerChunkX - radius; cx <= centerChunkX + radius; cx++) {
+                ArrayList<EventLootRecord> records =
+                        randomEventLootByChunk.get(chunkKey(cx, cy));
+                if (records != null) result.addAll(records);
+            }
+        }
+        return result;
     }
 
     private static final String GEN = "gen";
@@ -518,6 +571,7 @@ public class InfiniteWorldState implements Bundlable {
                 ? Math.max(1L, bundle.getLong(RANDOM_EVENT_NEXT_LOOT_KEY)) : 1L;
 
         randomEventLoot.clear();
+        randomEventLootByChunk.clear();
         long[] eventLootKeys = bundle.getLongArray(RANDOM_EVENT_LOOT_KEYS);
         int[] eventLootX = bundle.getIntArray(RANDOM_EVENT_LOOT_X);
         int[] eventLootY = bundle.getIntArray(RANDOM_EVENT_LOOT_Y);
@@ -531,8 +585,10 @@ public class InfiniteWorldState implements Bundlable {
             int count = Math.min(Math.min(eventLootKeys.length, eventLootX.length),
                     Math.min(eventLootY.length, eventLootItems.size()));
             for (int i = 0; i < count; i++) {
-                randomEventLoot.put(eventLootKeys[i],
-                        new EventLootRecord(eventLootKeys[i], eventLootX[i], eventLootY[i], eventLootItems.get(i)));
+                EventLootRecord record =
+                        new EventLootRecord(eventLootKeys[i], eventLootX[i], eventLootY[i], eventLootItems.get(i));
+                randomEventLoot.put(eventLootKeys[i], record);
+                indexRandomEventLoot(record);
                 randomEventNextLootKey = Math.max(randomEventNextLootKey, eventLootKeys[i] + 1L);
             }
         }
