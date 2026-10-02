@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicRing;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.MimicScrollRing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
@@ -83,11 +84,16 @@ public class WndUpgrade extends Window {
 		title.setRect(0, 0, WIDTH, 0);
 		add(title);
 
-		int quantity = upgrader.quantity();
-		Item moreUpgradeItem = Dungeon.hero.belongings.getItem(upgrader.getClass());
-
-		if (moreUpgradeItem != null && moreUpgradeItem != upgrader){
-			quantity += moreUpgradeItem.quantity();
+		int quantity;
+		Item moreUpgradeItem = null;
+		if (upgrader instanceof MimicScrollRing) {
+			quantity = ((MimicScrollRing)upgrader).currentCharges();
+		} else {
+			quantity = upgrader.quantity();
+			moreUpgradeItem = Dungeon.hero.belongings.getItem(upgrader.getClass());
+			if (moreUpgradeItem != null && moreUpgradeItem != upgrader){
+				quantity += moreUpgradeItem.quantity();
+			}
 		}
 
 		String mainText = toUpgrade instanceof MimicRing
@@ -467,7 +473,10 @@ public class WndUpgrade extends Window {
 				ScrollOfUpgrade.upgrade(Dungeon.hero);
 
 				Item upgraded = toUpgrade;
-				if (upgrader instanceof ScrollOfUpgrade){
+				if (upgrader instanceof MimicScrollRing){
+					upgraded = ((MimicScrollRing)upgrader).upgradeSelectedItem(Dungeon.hero, toUpgrade);
+					Sample.INSTANCE.play( Assets.Sounds.READ );
+				} else if (upgrader instanceof ScrollOfUpgrade){
 					((ScrollOfUpgrade) upgrader).readAnimation();
 					upgraded = ((ScrollOfUpgrade) upgrader).upgradeItem(toUpgrade);
 					Sample.INSTANCE.play( Assets.Sounds.READ );
@@ -476,12 +485,20 @@ public class WndUpgrade extends Window {
 					upgraded = ((MagicalInfusion) upgrader).upgradeItem(toUpgrade);
 				}
 
-				if (!force) upgrader.detach(Dungeon.hero.belongings.backpack);
-				Item moreUpgradeItem = Dungeon.hero.belongings.getItem(upgrader.getClass());
+				if (!(upgrader instanceof MimicScrollRing) && !force) {
+					upgrader.detach(Dungeon.hero.belongings.backpack);
+				}
+				Item moreUpgradeItem = upgrader instanceof MimicScrollRing
+						? null : Dungeon.hero.belongings.getItem(upgrader.getClass());
 
 				hide();
 
-				if (moreUpgradeItem != null && toUpgrade.isUpgradable()){
+				if (upgrader instanceof MimicScrollRing) {
+					MimicScrollRing ring = (MimicScrollRing)upgrader;
+					if (ring.hasMimicCharge() && upgraded != null && upgraded.isUpgradable()) {
+						GameScene.show(new WndUpgrade(ring, upgraded, false));
+					}
+				} else if (moreUpgradeItem != null && toUpgrade.isUpgradable()){
 					GameScene.show(new WndUpgrade(moreUpgradeItem, upgraded, false));
 				}
 			}
@@ -494,7 +511,9 @@ public class WndUpgrade extends Window {
 			protected void onClick() {
 				super.onClick();
 				hide();
-				if (upgrader instanceof ScrollOfUpgrade) {
+				if (upgrader instanceof MimicScrollRing) {
+					((MimicScrollRing)upgrader).showUpgradeSelector(Dungeon.hero);
+				} else if (upgrader instanceof ScrollOfUpgrade) {
 					((ScrollOfUpgrade) upgrader).reShowSelector(force);
 				} else if (upgrader instanceof MagicalInfusion){
 					((MagicalInfusion)upgrader).reShowSelector();
@@ -527,7 +546,9 @@ public class WndUpgrade extends Window {
 	@Override
 	public void onBackPressed() {
 		super.onBackPressed();
-		if (upgrader instanceof ScrollOfUpgrade) {
+		if (upgrader instanceof MimicScrollRing) {
+			((MimicScrollRing)upgrader).showUpgradeSelector(Dungeon.hero);
+		} else if (upgrader instanceof ScrollOfUpgrade) {
 			((ScrollOfUpgrade) upgrader).reShowSelector(force);
 		} else if (upgrader instanceof MagicalInfusion){
 			((MagicalInfusion)upgrader).reShowSelector();
@@ -535,7 +556,9 @@ public class WndUpgrade extends Window {
 	}
 
 	public WndBag.ItemSelector getItemSelector(){
-		if (upgrader instanceof ScrollOfUpgrade) {
+		if (upgrader instanceof MimicScrollRing) {
+			return null;
+		} else if (upgrader instanceof ScrollOfUpgrade) {
 			return ((ScrollOfUpgrade) upgrader).getSelector(force);
 		} else if (upgrader instanceof MagicalInfusion){
 			return ((MagicalInfusion)upgrader).getSelector();
