@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldProgression;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldRandomEvent;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -54,6 +55,7 @@ public class WndAssist extends Window {
     private RedButton btnUpgrade;
     private RedButton btnSpeed;
     private RedButton btnArtifact;
+    private RedButton btnRandomEvent;
     private CheckBox chkArtifact;
     private RedButton btnTeleport;
     private OptionSlider depthSlider;
@@ -100,6 +102,7 @@ public class WndAssist extends Window {
         if (Dungeon.infiniteWorld) {
             addLevelTestRow();
             addBreakthroughTestRow();
+            addRandomEventRow();
         }
         addSpeedRow();
         addItemGrantRow();
@@ -240,6 +243,48 @@ public class WndAssist extends Window {
         pos = clear.bottom();
     }
 
+    private void addRandomEventRow() {
+        btnRandomEvent = new RedButton(randomEventText(), 8) {
+            @Override
+            protected void onClick() {
+                showRandomEventPicker();
+            }
+        };
+        add(btnRandomEvent);
+        btnRandomEvent.setRect(0, pos + GAP, WIDTH, BTN_H);
+        pos = btnRandomEvent.bottom();
+    }
+
+    private String randomEventText() {
+        int type = InfiniteWorldRandomEvent.activeType();
+        return type == InfiniteWorldRandomEvent.NONE
+                ? "随机事件：自动 / 选择"
+                : "随机事件：" + InfiniteWorldRandomEvent.eventName(type);
+    }
+
+    private void showRandomEventPicker() {
+        Game.scene().addToFront(new WndOptions(
+                "无限世界随机事件",
+                "随机事件平时会自行出现，持续 500～5000 行动值且严格互斥。这里可以主动指定事件或立即关闭当前事件。",
+                "怪物狂欢日",
+                "暗无天日",
+                "财源滚滚",
+                "谁是卧底",
+                "一路繁花",
+                "关闭当前事件",
+                "返回") {
+            @Override
+            protected void onSelect(int index) {
+                if (index >= 0 && index < 5) {
+                    InfiniteWorldRandomEvent.forceStart(index + 1);
+                } else if (index == 5) {
+                    InfiniteWorldRandomEvent.forceStop();
+                }
+                if (btnRandomEvent != null) btnRandomEvent.text(randomEventText());
+            }
+        });
+    }
+
     private void addSpeedRow() {
         float y = pos + GAP;
         float leftW = WIDTH - MODIFY_W - GAP;
@@ -326,6 +371,7 @@ public class WndAssist extends Window {
     private void updateButtons() {
         if (btnUpgrade != null) btnUpgrade.text(upgradeText());
         if (btnSpeed != null) btnSpeed.text(speedText());
+        if (btnRandomEvent != null) btnRandomEvent.text(randomEventText());
 
         if (btnTeleport != null) btnTeleport.enable(SPDSettings.assistTeleport());
         if (depthSlider != null) depthSlider.enable(SPDSettings.assistTeleport());
