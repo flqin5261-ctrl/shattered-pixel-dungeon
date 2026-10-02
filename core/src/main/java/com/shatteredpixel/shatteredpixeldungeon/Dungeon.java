@@ -47,10 +47,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.EyeOfNewt;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -951,9 +953,13 @@ public class Dungeon {
 		// The fog-update rectangle still has to cover those extra cells, but must not
 		// write them back into the base or the next FOV pass would apply them twice.
 		hero.viewDistance = baseView;
-		int dist = Math.max(Dungeon.hero.viewDistance, 8);
-		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
-		dist += 2 * Dungeon.hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
+		float effectiveView = Math.max(Dungeon.hero.viewDistance, 8);
+		effectiveView *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
+		effectiveView *= EyeOfNewt.visionRangeMultiplier();
+		effectiveView += 2f * Dungeon.hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
+		BreakthroughCertificate certificate = BreakthroughCertificate.equipped(Dungeon.hero);
+		if (certificate != null) effectiveView += certificate.effectiveVisionBonus(Dungeon.hero);
+		int dist = Math.round(effectiveView);
 
 		if (Dungeon.hero.buff(MagicalSight.class) != null){
 			dist = Math.max( dist, MagicalSight.DISTANCE );
