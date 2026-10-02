@@ -2483,23 +2483,28 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v23CoverageUtilityItem(long ordinal) {
-        switch ((int)Math.floorMod(ordinal, 8L)) {
-            case 0:
-                return new Ankh();
-            case 1:
-                return new Stylus();
-            case 2:
-                return new Honeypot();
-            case 3:
-                return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
-            case 4:
-                return new StoneOfAugmentation();
-            case 5:
-                return TippedDart.randomTipped(2);
-            case 6:
-                return new Bomb.DoubleBomb();
-            default:
-                return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+        Random.pushGenerator(0x5EED2300L ^ ordinal);
+        try {
+            switch ((int)Math.floorMod(ordinal, 8L)) {
+                case 0:
+                    return new Ankh();
+                case 1:
+                    return new Stylus();
+                case 2:
+                    return new Honeypot();
+                case 3:
+                    return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
+                case 4:
+                    return new StoneOfAugmentation();
+                case 5:
+                    return TippedDart.randomTipped(2);
+                case 6:
+                    return new Bomb.DoubleBomb();
+                default:
+                    return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+            }
+        } finally {
+            Random.popGenerator();
         }
     }
 
@@ -2538,16 +2543,21 @@ public class InfiniteWorldLevel extends Level {
 
     private Item v23MerchantCoverageItem(int cx, int cy, int progressTier) {
         long ordinal = v22VariantOrdinal(cx, cy, 25270 + progressTier);
-        switch ((int)Math.floorMod(ordinal, 9L)) {
-            case 0: return new Stylus();
-            case 1: return new Honeypot();
-            case 2: return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
-            case 3: return new StoneOfAugmentation();
-            case 4: return TippedDart.randomTipped(2);
-            case 5: return new Bomb.DoubleBomb();
-            case 6: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
-            case 7: return v22CategoryItem(Generator.Category.WAND, ordinal, 0);
-            default:return v22CategoryItem(Generator.Category.RING, ordinal, 0);
+        Random.pushGenerator(hash(cx, cy, 25290 + progressTier));
+        try {
+            switch ((int)Math.floorMod(ordinal, 9L)) {
+                case 0: return new Stylus();
+                case 1: return new Honeypot();
+                case 2: return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
+                case 3: return new StoneOfAugmentation();
+                case 4: return TippedDart.randomTipped(2);
+                case 5: return new Bomb.DoubleBomb();
+                case 6: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+                case 7: return v22CategoryItem(Generator.Category.WAND, ordinal, 0);
+                default:return v22CategoryItem(Generator.Category.RING, ordinal, 0);
+            }
+        } finally {
+            Random.popGenerator();
         }
     }
 
