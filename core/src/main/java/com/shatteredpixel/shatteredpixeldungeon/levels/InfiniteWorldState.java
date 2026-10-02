@@ -11,6 +11,7 @@ import com.watabou.utils.Bundle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InfiniteWorldState implements Bundlable {
@@ -63,6 +64,34 @@ public class InfiniteWorldState implements Bundlable {
     public boolean genesisEchoUnlocked = false;
     public int genesisKillHpBonus = 0;
     public int genesisKillStrBonus = 0;
+
+    // Assist 1.0.4 random-event runtime. Type 0 means no active event.
+    // Durations and trigger gaps are measured in positive Hero action-value.
+    public int randomEventType = 0;
+    public float randomEventRemaining = 0f;
+    public float randomEventDuration = 0f;
+    public float randomEventNextTrigger = 0f;
+    public float randomEventGoldRemainder = 0f;
+    public int randomEventSerial = 0;
+    public long randomEventNextLootKey = 1L;
+
+    // Event-created world loot (primarily "一路繁花", carnival artifacts and
+    // dark-day boss rewards) is world-space persistent so streaming cannot erase it.
+    private final LinkedHashMap<Long, EventLootRecord> randomEventLoot = new LinkedHashMap<>();
+
+    public static class EventLootRecord {
+        public long key;
+        public int worldX;
+        public int worldY;
+        public Item item;
+
+        EventLootRecord(long key, int worldX, int worldY, Item item) {
+            this.key = key;
+            this.worldX = worldX;
+            this.worldY = worldY;
+            this.item = item;
+        }
+    }
 
     private final HashMap<Long, Integer> terrainOverrides = new HashMap<>();
     private final HashSet<Long> generatedChunks = new HashSet<>();
@@ -212,6 +241,21 @@ public class InfiniteWorldState implements Bundlable {
         else objectStates.put(key, state);
     }
 
+    public long addRandomEventLoot(int worldX, int worldY, Item item) {
+        if (item == null) return 0L;
+        long key = Math.max(1L, randomEventNextLootKey++);
+        randomEventLoot.put(key, new EventLootRecord(key, worldX, worldY, item.duplicate()));
+        return key;
+    }
+
+    public void removeRandomEventLoot(long key) {
+        randomEventLoot.remove(key);
+    }
+
+    public ArrayList<EventLootRecord> randomEventLootRecords() {
+        return new ArrayList<>(randomEventLoot.values());
+    }
+
     private static final String GEN = "gen";
     private static final String CX = "cx";
     private static final String CY = "cy";
@@ -246,6 +290,17 @@ public class InfiniteWorldState implements Bundlable {
     private static final String GENESIS_ECHO_UNLOCKED = "genesis_echo_unlocked";
     private static final String GENESIS_KILL_HP = "genesis_kill_hp";
     private static final String GENESIS_KILL_STR = "genesis_kill_str";
+    private static final String RANDOM_EVENT_TYPE = "random_event_type";
+    private static final String RANDOM_EVENT_REMAINING = "random_event_remaining";
+    private static final String RANDOM_EVENT_DURATION = "random_event_duration";
+    private static final String RANDOM_EVENT_NEXT_TRIGGER = "random_event_next_trigger";
+    private static final String RANDOM_EVENT_GOLD_REMAINDER = "random_event_gold_remainder";
+    private static final String RANDOM_EVENT_SERIAL = "random_event_serial";
+    private static final String RANDOM_EVENT_NEXT_LOOT_KEY = "random_event_next_loot_key";
+    private static final String RANDOM_EVENT_LOOT_KEYS = "random_event_loot_keys";
+    private static final String RANDOM_EVENT_LOOT_X = "random_event_loot_x";
+    private static final String RANDOM_EVENT_LOOT_Y = "random_event_loot_y";
+    private static final String RANDOM_EVENT_LOOT_ITEMS = "random_event_loot_items";
     private static final String TERRAIN_KEYS = "terrain_keys";
     private static final String GENERATED_CHUNKS = "generated_chunks";
     private static final String EXPLORED_CHUNKS = "explored_chunks";
@@ -302,6 +357,30 @@ public class InfiniteWorldState implements Bundlable {
         bundle.put(GENESIS_ECHO_UNLOCKED, genesisEchoUnlocked);
         bundle.put(GENESIS_KILL_HP, genesisKillHpBonus);
         bundle.put(GENESIS_KILL_STR, genesisKillStrBonus);
+        bundle.put(RANDOM_EVENT_TYPE, randomEventType);
+        bundle.put(RANDOM_EVENT_REMAINING, randomEventRemaining);
+        bundle.put(RANDOM_EVENT_DURATION, randomEventDuration);
+        bundle.put(RANDOM_EVENT_NEXT_TRIGGER, randomEventNextTrigger);
+        bundle.put(RANDOM_EVENT_GOLD_REMAINDER, randomEventGoldRemainder);
+        bundle.put(RANDOM_EVENT_SERIAL, randomEventSerial);
+        bundle.put(RANDOM_EVENT_NEXT_LOOT_KEY, randomEventNextLootKey);
+
+        long[] eventLootKeys = new long[randomEventLoot.size()];
+        int[] eventLootX = new int[randomEventLoot.size()];
+        int[] eventLootY = new int[randomEventLoot.size()];
+        ArrayList<Item> eventLootItems = new ArrayList<>();
+        int eventLootIndex = 0;
+        for (EventLootRecord record : randomEventLoot.values()) {
+            eventLootKeys[eventLootIndex] = record.key;
+            eventLootX[eventLootIndex] = record.worldX;
+            eventLootY[eventLootIndex] = record.worldY;
+            eventLootItems.add(record.item);
+            eventLootIndex++;
+        }
+        bundle.put(RANDOM_EVENT_LOOT_KEYS, eventLootKeys);
+        bundle.put(RANDOM_EVENT_LOOT_X, eventLootX);
+        bundle.put(RANDOM_EVENT_LOOT_Y, eventLootY);
+        bundle.put(RANDOM_EVENT_LOOT_ITEMS, eventLootItems);
 
         long[] terrainKeys = new long[terrainOverrides.size()];
         int[] terrainValues = new int[terrainOverrides.size()];
@@ -424,6 +503,39 @@ public class InfiniteWorldState implements Bundlable {
                 ? bundle.getInt(GENESIS_KILL_HP) : 0;
         genesisKillStrBonus = bundle.contains(GENESIS_KILL_STR)
                 ? bundle.getInt(GENESIS_KILL_STR) : 0;
+        randomEventType = bundle.contains(RANDOM_EVENT_TYPE) ? bundle.getInt(RANDOM_EVENT_TYPE) : 0;
+        randomEventRemaining = bundle.contains(RANDOM_EVENT_REMAINING)
+                ? bundle.getFloat(RANDOM_EVENT_REMAINING) : 0f;
+        randomEventDuration = bundle.contains(RANDOM_EVENT_DURATION)
+                ? bundle.getFloat(RANDOM_EVENT_DURATION) : 0f;
+        randomEventNextTrigger = bundle.contains(RANDOM_EVENT_NEXT_TRIGGER)
+                ? bundle.getFloat(RANDOM_EVENT_NEXT_TRIGGER) : 0f;
+        randomEventGoldRemainder = bundle.contains(RANDOM_EVENT_GOLD_REMAINDER)
+                ? bundle.getFloat(RANDOM_EVENT_GOLD_REMAINDER) : 0f;
+        randomEventSerial = bundle.contains(RANDOM_EVENT_SERIAL)
+                ? bundle.getInt(RANDOM_EVENT_SERIAL) : 0;
+        randomEventNextLootKey = bundle.contains(RANDOM_EVENT_NEXT_LOOT_KEY)
+                ? Math.max(1L, bundle.getLong(RANDOM_EVENT_NEXT_LOOT_KEY)) : 1L;
+
+        randomEventLoot.clear();
+        long[] eventLootKeys = bundle.getLongArray(RANDOM_EVENT_LOOT_KEYS);
+        int[] eventLootX = bundle.getIntArray(RANDOM_EVENT_LOOT_X);
+        int[] eventLootY = bundle.getIntArray(RANDOM_EVENT_LOOT_Y);
+        ArrayList<Item> eventLootItems = new ArrayList<>();
+        if (bundle.contains(RANDOM_EVENT_LOOT_ITEMS)) {
+            for (Bundlable item : bundle.getCollection(RANDOM_EVENT_LOOT_ITEMS)) {
+                if (item instanceof Item) eventLootItems.add((Item)item);
+            }
+        }
+        if (eventLootKeys != null && eventLootX != null && eventLootY != null) {
+            int count = Math.min(Math.min(eventLootKeys.length, eventLootX.length),
+                    Math.min(eventLootY.length, eventLootItems.size()));
+            for (int i = 0; i < count; i++) {
+                randomEventLoot.put(eventLootKeys[i],
+                        new EventLootRecord(eventLootKeys[i], eventLootX[i], eventLootY[i], eventLootItems.get(i)));
+                randomEventNextLootKey = Math.max(randomEventNextLootKey, eventLootKeys[i] + 1L);
+            }
+        }
 
         terrainOverrides.clear();
         long[] terrainKeys = bundle.getLongArray(TERRAIN_KEYS);
