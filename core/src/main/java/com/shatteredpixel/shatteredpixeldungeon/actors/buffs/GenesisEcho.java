@@ -257,11 +257,17 @@ public class GenesisEcho extends Buff {
         InfiniteWorldState st = InfiniteWorldProgression.state();
         boolean first = !st.genesisEchoUnlocked;
         st.genesisEchoUnlocked = true;
-        boolean growthMigrated = retireLegacyKillGrowth(st);
+        retireLegacyKillGrowth(st);
 
         GenesisEcho echo = Buff.affect(hero, GenesisEcho.class);
         Buff.affect(hero, EquipmentSummary.class);
-        if (growthMigrated) hero.updateHT(true);
+
+        // Attaching Genesis Echo can instantly enable Miracle Talent Mastery and
+        // the second level-60 seal layer. Recompute cached HP/FOV only after the
+        // buff exists, otherwise the awakening frame still shows the old values.
+        hero.updateHT(true);
+        if (Dungeon.level != null && Dungeon.hero == hero) Dungeon.observe();
+
         cleanseBlockedEffects(hero);
         identifyOwnedItems(hero);
         hero.HP = hero.HT;
@@ -275,9 +281,14 @@ public class GenesisEcho extends Buff {
         if (hero == null || !Dungeon.infiniteWorld) return;
         InfiniteWorldState st = InfiniteWorldProgression.state();
         boolean growthMigrated = st.genesisEchoUnlocked && retireLegacyKillGrowth(st);
-        if (growthMigrated) hero.updateHT(true);
+        boolean echoAttached = false;
         if (st.genesisEchoUnlocked && hero.buff(GenesisEcho.class) == null) {
             Buff.affect(hero, GenesisEcho.class);
+            echoAttached = true;
+        }
+        if (growthMigrated || echoAttached) {
+            hero.updateHT(true);
+            if (Dungeon.level != null && Dungeon.hero == hero) Dungeon.observe();
         }
         if (st.genesisEchoUnlocked) {
             cleanseBlockedEffects(hero);
