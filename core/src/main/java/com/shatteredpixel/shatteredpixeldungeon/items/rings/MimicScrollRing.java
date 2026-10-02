@@ -92,6 +92,14 @@ public class MimicScrollRing extends MimicRing {
         }
         if (!consumeMimicCharge()) return item;
 
+        // Preserve the ordinary scroll's action time, read animation and
+        // on-scroll talent path for every confirmed +1. The temporary scroll is
+        // anonymous so it never touches discovery state or backpack inventory.
+        curUser = hero;
+        ScrollOfUpgrade animationScroll = new ScrollOfUpgrade();
+        animationScroll.anonymize();
+        animationScroll.readAnimation();
+
         // Apply the exact Scroll of Upgrade mechanics, without consuming a real
         // scroll from the backpack. One confirmed +1 costs one mimic-ring charge.
         return ScrollOfUpgrade.applyUpgrade(hero, item);
