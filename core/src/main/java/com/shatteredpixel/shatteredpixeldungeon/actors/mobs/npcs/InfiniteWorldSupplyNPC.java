@@ -53,6 +53,9 @@ public class InfiniteWorldSupplyNPC extends NPC {
     }
 
     private void applyPersona() {
+        // Constructors/restores begin with the default ghost persona, so always
+        // reset movement traits before applying the actual stored persona.
+        flying = false;
         switch (persona) {
             case WANDMAKER:
                 spriteClass = WandmakerSprite.class;
