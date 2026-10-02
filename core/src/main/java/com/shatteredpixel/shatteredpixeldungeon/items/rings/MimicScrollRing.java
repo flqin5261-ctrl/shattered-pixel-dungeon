@@ -75,7 +75,8 @@ public class MimicScrollRing extends MimicRing {
     }
 
     public void showUpgradeSelector(Hero hero) {
-        if (hero == null || !isEquipped(hero) || !hasMimicCharge()) return;
+        if (hero == null || !isEquipped(hero) || !hasMimicCharge()
+                || !hasStoredUpgradeAbility()) return;
         new MimicUpgradeSelector(this).execute(hero, Scroll.AC_READ);
     }
 
