@@ -86,6 +86,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.InfiniteWorldRandomEvent;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
@@ -1088,6 +1089,8 @@ public abstract class Mob extends Char {
 					exp = Math.round(10 * spawningWeight());
 				}
 
+				exp = InfiniteWorldRandomEvent.adjustExperience(this, exp);
+
 				if (exp > 0) {
 					Dungeon.hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(exp), FloatingText.EXPERIENCE);
 				}
@@ -1183,7 +1186,8 @@ public abstract class Mob extends Char {
 
 		dropBonus += ShardOfOblivion.lootChanceMultiplier()-1f;
 
-		return Math.min(1f, lootChance * dropBonus * assistLootScale);
+		return Math.min(1f, lootChance * dropBonus * assistLootScale
+				* InfiniteWorldRandomEvent.lootChanceMultiplier(this));
 	}
 	
 	public void rollToDropLoot(){
@@ -1222,6 +1226,8 @@ public abstract class Mob extends Char {
 				Random.Int(10) < Dungeon.hero.pointsInTalent(Talent.SOUL_EATER)){
 			Talent.onFoodEaten(Dungeon.hero, 0, null);
 		}
+
+		InfiniteWorldRandomEvent.onMobRolledLoot(this);
 
 	}
 	
