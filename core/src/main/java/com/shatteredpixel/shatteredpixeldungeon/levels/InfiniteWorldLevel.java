@@ -788,7 +788,9 @@ public class InfiniteWorldLevel extends Level {
             ensureInfiniteWorldSupplyNPCs(true);
         }
 
-        InfiniteWorldRandomEvent.onHeroMoved(this, hero);
+        // Event movement effects are dispatched by Hero.move only for true
+        // travelling steps. recordHeroMove also services teleports, which must not
+        // count as a step for Blooming Path.
 
         // Mob pruning only needs coarse movement granularity. The hard cap is tiny,
         // so checking every four world cells (or on a chunk change) preserves
@@ -801,6 +803,11 @@ public class InfiniteWorldLevel extends Level {
             lastPruneWorldX = st.heroWorldX;
             lastPruneWorldY = st.heroWorldY;
         }
+    }
+
+    public void onHeroTravelStep(Hero hero) {
+        if (hero == null || Dungeon.level != this) return;
+        InfiniteWorldRandomEvent.onHeroMoved(this, hero);
     }
 
     public void beginGenesisTeleportGrace(Hero hero) {
