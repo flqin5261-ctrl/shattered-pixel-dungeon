@@ -169,10 +169,7 @@ public class AlchemistsToolkit extends Artifact {
 	@Override
 	public void charge(Hero target, float amount) {
 		if (target.buff(MagicImmune.class) != null) return;
-		partialCharge += 0.25f*amount;
-		while (partialCharge >= 1){
-			partialCharge--;
-			charge++;
+		if (addUncappedChargeProgress(0.25f * amount) > 0) {
 			updateQuickslot();
 		}
 	}
@@ -255,13 +252,11 @@ public class AlchemistsToolkit extends Artifact {
 			float chargeGain = (2 + nativeLevel()) * levelPortion;
 			chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
 			chargeGain *= assistOverlevelChargeMultiplier();
-			partialCharge += chargeGain;
-
-			//charge is in increments of 1 energy.
-			while (partialCharge >= 1) {
-				charge++;
-				partialCharge -= 1;
-
+			// Convert the whole gain in one arithmetic step. With stacked/high-level
+			// Ring of Energy bonuses the old per-point while loop could execute
+			// millions of iterations, or forever if the multiplier overflowed to
+			// Infinity, freezing the Actor thread during a monster death.
+			if (addUncappedChargeProgress(chargeGain) > 0) {
 				updateQuickslot();
 			}
 		}
