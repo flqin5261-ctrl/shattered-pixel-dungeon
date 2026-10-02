@@ -1274,7 +1274,14 @@ public class Hero extends Char {
 			Heap heap = Dungeon.level.heaps.get( dst );
 			if (heap != null) {
 				Item item = heap.peek();
-				if (item.doPickUp( this )) {
+
+				// Remote Genesis Reach pickup uses Item.doPickUp(), which calls
+				// spendAndNext() internally. Clear the queued HeroAction first so the
+				// scheduler can never observe the same remote pickup again while the
+				// pickup callback is advancing actor time.
+				if (remote) curAction = null;
+
+				if (item.doPickUp( this, remote ? dst : pos )) {
 					if (Dungeon.level instanceof InfiniteWorldLevel) {
 						((InfiniteWorldLevel)Dungeon.level).consumePersistentRandomEventLoot(item, dst);
 					}
@@ -1624,10 +1631,29 @@ public class Hero extends Char {
 				&& attackTarget != null
 				&& attackTarget.alignment == Alignment.ENEMY
 				&& fieldOfView[attackTarget.pos]) {
-			GenesisEcho.forceSlay(this, attackTarget);
+
+			// Genesis Reach is an immediate, synchronous action: there is no Hero
+			// attack animation whose callback can clear curAction for us. The old
+			// implementation spent one turn and returned true while leaving the same
+			// HeroAction.Attack queued. Actor.process then selected Hero again later,
+			// re-ran the dead target forever, and the UI stayed on the spinning action
+			// indicator. Clear the action before spending time so every execution has
+			// exactly one scheduler turn.
+			if (attackTarget.isAlive()) {
+				Char executed = attackTarget;
+				curAction = null;
+				attackTarget = null;
+				GenesisEcho.forceSlay(this, executed);
+				spend(Actor.TICK);
+				return true;
+			}
+
+			// The target can legitimately die between tap/handle() and Hero.act().
+			// Treat that as a completed no-op instead of retrying a stale attack.
+			curAction = null;
 			attackTarget = null;
-			spend(Actor.TICK);
-			return true;
+			ready();
+			return false;
 		}
 
 		if (isCharmedBy(attackTarget)){
