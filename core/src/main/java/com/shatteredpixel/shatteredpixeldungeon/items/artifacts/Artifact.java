@@ -171,6 +171,39 @@ public class Artifact extends KindofMisc {
 		// no-op by default
 	}
 
+	/**
+	 * Converts fractional artifact charge into whole charge in O(1).
+	 *
+	 * Assist permits very large stacked Ring of Energy bonuses and custom
+	 * equipment levels. Repeatedly subtracting 1 from partialCharge can therefore
+	 * take millions of iterations, and Float.POSITIVE_INFINITY would never
+	 * decrease at all. This helper preserves the same whole/fractional result
+	 * without a value-proportional loop and saturates before int overflow.
+	 */
+	protected final int addUncappedChargeProgress(float gain) {
+		if (Float.isNaN(partialCharge) || partialCharge < 0f) partialCharge = 0f;
+		if (Float.isNaN(gain) || gain <= 0f) return 0;
+
+		double total = (double)partialCharge + (double)gain;
+		long room = (long)Integer.MAX_VALUE - Math.max(0, charge);
+		if (!Double.isFinite(total) || total >= room) {
+			int before = charge;
+			charge = Integer.MAX_VALUE;
+			partialCharge = 0f;
+			return Math.max(0, charge - before);
+		}
+
+		int whole = (int)Math.floor(total);
+		if (whole <= 0) {
+			partialCharge = (float)total;
+			return 0;
+		}
+
+		charge += whole;
+		partialCharge = (float)(total - whole);
+		return whole;
+	}
+
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
 		if (super.doUnequip( hero, collect, single )) {
