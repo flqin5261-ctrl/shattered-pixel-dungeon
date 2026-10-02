@@ -272,6 +272,9 @@ public class InfiniteWorldLevel extends Level {
 
     @Override
     public int mobLimit() {
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) return 20;
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.UNDERCOVER)) return 28;
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.DARK_DAY)) return 10;
         return MOB_HARD_CAP;
     }
 
@@ -284,6 +287,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private int dynamicMobTargetCap() {
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) {
+            return 18;
+        }
         switch (mobEcologyStage()) {
             case 0: return 2;
             case 1: return 3;
@@ -293,6 +299,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private float mobRespawnMinTurns() {
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) {
+            return 2.5f;
+        }
         switch (mobEcologyStage()) {
             case 0: return 42f;
             case 1: return 34f;
@@ -302,6 +311,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private float mobRespawnMaxTurns() {
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) {
+            return 5.5f;
+        }
         switch (mobEcologyStage()) {
             case 0: return 62f;
             case 1: return 52f;
@@ -311,6 +323,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private float mobSpawnChance(int count) {
+        if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) {
+            return 1f;
+        }
         switch (mobEcologyStage()) {
             case 0:
                 return count == 0 ? 0.48f : 0.24f;
@@ -361,6 +376,13 @@ public class InfiniteWorldLevel extends Level {
             // exploration to populate the window with new enemies.
             if (assistSpectatorActive()) {
                 spend(mobRespawnMinTurns());
+                return true;
+            }
+
+            // "谁是卧底" owns the entire monster population while active.
+            if (InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.UNDERCOVER)) {
+                InfiniteWorldRandomEvent.onHeroMoved(InfiniteWorldLevel.this, Dungeon.hero);
+                spend(4f);
                 return true;
             }
 
@@ -647,7 +669,9 @@ public class InfiniteWorldLevel extends Level {
         int hy = Dungeon.hero.pos / width();
 
         for (Mob mob : mobs.toArray(new Mob[0])) {
-            if (mob instanceof InfiniteWorldShopkeeper || mob instanceof InfiniteWorldSupplyNPC) {
+            if (mob instanceof InfiniteWorldShopkeeper
+                    || mob instanceof InfiniteWorldSupplyNPC
+                    || mob instanceof InfiniteWorldEventBoss) {
                 int oldX = mob.pos % width();
                 int oldY = mob.pos / width();
                 int newX = oldX - shiftedCellsX;
@@ -709,6 +733,7 @@ public class InfiniteWorldLevel extends Level {
         generateStarterSupplies();
         rebuildV15DecorationProps();
         ensureInfiniteWorldSupplyNPCs(false);
+        InfiniteWorldRandomEvent.onLevelReady(this);
     }
 
     @Override
@@ -759,6 +784,8 @@ public class InfiniteWorldLevel extends Level {
             // a chunk boundary; no world regeneration is required.
             ensureInfiniteWorldSupplyNPCs(true);
         }
+
+        InfiniteWorldRandomEvent.onHeroMoved(this, hero);
 
         // Mob pruning only needs coarse movement granularity. The hard cap is tiny,
         // so checking every four world cells (or on a chunk change) preserves
@@ -838,6 +865,8 @@ public class InfiniteWorldLevel extends Level {
                 && st.heroActionValue >= GUARANTEED_ARTIFACT_CHEST_ACTION_VALUE) {
             spawnGuaranteedArtifactChest();
         }
+
+        InfiniteWorldRandomEvent.onHeroAction(this, Dungeon.hero, time);
     }
 
 
@@ -1185,6 +1214,7 @@ public class InfiniteWorldLevel extends Level {
 
         // We are already on the render thread via CharSprite.onComplete().
         GameScene.refreshInfiniteWorldWindow(shiftedCellsX, shiftedCellsY);
+        InfiniteWorldRandomEvent.onWindowShifted(this);
         genesisTeleportGrace = false;
         shifting = false;
         checkpointAfterStreaming();
@@ -1266,6 +1296,7 @@ public class InfiniteWorldLevel extends Level {
         snapshotV9AnomalyNotes();
         snapshotGuaranteedArtifactChest();
         snapshotStarterSupplies();
+        snapshotPersistentRandomEventLoot();
     }
 
     private void rebuildWindow() {
@@ -1309,8 +1340,139 @@ public class InfiniteWorldLevel extends Level {
         restoreGuaranteedArtifactChest();
         generateStarterSupplies();
         rebuildV15DecorationProps();
+        restorePersistentRandomEventLoot();
     }
 
+
+
+    // --- Assist 1.0.4 random-event helpers ---
+
+    public int eventWorldXForLocalCell(int cell) {
+        return worldXForLocalCell(cell);
+    }
+
+    public int eventWorldYForLocalCell(int cell) {
+        return worldYForLocalCell(cell);
+    }
+
+    public int findRandomEventSpawnCell(Char ch, int minDistance, int maxDistance) {
+        if (Dungeon.hero == null || ch == null) return -1;
+
+        int hx = Dungeon.hero.pos % width();
+        int hy = Dungeon.hero.pos / width();
+
+        for (int tries = 0; tries < 160; tries++) {
+            int x = hx + Random.Int(maxDistance * 2 + 1) - maxDistance;
+            int y = hy + Random.Int(maxDistance * 2 + 1) - maxDistance;
+            if (x <= 1 || x >= width() - 2 || y <= 1 || y >= height() - 2) continue;
+
+            int cell = x + y * width();
+            int dist = Math.max(Math.abs(x - hx), Math.abs(y - hy));
+            if (dist < minDistance || dist > maxDistance) continue;
+            if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
+            if (Actor.findChar(cell) != null) continue;
+            if (nearV11Shopkeeper(cell, 6)) continue;
+            if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+            if (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]) continue;
+            return cell;
+        }
+        return -1;
+    }
+
+    public int findRandomEventDropCell(int origin, int minRadius, int maxRadius) {
+        if (origin < 0 || origin >= length()) return -1;
+        int ox = origin % width();
+        int oy = origin / width();
+
+        for (int tries = 0; tries < 120; tries++) {
+            int dx = Random.Int(maxRadius * 2 + 1) - maxRadius;
+            int dy = Random.Int(maxRadius * 2 + 1) - maxRadius;
+            int dist = Math.max(Math.abs(dx), Math.abs(dy));
+            if (dist < minRadius || dist > maxRadius) continue;
+
+            int x = ox + dx;
+            int y = oy + dy;
+            if (x <= 1 || x >= width() - 2 || y <= 1 || y >= height() - 2) continue;
+
+            int cell = x + y * width();
+            if (!passable[cell] || solid[cell] || pit[cell] || secret[cell]) continue;
+            if (heaps.get(cell) != null || traps.get(cell) != null || plants.get(cell) != null) continue;
+            if (Actor.findChar(cell) != null && cell != origin) continue;
+            return cell;
+        }
+
+        if (passable[origin] && !solid[origin] && !pit[origin]) return origin;
+        return -1;
+    }
+
+    public void dropPersistentRandomEventLoot(Item item, int cell) {
+        if (item == null || cell < 0 || cell >= length()) return;
+        InfiniteWorldState st = state();
+        st.addRandomEventLoot(worldXForLocalCell(cell), worldYForLocalCell(cell), item);
+        Heap heap = drop(item, cell);
+        if (heap != null) heap.seen = heap.seen || heroFOV[cell] || visited[cell] || mapped[cell];
+    }
+
+    public void consumePersistentRandomEventLoot(Item item, int localCell) {
+        if (item == null || localCell < 0 || localCell >= length()) return;
+
+        int wx = worldXForLocalCell(localCell);
+        int wy = worldYForLocalCell(localCell);
+        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
+            if (record.worldX == wx && record.worldY == wy
+                    && record.item != null && record.item.isSimilar(item)) {
+                state().removeRandomEventLoot(record.key);
+                return;
+            }
+        }
+    }
+
+    public void restorePersistentRandomEventLoot() {
+        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
+            if (record.item == null) continue;
+            int cell = localCellForWorld(record.worldX, record.worldY);
+            if (cell < 0 || cell >= length()) continue;
+
+            boolean alreadyPresent = false;
+            Heap heap = heaps.get(cell);
+            if (heap != null) {
+                for (Item existing : heap.items) {
+                    if (record.item.isSimilar(existing)) {
+                        alreadyPresent = true;
+                        break;
+                    }
+                }
+            }
+            if (alreadyPresent) continue;
+
+            Item restored = record.item.duplicate();
+            Heap restoredHeap = drop(restored, cell);
+            if (restoredHeap != null) {
+                restoredHeap.seen = restoredHeap.seen || visited[cell] || mapped[cell] || heroFOV[cell];
+            }
+        }
+    }
+
+    private void snapshotPersistentRandomEventLoot() {
+        ArrayList<Long> consumed = new ArrayList<>();
+        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
+            int cell = localCellForWorld(record.worldX, record.worldY);
+            if (cell < 0 || cell >= length()) continue;
+
+            Heap heap = heaps.get(cell);
+            boolean present = false;
+            if (heap != null && record.item != null) {
+                for (Item existing : heap.items) {
+                    if (record.item.isSimilar(existing)) {
+                        present = true;
+                        break;
+                    }
+                }
+            }
+            if (!present) consumed.add(record.key);
+        }
+        for (Long key : consumed) state().removeRandomEventLoot(key);
+    }
 
     private static final int STARTER_ORIGIN_WORLD_X = 12;
     private static final int STARTER_ORIGIN_WORLD_Y = 12;
