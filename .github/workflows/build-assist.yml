@@ -68,6 +68,7 @@ on:
       - assist-1.0.0-mimic-upgrade-repeat
       - assist-1.0.1-breakthrough-format
       - assist-1.0.2-talent-audit
+      - assist-1.0.3-npc-loot-coverage
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
