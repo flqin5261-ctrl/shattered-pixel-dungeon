@@ -71,6 +71,7 @@ on:
       - assist-1.0.3-npc-loot-coverage
       - assist-1.0.4-random-events
       - assist-1.0.5-genesis-action-deadlock
+      - assist-1.0.6-artifact-charge-deadlock
       - assist-0.6.16-teleport-performance
       - assist-0.6.15-execution-authority
       - assist-0.6.14-layout-fix
