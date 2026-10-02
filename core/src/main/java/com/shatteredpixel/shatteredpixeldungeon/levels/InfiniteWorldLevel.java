@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.*;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -2482,7 +2483,7 @@ public class InfiniteWorldLevel extends Level {
     }
 
     private Item v23CoverageUtilityItem(long ordinal) {
-        switch ((int)Math.floorMod(ordinal, 6L)) {
+        switch ((int)Math.floorMod(ordinal, 8L)) {
             case 0:
                 return new Ankh();
             case 1:
@@ -2493,6 +2494,10 @@ public class InfiniteWorldLevel extends Level {
                 return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
             case 4:
                 return new StoneOfAugmentation();
+            case 5:
+                return TippedDart.randomTipped(2);
+            case 6:
+                return new Bomb.DoubleBomb();
             default:
                 return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
         }
@@ -2533,13 +2538,15 @@ public class InfiniteWorldLevel extends Level {
 
     private Item v23MerchantCoverageItem(int cx, int cy, int progressTier) {
         long ordinal = v22VariantOrdinal(cx, cy, 25270 + progressTier);
-        switch ((int)Math.floorMod(ordinal, 7L)) {
+        switch ((int)Math.floorMod(ordinal, 9L)) {
             case 0: return new Stylus();
             case 1: return new Honeypot();
             case 2: return new Alchemize().quantity(2 + (int)Math.floorMod(ordinal, 2L));
             case 3: return new StoneOfAugmentation();
-            case 4: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
-            case 5: return v22CategoryItem(Generator.Category.WAND, ordinal, 0);
+            case 4: return TippedDart.randomTipped(2);
+            case 5: return new Bomb.DoubleBomb();
+            case 6: return v22NormalCategoryItem(Generator.Category.TRINKET, ordinal);
+            case 7: return v22CategoryItem(Generator.Category.WAND, ordinal, 0);
             default:return v22CategoryItem(Generator.Category.RING, ordinal, 0);
         }
     }
