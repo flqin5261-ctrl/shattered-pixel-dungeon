@@ -396,9 +396,11 @@ public class InfiniteWorldLevel extends Level {
                 int heroChunkX = Math.floorDiv(state().heroWorldX, CHUNK_SIZE);
                 int heroChunkY = Math.floorDiv(state().heroWorldY, CHUNK_SIZE);
                 int anomaly = v9AnomalyType(heroChunkX, heroChunkY);
-                if (anomaly != 0) {
-                    // Every Backrooms district now has its own ecology instead of
-                    // sharing one generic spawn multiplier.
+                if (anomaly != 0
+                        && !InfiniteWorldRandomEvent.isActive(InfiniteWorldRandomEvent.MONSTER_CARNIVAL)) {
+                    // Every Backrooms district normally has its own ecology. A
+                    // monster carnival deliberately overrides even entity-free
+                    // Backrooms themes so the event behaves consistently anywhere.
                     chance *= v19AnomalyMobFactor(anomaly);
                 }
 
