@@ -643,8 +643,9 @@ public class InfiniteWorldLevel extends Level {
         }
 
         // Runtime effects can occasionally add enemies outside the ecology
-        // controller. Keep an absolute cap by removing the farthest extras first.
-        while (managed.size() > MOB_HARD_CAP) {
+        // controller. Event modes deliberately raise the safe cap, so prune
+        // against mobLimit() rather than the normal seven-enemy constant.
+        while (managed.size() > mobLimit()) {
             Mob farthest = null;
             int farthestDist = -1;
             for (Mob mob : managed) {
