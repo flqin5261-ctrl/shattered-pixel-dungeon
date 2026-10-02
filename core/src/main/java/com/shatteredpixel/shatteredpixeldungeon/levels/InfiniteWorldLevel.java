@@ -1428,9 +1428,8 @@ public class InfiniteWorldLevel extends Level {
 
         int wx = worldXForLocalCell(localCell);
         int wy = worldYForLocalCell(localCell);
-        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
-            if (record.worldX == wx && record.worldY == wy
-                    && record.item != null && record.item.isSimilar(item)) {
+        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecordsAt(wx, wy)) {
+            if (record.item != null && record.item.isSimilar(item)) {
                 state().removeRandomEventLoot(record.key);
                 return;
             }
@@ -1438,7 +1437,9 @@ public class InfiniteWorldLevel extends Level {
     }
 
     public void restorePersistentRandomEventLoot() {
-        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
+        for (InfiniteWorldState.EventLootRecord record :
+                state().randomEventLootRecordsInWindow(
+                        state().centerChunkX, state().centerChunkY, HALF_WINDOW)) {
             if (record.item == null) continue;
             int cell = localCellForWorld(record.worldX, record.worldY);
             if (cell < 0 || cell >= length()) continue;
@@ -1465,7 +1466,9 @@ public class InfiniteWorldLevel extends Level {
 
     private void snapshotPersistentRandomEventLoot() {
         ArrayList<Long> consumed = new ArrayList<>();
-        for (InfiniteWorldState.EventLootRecord record : state().randomEventLootRecords()) {
+        for (InfiniteWorldState.EventLootRecord record :
+                state().randomEventLootRecordsInWindow(
+                        state().centerChunkX, state().centerChunkY, HALF_WINDOW)) {
             int cell = localCellForWorld(record.worldX, record.worldY);
             if (cell < 0 || cell >= length()) continue;
 
