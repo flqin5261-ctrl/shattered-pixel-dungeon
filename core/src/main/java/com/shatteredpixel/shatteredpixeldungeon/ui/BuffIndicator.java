@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GenesisEcho;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.InfiniteWorldEventBuff;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.BreakthroughCertificate;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -193,7 +194,11 @@ public class BuffIndicator extends Component {
 		ArrayList<Buff> newBuffs = new ArrayList<>();
 		for (Buff buff : ch.buffs()) {
 			if (buff.icon() != NONE) {
-				newBuffs.add(buff);
+				if (buff instanceof InfiniteWorldEventBuff) {
+					newBuffs.add(0, buff);
+				} else {
+					newBuffs.add(buff);
+				}
 			}
 		}
 
@@ -349,8 +354,10 @@ public class BuffIndicator extends Component {
 			// under the HP bar. Show its 30/40/50/60 tier even in compact mobile UI.
 			boolean certificateBadge = buff instanceof BreakthroughCertificate.BreakthroughBlessing;
 			boolean genesisBadge = buff instanceof GenesisEcho;
+			boolean eventBadge = buff instanceof InfiniteWorldEventBuff;
 			//round up to the nearest pixel if <50% faded, otherwise round down
-			if ((!large && !certificateBadge && !genesisBadge) || buff.iconTextDisplay().isEmpty()) {
+			if ((!large && !certificateBadge && !genesisBadge && !eventBadge)
+					|| buff.iconTextDisplay().isEmpty()) {
 				text.visible = false;
 				grey.visible = true;
 				float fadeHeight = GameMath.gate(0, buff.iconFadePercent(), 1) * icon.height();
