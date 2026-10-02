@@ -1275,6 +1275,9 @@ public class Hero extends Char {
 			if (heap != null) {
 				Item item = heap.peek();
 				if (item.doPickUp( this )) {
+					if (Dungeon.level instanceof InfiniteWorldLevel) {
+						((InfiniteWorldLevel)Dungeon.level).consumePersistentRandomEventLoot(item, dst);
+					}
 					heap.pickUp();
 
 					//TODO this statement is getting silly, might be better to handle this as a propery of items
