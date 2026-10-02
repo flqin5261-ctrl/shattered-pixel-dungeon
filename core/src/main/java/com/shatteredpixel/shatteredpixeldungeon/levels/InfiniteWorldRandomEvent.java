@@ -105,7 +105,9 @@ public final class InfiniteWorldRandomEvent {
         if (isActive(UNDERCOVER)) {
             clearNonUndercoverEnemies(level);
         }
-        maintainSpecialPopulation(level);
+        // Do not GameScene.add() event actors while a level is still being built
+        // under InterlevelScene. The first Hero move/action will safely refill the
+        // event population after GameScene has taken ownership of the level.
     }
 
     public static void onWindowShifted(InfiniteWorldLevel level) {
