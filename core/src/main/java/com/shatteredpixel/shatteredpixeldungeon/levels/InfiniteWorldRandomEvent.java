@@ -102,10 +102,8 @@ public final class InfiniteWorldRandomEvent {
         ensureSchedule();
         level.restorePersistentRandomEventLoot();
         ensureBuff();
-        if (isActive(UNDERCOVER)) {
-            clearNonUndercoverEnemies(level);
-        }
-        // Do not GameScene.add() event actors while a level is still being built
+        // Do not mutate actor populations or GameScene.add() event actors while a
+        // level is still being built
         // under InterlevelScene. The first Hero move/action will safely refill the
         // event population after GameScene has taken ownership of the level.
     }
@@ -495,8 +493,18 @@ public final class InfiniteWorldRandomEvent {
             clearNonUndercoverEnemies(level);
 
             int count = 0;
+            int hx = Dungeon.hero.pos % level.width();
+            int hy = Dungeon.hero.pos / level.width();
             for (Mob mob : level.mobs.toArray(new Mob[0])) {
-                if (mob instanceof InfiniteWorldUndercoverMob) count++;
+                if (mob instanceof InfiniteWorldUndercoverMob) {
+                    int mx = mob.pos % level.width();
+                    int my = mob.pos / level.width();
+                    if (Math.max(Math.abs(mx - hx), Math.abs(my - hy)) > 28) {
+                        mob.despawnFromInfiniteWorld();
+                    } else {
+                        count++;
+                    }
+                }
             }
 
             int attempts = 0;
