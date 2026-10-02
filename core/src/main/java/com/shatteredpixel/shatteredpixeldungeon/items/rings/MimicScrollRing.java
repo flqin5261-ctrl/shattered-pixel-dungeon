@@ -79,6 +79,12 @@ public class MimicScrollRing extends MimicRing {
         new MimicUpgradeSelector(this).execute(hero, Scroll.AC_READ);
     }
 
+    public boolean hasStoredUpgradeAbility() {
+        Class<? extends Item>[] pool = abilityPool();
+        return pool != null && abilityIndex >= 0 && abilityIndex < pool.length
+                && pool[abilityIndex] == ScrollOfUpgrade.class;
+    }
+
     public Item upgradeSelectedItem(Hero hero, Item item) {
         if (hero == null || item == null || !isEquipped(hero) || !item.isUpgradable()) {
             return item;
