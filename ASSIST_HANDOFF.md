@@ -85,12 +85,13 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新稳定版本：**0.5.9**
-- 当前 versionCode：**955**
-- 当前最新稳定分支：`assist-0.5.9-stable`
-- 当前发布代码 SHA：`4a987553a9705db2dd05b645c77681e9f0a6aaf8`
-- 当前对应开发分支：`assist-0.5.9-environment-rich`
-- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 16**
+- 当前最新已验证发布基线：**1.0.3**
+- 当前发布 versionCode：**999**
+- 当前发布分支：`assist-1.0.3-npc-loot-coverage`
+- 当前发布代码 SHA：`638160661f8252a08ca291ee0767a9685705a441`
+- 当前开发分支：`assist-1.0.4-random-events`
+- 当前开发版本：**1.0.4 / versionCode 1000**
+- 当前无限世界生成器版本：**WORLD_GEN_VERSION = 23**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
 
@@ -109,7 +110,7 @@
    - `docs/assist/ARCHITECTURE_AND_INVARIANTS.md`
    - `docs/assist/BUG_HISTORY_AND_FIXES.md`
    - `docs/assist/ROADMAP_AND_TEST_CHECKLIST.md`
-4. 检查最新稳定分支 `assist-0.5.3-stable` 和最新开发分支。
+4. 检查本文“项目身份”中的当前发布基线与当前开发分支，不要再回退到早期 0.x stable。
 5. 修改前优先从最新稳定分支创建新的开发分支，例如：
    - `assist-0.5.2-xxxxx`
 6. **不要覆盖历史 stable 分支。**
@@ -2243,3 +2244,59 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - V23 merchant flexible stock rotates those same omitted vanilla utility families after the Ankh guarantee is satisfied.
 - NPC reward pools are themed: Ghost favors gear/food/potions, Wandmaker favors wands/magic/artifacts, Blacksmith favors gear/upgrade utility, and Imp favors rings/valuable magic. Each can also surface Ankh through its reward rotation.
 - Quest-only materials, class-only starting items and purely crafted derivatives are intentionally not injected as generic ground loot.
+
+
+## Assist 1.0.4 — Infinite World random events
+
+- Version: 1.0.4 / versionCode 1000.
+- Branch: `assist-1.0.4-random-events`.
+- WORLD_GEN_VERSION remains 23; this release adds runtime/save-state systems and does not change deterministic base world generation.
+- Added a mutually-exclusive Infinite World random-event controller. Natural events begin after a randomized inactive action-value interval and last a randomized 500–5000 Hero action-value. Spectator terrain QA mode does not naturally start events.
+- Every active event attaches `InfiniteWorldEventBuff`, shows a HUD icon with remaining action-value, has a tappable full rule description, and emits lower-left GLog start/end notices and explanations.
+- WndAssist adds an Infinite World random-event chooser with five direct activation choices plus “关闭当前事件”. Starting a different event first cleans up the old one; events never overlap.
+
+### 怪物狂欢日
+- Normal Infinite World monster target rises from the normal progression cap to 18, safety cap 20.
+- Ecology cadence becomes roughly 2.5–5.5 action-value and spawn chance is 100% until target population is reached.
+- Carnival overrides Backrooms ecology multipliers, including themes that normally have zero hostile entities.
+- Normal enemy EXP is doubled at the actual Mob EXP award path.
+- Normal loot chance is multiplied by 3 (still clamped to 100%).
+- Every ordinary monster loot resolution has an additional 9% artifact-drop attempt.
+- Event end uses Infinite World despawn, not Mob.die(), so all remaining enemies disappear without XP, loot, kill stats, or Genesis kill rewards.
+
+### 暗无天日
+- Maintains exactly two `InfiniteWorldEventBoss` units around the Hero. Event bosses farther than 28 cells are silently replaced; a defeated boss is immediately replenished.
+- Event bosses reuse four safe vanilla boss visual personas (Goo/Tengu/DM-300/Dwarf King) but use independent Infinite World AI/stats instead of finite boss-level scripts.
+- Boss HP/defense/damage and EXP scale from current Hero level/HT. Base event EXP is 900 + 90×Hero level with maxLvl 60.
+- Each legitimate boss kill drops 14–24 random physical Catalog items plus 3000–20000 gold through persistent event loot.
+- Event cleanup removes remaining bosses with no XP/no loot.
+
+### 财源滚滚
+- Hero.spend/spendConstant already report positive action-value through InfiniteWorldLevel.recordHeroAction; the event consumes the same value.
+- Fractional action-value is accumulated. Every full 1.0 action-value performs one independent gold roll.
+- Normal roll: 1–1000 gold; 2% jackpot: 5000–50000 gold. There is no event-total reward cap; Dungeon.gold keeps its engine int safety clamp.
+- Gold is credited directly, updates Statistics/Badges, shows floating gold text, and is never reclaimed when the event ends.
+
+### 谁是卧底
+- Starting the event removes the existing hostile population with no rewards, and normal ecology is suppressed for the whole event.
+- Maintains 24 event mobs around the Hero with safety cap 28; distant event mobs are replaced so the swarm follows exploration.
+- Every spawn independently has 60% chance to be a peaceful unit. Peaceful units stay in Mob.PASSIVE, consume turns only, and never attack.
+- Hostile units use only clear-line ranged attacks up to 10 cells. Their doAttack path deliberately skips sprite.attack(), so there is no attack animation.
+- All event mobs reuse mixed Rat/Gnoll/Crab/Skeleton identities so appearance/name does not reveal faction.
+- Peaceful kills are converted to NEUTRAL before the normal death pipeline, preventing ordinary XP/loot/kill/Genesis rewards, then deal the specified 50 Hero damage.
+- Real hostile kills grant their large normal EXP (450 + 45×Hero level) plus 2500–25000 direct gold.
+- Every maintenance pass removes non-event hostile mobs; event end removes all hostile mobs without rewards.
+
+### 一路繁花
+- Each distinct Hero movement coordinate triggers 1–5 separate nearby loot drops; each physical item class is chosen independently from the complete Catalog registry.
+- This intentionally includes quest/progression/misc physical items that ordinary Infinite World loot normally does not generate. Non-Item catalog entries such as enchantment/glyph descriptors are skipped.
+- Stackable drops receive an additional random quantity of 1–8.
+- Event loot is persisted as world-coordinate Item records in InfiniteWorldState. Streaming rebuilds and save/load restore it.
+- Hero.actPickUp removes the matching persistent record immediately after a successful pickup, preventing save/load duplication.
+- Event end does not delete any Blooming Path loot already created.
+
+### Persistence / safety
+- InfiniteWorldState stores active event type, remaining/duration, next natural trigger, fractional prosperity remainder, serial and persistent event-loot records.
+- Event population refill is deferred until GameScene is active after load; level construction only restores state/Buff/loot.
+- Streaming rebases event bosses; ordinary undercover mobs use the normal enemy rebase path and are then localized/refilled by the event controller.
+- Persistent event loot is snapshotted before streaming and restored after the new 7×7 window rebuild.
