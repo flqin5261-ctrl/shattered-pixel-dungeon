@@ -457,9 +457,17 @@ public final class InfiniteWorldRandomEvent {
 
         if (isActive(DARK_DAY)) {
             ArrayList<InfiniteWorldEventBoss> bosses = new ArrayList<>();
+            int hx = Dungeon.hero.pos % level.width();
+            int hy = Dungeon.hero.pos / level.width();
             for (Mob mob : level.mobs.toArray(new Mob[0])) {
                 if (mob instanceof InfiniteWorldEventBoss) {
-                    bosses.add((InfiniteWorldEventBoss)mob);
+                    int mx = mob.pos % level.width();
+                    int my = mob.pos / level.width();
+                    if (Math.max(Math.abs(mx - hx), Math.abs(my - hy)) > 28) {
+                        mob.despawnFromInfiniteWorld();
+                    } else {
+                        bosses.add((InfiniteWorldEventBoss)mob);
+                    }
                 }
             }
             while (bosses.size() > DARK_BOSS_TARGET) {
