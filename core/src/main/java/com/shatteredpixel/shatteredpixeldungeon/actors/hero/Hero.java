@@ -2700,7 +2700,11 @@ public class Hero extends Char {
 		super.move( step, travelling);
 
 		if (Dungeon.level instanceof InfiniteWorldLevel) {
-			((InfiniteWorldLevel) Dungeon.level).recordHeroMove(this);
+			InfiniteWorldLevel infinite = (InfiniteWorldLevel) Dungeon.level;
+			infinite.recordHeroMove(this);
+			if (travelling) {
+				infinite.onHeroTravelStep(this);
+			}
 		}
 		
 		if (!InfiniteWorldLevel.assistSpectatorActive() && !flying && travelling) {
