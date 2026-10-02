@@ -124,6 +124,12 @@ public class InfiniteWorldEventBoss extends Mob {
     }
 
     @Override
+    public void notice() {
+        super.notice();
+        com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar.assignBoss(this);
+    }
+
+    @Override
     public void rollToDropLoot() {
         InfiniteWorldRandomEvent.dropDarkDayBossRewards(this);
     }
