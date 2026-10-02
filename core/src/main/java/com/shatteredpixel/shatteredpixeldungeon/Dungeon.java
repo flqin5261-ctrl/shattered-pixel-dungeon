@@ -946,9 +946,14 @@ public class Dungeon {
 	public static void observe(){
 		Light light = hero.buff(Light.class);
 		int baseView = light == null ? level.viewDistance : Math.max(Light.DISTANCE, level.viewDistance);
-		hero.viewDistance = baseView + 2 * hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
+		// Keep Hero.viewDistance as the unmodified base. Level.updateFieldOfView()
+		// is the single authority that applies Transcendent Vision's +2 cells/point.
+		// The fog-update rectangle still has to cover those extra cells, but must not
+		// write them back into the base or the next FOV pass would apply them twice.
+		hero.viewDistance = baseView;
 		int dist = Math.max(Dungeon.hero.viewDistance, 8);
 		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
+		dist += 2 * Dungeon.hero.pointsInTalent(Talent.TRANSCENDENT_VISION);
 
 		if (Dungeon.hero.buff(MagicalSight.class) != null){
 			dist = Math.max( dist, MagicalSight.DISTANCE );
