@@ -2253,6 +2253,7 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - WORLD_GEN_VERSION remains 23; this release adds runtime/save-state systems and does not change deterministic base world generation.
 - Added a mutually-exclusive Infinite World random-event controller. Natural events begin after a randomized inactive action-value interval and last a randomized 500–5000 Hero action-value. Spectator terrain QA mode does not naturally start events.
 - Every active event attaches `InfiniteWorldEventBuff`, shows a HUD icon with remaining action-value, has a tappable full rule description, and emits lower-left GLog start/end notices and explanations.
+- BuffIndicator prioritizes InfiniteWorldEventBuff ahead of the 14-icon compact-HUD limit and allows its remaining-action text even on small/mobile UI, so the event cannot be hidden behind long-lived Assist buffs.
 - WndAssist adds an Infinite World random-event chooser with five direct activation choices plus “关闭当前事件”. Starting a different event first cleans up the old one; events never overlap.
 
 ### 怪物狂欢日
@@ -2292,7 +2293,9 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - This intentionally includes quest/progression/misc physical items that ordinary Infinite World loot normally does not generate. Non-Item catalog entries such as enchantment/glyph descriptors are skipped.
 - Stackable drops receive an additional random quantity of 1–8.
 - Event loot is persisted as world-coordinate Item records in InfiniteWorldState. Streaming rebuilds and save/load restore it.
+- Persistent event loot also has a runtime chunk index: pickup scans only the current world cell and streaming restore/snapshot scans only the active 7×7 chunk window, not the run's entire historical loot list.
 - Hero.actPickUp removes the matching persistent record immediately after a successful pickup, preventing save/load duplication.
+- Blooming Path is dispatched only from true Hero travelling movement; teleport/reposition calls still update Infinite World coordinates but do not count as a “step”.
 - Event end does not delete any Blooming Path loot already created.
 
 ### Persistence / safety
