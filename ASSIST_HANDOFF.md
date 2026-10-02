@@ -2215,3 +2215,15 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - 宝箱、钥匙及宝箱剩余内容都有世界坐标/对象状态/内容持久化，不会因7×7流式窗口重建复制。
 - 物资格优先寻找出生点9格半径内的天然可用地块；极端地图没有3个可用地块时会强制预留附近普通地面，保证物资绝不缺失。
 - 八荒·亘古元敕尚未觉醒时，物品保持原有未鉴定状态；觉醒并实际获得物品后，通识古今立即完成鉴定。
+
+
+## Assist 1.0.2 — Talent runtime audit
+
+- Version: 1.0.2 / versionCode 998. WORLD_GEN_VERSION remains 22.
+- Branch: assist-1.0.2-talent-audit.
+- T5/T6 runtime audit confirms real hooks for Ascendant Force/Focus/Reflex and Transcendent Strength/Speed/Guard/Regen.
+- Ascendant Vitality now calls Hero.updateHT(true) immediately when a point is spent, so both HT and the gained current HP delta update on the same tap.
+- Transcendent Vision was already implemented but was applied twice: Dungeon.observe() wrote +2/point into Hero.viewDistance, then Level.updateFieldOfView() added another +2/point. Hero.viewDistance now remains the base value; Level is the single FOV authority, while Dungeon.observe() mirrors the effective radius only for fog refresh bounds.
+- Dungeon.observe() fog bounds now also mirror Eye of Newt and Breakthrough Certificate vision bonuses, preventing outer visible cells from retaining stale fog.
+- Genesis Echo awakening now recalculates HT and FOV after the buff is attached. This is required because a linked level-60 Miracle World instantly enables full T1-T6 mastery and the second certificate layer.
+- T7 audit confirms live implementations for Genesis Reach, Teleport, Spellcast and Fortune. Fortune minimum 10 bonus items / 9x9 spread / stack quantity >=10 / weapon-armor-ring-wand +120 and Spellcast 0.35s wand double-tap match their descriptions.
