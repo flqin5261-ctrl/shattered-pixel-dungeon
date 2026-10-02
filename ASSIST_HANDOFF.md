@@ -2227,3 +2227,19 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - Dungeon.observe() fog bounds now also mirror Eye of Newt and Breakthrough Certificate vision bonuses, preventing outer visible cells from retaining stale fog.
 - Genesis Echo awakening now recalculates HT and FOV after the buff is attached. This is required because a linked level-60 Miracle World instantly enables full T1-T6 mastery and the second certificate layer.
 - T7 audit confirms live implementations for Genesis Reach, Teleport, Spellcast and Fortune. Fortune minimum 10 bonus items / 9x9 spread / stack quantity >=10 / weapon-armor-ring-wand +120 and Spellcast 0.35s wand double-tap match their descriptions.
+
+
+## Assist 1.0.3 — Infinite World NPC + loot coverage
+
+- Version: 1.0.3 / versionCode 999.
+- New-world generator: WORLD_GEN_VERSION 23. Existing V22 saves retain V22 deterministic terrain/loot identity.
+- Branch: assist-1.0.3-npc-loot-coverage.
+- Added InfiniteWorldSupplyNPC, a quest-free Infinite World contact that reuses the original Sad Ghost, Wandmaker, Blacksmith and Imp names/sprites without touching their global vanilla Quest state.
+- Supply NPC sites use a deterministic 5x5 chunk lattice, exclude the origin, Backrooms/anomaly chunks and merchant chunks, and grant one persistent once-per-site random supply reward. Full backpacks drop the claimed gift safely at the Hero.
+- Existing saves receive NPC sites after entering a new chunk; streaming rebases these neutral NPCs alongside travelling merchants.
+- Audit found Ankh was structurally impossible in Infinite World V22: it is not a Generator.Category item, while vanilla ShopRoom explicitly stocks new Ankh(). Infinite merchants and V22 balanced loose/chest cycles omitted it.
+- Infinite merchant slot 5 now guarantees an Ankh whenever the Hero does not currently own one. This applies to existing V22 saves through merchant stock refresh.
+- V23 adds a low-frequency utility coverage slot to ordinary loose/chest supply sequencing: Ankh, Stylus, Honeypot, Alchemize, StoneOfAugmentation, tipped darts, double bombs and trinkets. Core food/equipment/potion/scroll/seed/stone families remain the dominant 17/18 drops.
+- V23 merchant flexible stock rotates those same omitted vanilla utility families after the Ankh guarantee is satisfied.
+- NPC reward pools are themed: Ghost favors gear/food/potions, Wandmaker favors wands/magic/artifacts, Blacksmith favors gear/upgrade utility, and Imp favors rings/valuable magic. Each can also surface Ankh through its reward rotation.
+- Quest-only materials, class-only starting items and purely crafted derivatives are intentionally not injected as generic ground loot.
