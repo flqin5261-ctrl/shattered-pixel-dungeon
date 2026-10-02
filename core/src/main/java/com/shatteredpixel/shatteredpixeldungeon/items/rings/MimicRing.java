@@ -70,6 +70,22 @@ public abstract class MimicRing extends Ring {
 
     protected abstract void invokeStoredAbility(Hero hero, Class<? extends Item> abilityClass);
 
+    protected boolean consumeChargeBeforeInvoke(Class<? extends Item> abilityClass) {
+        return true;
+    }
+
+    public boolean consumeMimicCharge() {
+        if (curCharges <= 0) return false;
+        curCharges--;
+        partialCharge = Math.max(0f, partialCharge);
+        updateQuickslot();
+        return true;
+    }
+
+    public boolean hasMimicCharge() {
+        return curCharges > 0;
+    }
+
     @Override
     public void reset() {
         super.reset();
@@ -130,13 +146,18 @@ public abstract class MimicRing extends Ring {
             abilityIndex = 0;
         }
 
-        // The charge belongs to the ring, not the temporary emulated consumable.
-        // Spend exactly one before handing control to any asynchronous inventory UI.
-        curCharges--;
-        partialCharge = Math.max(0f, partialCharge);
-        updateQuickslot();
+        Class<? extends Item> abilityClass = pool[abilityIndex];
 
-        invokeStoredAbility(hero, pool[abilityIndex]);
+        // Most copied consumables spend the ring charge as soon as they are invoked.
+        // Some asynchronous abilities (currently Scroll of Upgrade) need to defer
+        // payment until the player actually confirms an item action, otherwise a
+        // cancelled selector would consume a charge and repeated use could not stay
+        // inside the same interaction window.
+        if (consumeChargeBeforeInvoke(abilityClass)) {
+            if (!consumeMimicCharge()) return;
+        }
+
+        invokeStoredAbility(hero, abilityClass);
     }
 
     protected String storedAbilityName() {
