@@ -85,12 +85,12 @@
 - 许可证：GPL-3.0
 - 应用名：`Shattered Pixel Dungeon · Assist`
 - 固定 applicationId：`com.shatteredpixel.shatteredpixeldungeon.assist`
-- 当前最新已验证发布基线：**1.0.3**
-- 当前发布 versionCode：**999**
-- 当前发布分支：`assist-1.0.3-npc-loot-coverage`
-- 当前发布代码 SHA：`638160661f8252a08ca291ee0767a9685705a441`
-- 当前开发分支：`assist-1.0.4-random-events`
-- 当前开发版本：**1.0.4 / versionCode 1000**
+- 当前最新已验证发布基线：**1.0.4**
+- 当前发布 versionCode：**1000**
+- 当前发布分支：`assist-1.0.4-random-events`
+- 当前发布代码 SHA：`d519a44eab422507bb6ff297f87410f4c932e790`
+- 当前开发分支：`assist-1.0.5-genesis-action-deadlock`
+- 当前开发版本：**1.0.5 / versionCode 1001**
 - 当前无限世界生成器版本：**WORLD_GEN_VERSION = 23**
 
 用户的核心目标不是做一个“原版小改版”，而是逐步把一个额外模式做成：
@@ -2303,3 +2303,38 @@ Infinite World 世界出生点绝对坐标仍为 (12,12)。首次初始化时，
 - Event population refill is deferred until GameScene is active after load; level construction only restores state/Buff/loot.
 - Streaming rebases event bosses; ordinary undercover mobs use the normal enemy rebase path and are then localized/refilled by the event controller.
 - Persistent event loot is snapshotted before streaming and restored after the new 7×7 window rebuild.
+
+
+## Assist 1.0.5 — Genesis Reach action deadlock hotfix
+
+- Version: 1.0.5 / versionCode 1001.
+- Branch: `assist-1.0.5-genesis-action-deadlock`.
+- WORLD_GEN_VERSION remains 23; this is a Hero action-state hotfix and does not remap Infinite World terrain or loot identity.
+
+### Root cause
+At level 60 with T7 `GENESIS_REACH` / 寰墟指殛 selected, clicking a visible enemy enters Hero.actAttack's immediate execution path. Unlike a normal melee attack, this path has no Hero attack animation and therefore no later onAttackComplete() callback.
+
+The old code did:
+1. GenesisEcho.forceSlay(target)
+2. attackTarget = null
+3. spend(Actor.TICK)
+4. return true
+
+but left `Hero.curAction` pointing to the same `HeroAction.Attack`.
+
+Because `return true` tells Actor.process that the synchronous action is complete, the scheduler eventually selects Hero again. Hero.act sees the same queued attack, actAttack restores the already-dead target from action.target, forceSlay becomes a no-op, spends another turn, and returns true again. This repeats indefinitely and the UI remains on the spinning action indicator. Once this loop starts, later movement/wand/pickup input never gets a chance to execute, which makes unrelated actions appear to be the trigger.
+
+### Fix
+- Genesis Reach immediate execution now treats the click as one atomic synchronous Hero action.
+- `curAction` and `attackTarget` are cleared **before** forceSlay/spend.
+- Exactly one Actor.TICK is spent, then Actor.process can naturally return Hero to ready state.
+- If the selected target dies between handle() and Hero.act(), the stale attack is cleared as a completed no-op instead of being retried.
+- Normal melee/ranged attack animation paths are unchanged.
+
+### Remote pickup hardening
+Genesis Reach remote pickup still uses Item.doPickUp(), whose successful path calls Hero.spendAndNext() internally. To prevent the same class of stale-action reentry:
+- a remote PickUp clears `curAction` before calling Item.doPickUp();
+- the remote heap cell is passed to doPickUp for correct pickup visual origin;
+- local/original pickup behavior is unchanged.
+
+This hotfix deliberately avoids a generic timeout/watchdog: the scheduler/action lifecycle is corrected at the source so no action, drop, XP, or kill is silently skipped or duplicated.
