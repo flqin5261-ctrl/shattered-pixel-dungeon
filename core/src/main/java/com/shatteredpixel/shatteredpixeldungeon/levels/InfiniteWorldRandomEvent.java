@@ -322,16 +322,19 @@ public final class InfiniteWorldRandomEvent {
     }
 
     private static void spawnBloomLoot(InfiniteWorldLevel level, Hero hero) {
-        Item item = randomCatalogItem();
-        if (item == null) return;
+        int drops = Random.IntRange(1, 5);
+        for (int i = 0; i < drops; i++) {
+            Item item = randomCatalogItem();
+            if (item == null) continue;
 
-        if (item.stackable) {
-            item.quantity(Random.IntRange(1, 5));
+            if (item.stackable) {
+                item.quantity(Random.IntRange(1, 8));
+            }
+
+            int cell = level.findRandomEventDropCell(hero.pos, 1, 5);
+            if (cell < 0) cell = hero.pos;
+            level.dropPersistentRandomEventLoot(item, cell);
         }
-
-        int cell = level.findRandomEventDropCell(hero.pos, 1, 4);
-        if (cell < 0) cell = hero.pos;
-        level.dropPersistentRandomEventLoot(item, cell);
     }
 
     public static Item randomCatalogItem() {
