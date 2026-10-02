@@ -244,7 +244,7 @@ public final class InfiniteWorldRandomEvent {
             } else if (ended == DARK_DAY) {
                 clearEventBosses(level);
             } else if (ended == UNDERCOVER) {
-                clearUndercoverMobs(level);
+                clearAllEnemies(level);
             }
         } finally {
             cleaningUp = false;
@@ -490,6 +490,10 @@ public final class InfiniteWorldRandomEvent {
                 bosses.add(boss);
             }
         } else if (isActive(UNDERCOVER)) {
+            // The event promise is strict: every monster on screen belongs to
+            // this event, so no normal/summoned hostile is allowed to mix in.
+            clearNonUndercoverEnemies(level);
+
             int count = 0;
             for (Mob mob : level.mobs.toArray(new Mob[0])) {
                 if (mob instanceof InfiniteWorldUndercoverMob) count++;
